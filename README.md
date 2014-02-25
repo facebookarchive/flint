@@ -19,7 +19,7 @@ Dependencies
 
 - googletest (Google C++ Testing Framework)
 
-    Grab gtest 1.6.0 from: http://googletest.googlecode.com/files/gtest-1.6.0.zip. Unzip it inside of the test/ subdirectory.
+    Grab gtest 1.6.0 from: http://googletest.googlecode.com/files/gtest-1.6.0.zip. Unzip it inside of the cxx/ subdirectory.
 
 - additional platform specific dependencies
 
