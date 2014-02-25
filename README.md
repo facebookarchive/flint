@@ -17,6 +17,10 @@ Dependencies
 
     Follow the instructions to download and install folly.
 
+- double-conversion (http://code.google.com/p/double-conversion/)
+    
+    Follow the instructions listed on the Folly page to build and install
+
 - googletest (Google C++ Testing Framework)
 
     Grab gtest 1.6.0 from: http://googletest.googlecode.com/files/gtest-1.6.0.zip. Unzip it inside of the cxx/ subdirectory.
@@ -33,3 +37,12 @@ Dependencies
     - libboost1.54-all-dev
     - libgoogle-glog-dev
     - libgflags-dev
+
+To Build
+--------
+
+autoreconf --install
+
+LDFLAGS=-L<double-conversion> CPPFLAGS=-I<double-conversion>/src configure ...
+
+make
