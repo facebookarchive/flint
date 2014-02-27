@@ -7,6 +7,40 @@ import Checks, Tokenizer;
 
 unittest {
   string s = "
+#include <vector>
+#include <list1>
+#include <algorith>
+#include \"map\"
+int main() {
+  std::vector<int> s;
+  std::map<Foo> s;
+  std::list<T> s!@#1;
+  std::foo<bar> s;
+  std::find();
+  std::find_if();
+  std::remove();
+  vector<int> s;
+  map<Foo> s;
+  list<T> s!@#1;
+  foo<bar> s;
+  find();
+  find_if();
+  remove();
+}
+
+#include <algorithm>
+void foo() {
+  std::find();
+  std::find_if();
+  std::remove();
+}
+";
+  auto tokens = tokenize(s, "nofile.cpp");
+  EXPECT_EQ(checkDirectStdInclude("nofile.cpp", tokens), 5);
+}
+
+unittest {
+  string s = "
 #include <stdio.h>
 int main() {
   printf(\"hello, world\");

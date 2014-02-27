@@ -2387,3 +2387,307 @@ uint checkBreakInSynchronized(string fpath, Token[] v) {
   }
   return result;
 }
+
+
+
+
+/**
+ * Checks that the proper C++11 headers are directly (i.e. non-transitively)
+ * included for instances of std::identifier.
+ *
+ * This is a first naive grep and needs to be extended but is supposed to be a
+ * reasonable first approximation of the types available in the std namespace.
+ *
+ * There are inaccuracies/mistakes in the stdHeader2ClassesAndStructs
+ * resulting from the crudeness of the grep (e.g.
+ *   "stdexcept" : ["for"],
+ *   "algorithm" : ["uniform_int_distribution"],
+ *   "random"    : ["uniform_int_distribution"],
+ *   ...
+ * ).
+ * If this is inacceptable we should use the linter itself and not rely on
+ * a grep.
+ *
+ * For future reference, the associative array initializer to include file
+ * map was generated using the following commands:
+ *
+ * cd $SOME_DIR
+ *
+ * git -c http.proxy=fwdproxy.any:8080 clone \
+ * https://github.com/llvm-mirror/libcxx.git libcxx
+ *
+ * find $SOME_DIR/libcxx/include/ -name "*" -type f  | grep -v "\.h" \
+ * | grep -v "\.tcc" | xargs egrep "class |struct " | grep -v "\*" \
+ * | grep -v " _" | grep -v "#include" | grep -v ";" | grep -v // \
+ * | grep -v "<" | grep -v "\.\.\." | sed "s:/usr/include/c++/4.4.6/::g" \
+ * | sed "s/: / /g" | grep -v "std::" | grep -v "()" | grep -v "#" \
+ * | grep -v enum
+ * | grep -v __ | egrep -v "<|>|=" | sed "s:/data/users/ntv/libcxx/include/::g"\
+ * | sed "s/:/ /g" | sed "s/class//g" | sed s/struct//g
+ * | awk {'printf("\"%s\"  : \"%s\",\n", $1, $2)'} | sort | uniq > /tmp/foo
+ *
+ * cat /tmp/foo
+ *
+ * Manual tweaks and regexp replaces in emacs
+ */
+uint checkDirectStdInclude(string fpath, Token[] toks) {
+  immutable auto stdHeader2ClassesAndStructs = [
+    "algorithm" : [
+      "param_type", "uniform_int_distribution"
+    ],
+    "array" : [
+      "array"
+    ],
+    "atomic" : [
+      "atomic", "typedef"
+    ],
+    "bitset" : [
+      "bitset", "reference"
+    ],
+    "chrono" : [
+      "duration", "duration_values", "steady_clock", "system_clock",
+      "time_point"
+    ],
+    "codecvt" : [
+      "codecvt_utf16", "codecvt_utf8", "codecvt_utf8_utf16"
+    ],
+    "complex" : [
+      "complex"
+    ],
+    "condition_variable" : [
+      "condition_variable", "condition_variable_any"
+    ],
+    "deque" : [
+      "deque"
+    ],
+    "exception" : [
+      "bad_exception", "exception", "nested_exception"
+    ],
+    "experimental/dynarray" : [
+      "dynarray", "bad_optional_access", "nullopt_t", "optional"
+    ],
+    "ext/hash_map" : [
+      "hash_map", "hash_multimap"
+    ],
+    "ext/hash_set" : [
+      "hash_multiset", "hash_set"
+    ],
+    "forward_list" : [
+      "forward_list"
+    ],
+    "fstream" : [
+      "basic_filebuf", "basic_fstream", "basic_ifstream", "basic_ofstream"
+    ],
+    "functional" : [
+      "bad_function_call", "binary_function", "binary_negate", "binder1st",
+      "binder2nd", "reference_wrapper", "unary_function", "unary_negate"
+    ],
+    "future" : [
+      "future", "future_error", "promise", "shared_future"
+    ],
+    "initializer_list" : [
+      "initializer_list"
+    ],
+    "ios" : [
+      "basic_ios", "ios_base"
+    ],
+    "istream" : [
+      "basic_iostream", "basic_istream"
+    ],
+    "iterator" : [
+      "back_insert_iterator", "front_insert_iterator", "insert_iterator",
+      "istreambuf_iterator", "istream_iterator", "iterator",
+      "iterator_traits", "ostreambuf_iterator", "ostream_iterator",
+      "reverse_iterator"
+    ],
+    "limits" : [
+      "numeric_limits"
+    ],
+    "list" : [
+      "list"
+    ],
+    "locale" : [
+      "locale", "wbuffer_convert", "wstring_convert"
+    ],
+    "map" : [
+      "map", "multimap", "value_compare"
+    ],
+    "memory" : [
+      "allocator", "allocator_traits", "auto_ptr", "auto_ptr_ref",
+      "bad_weak_ptr", "default_delete", "enable_shared_from_this",
+      "pointer_traits", "raw_storage_iterator", "shared_ptr", "unique_ptr",
+      "weak_ptr"
+    ],
+    "mutex" : [
+      "lock_guard", "mutex", "once_flag", "recursive_mutex",
+      "recursive_timed_mutex", "timed_mutex", "unique_lock"
+    ],
+    "new" : [
+      "bad_alloc", "bad_array_new_length"
+    ],
+    "ostream" : [
+      "basic_ostream"
+    ],
+    "queue" : [
+      "priority_queue", "queue"
+    ],
+    "random" : [
+      "bernoulli_distribution", "binomial_distribution",
+      "cauchy_distribution", "chi_squared_distribution",
+      "discard_block_engine", "discrete_distribution",
+      "exponential_distribution", "extreme_value_distribution",
+      "fisher_f_distribution", "gamma_distribution", "geometric_distribution",
+      "independent_bits_engine", "linear_congruential_engine",
+      "lognormal_distribution", "mersenne_twister_engine",
+      "negative_binomial_distribution", "normal_distribution", "param_type",
+      "piecewise_constant_distribution", "piecewise_linear_distribution",
+      "poisson_distribution", "random_device", "seed_seq",
+      "shuffle_order_engine", "student_t_distribution",
+      "subtract_with_carry_engine", "UIntType,", "uniform_int_distribution",
+      "uniform_real_distribution", "weibull_distribution"
+    ],
+    "ratio" : [
+      "ratio"
+    ],
+    "regex" : [
+      "basic_regex", "match_results", "regex_error", "regex_iterator",
+      "regex_token_iterator", "regex_traits", "sub_match"
+    ],
+    "scoped_allocator" : [
+      "rebind", "scoped_allocator_adaptor"
+    ],
+    "set" : [
+      "multiset", "set"
+    ],
+    "shared_mutex" : [
+      "shared_lock", "shared_mutex"
+    ],
+    "sstream" : [
+      "basic_istringstream", "basic_ostringstream", "basic_stringbuf",
+      "basic_stringstream"
+    ],
+    "stack" : [
+      "stack"
+    ],
+    "stdexcept" : [
+      "for"
+    ],
+    "streambuf" : [
+      "basic_streambuf"
+    ],
+    "string" : [
+      "basic_string", "char_traits", "fpos"
+    ],
+    "strstream" : [
+      "istrstream", "ostrstream", "strstream", "strstreambuf"
+    ],
+    "system_error" : [
+      "error_category", "error_code", "error_condition", "system_error"
+    ],
+    "thread" : [
+      "thread"
+    ],
+    "tuple" : [
+      "tuple"
+    ],
+    "typeindex" : [
+      "type_index"
+    ],
+    "typeinfo" : [
+      "bad_cast", "bad_typeid", "type_info"
+    ],
+    "type_traits" : [
+      "aligned_union", "is_assignable", "is_deible",
+      "is_trivially_assignable", "underlying_type"
+    ],
+    "unordered_map" : [
+      "unordered_map", "unordered_multimap"
+    ],
+    "unordered_set" : [
+      "unordered_multiset", "unordered_set"
+    ],
+    "utility" : [
+      "integer_sequence", "pair"
+    ],
+    "valarray" : [
+      "gslice", "gslice_array", "indirect_array", "mask_array", "slice",
+      "slice_array", "valarray"
+    ],
+    "vector" : ["vector"]
+  ];
+
+  // These were created by hand
+  immutable auto methods = [
+    "algorithm" : [
+      "all_of", "any_of", "none_of", "for_each", "find", "find_if",
+      "find_if_not", "find_end", "find_first_of", "adjacent_find", "count",
+      "count_if", "mismatch", "equal", "is_permutation", "search", "search_n",
+      "copy", "copy_n", "copy_if", "copy_backward", "move", "move_backward",
+      "swap", "swap_ranges", "iter_swap", "transform", "replace", "replace_if",
+      "replace_copy", "replace_copy_if", "fill", "fill_n", "generate",
+      "generate_n", "remove", "remove_if", "remove_copy", "remove_copy_if",
+      "unique", "unique_copy", "reverse", "reverse_copy", "rotate",
+      "rotate_copy", "random_shuffle", "shuffle", "is_partitioned", "partition",
+      "stable_partition", "partition_copy", "partition_point", "sort",
+      "stable_sort", "partial_sort", "partial_sort_copy", "is_sorted",
+      "is_sorted_until", "nth_element", "lower_bound", "upper_bound",
+      "equal_range", "binary_search", "merge", "inplace_merge", "includes",
+      "set_union", "set_intersection", "set_difference",
+      "set_symmetric_difference", "push_heap", "pop_heap", "make_heap",
+      "sort_heap", "is_heap", "is_heap_until", "min", "max", "minmax",
+      "min_element", "max_element", "minmax_element", "lexicographical_compare",
+      "next_permutation", "prev_permutation"
+    ]
+  ];
+
+  auto includeMap = ["" : ""];
+  foreach (k, v; stdHeader2ClassesAndStructs) {
+    for (size_t i = 0; i < v.length; i++) {
+      includeMap[v[i]] = k;
+    }
+  }
+  foreach (k, v; methods) {
+    for (size_t i = 0; i < v.length; i++) {
+      includeMap[v[i]] = k;
+    }
+  }
+
+  int result;
+  string[] parsedIncludes;
+  for (; !toks.empty; toks.popFront) {
+    if (toks.atSequence(tk!"#",tk!"identifier") && toks[1].value == "include") {
+      // Skip relative include paths atm.
+      if (toks[2].value == "<") {
+        parsedIncludes ~= toks[3].value;
+      }
+      continue;
+    }
+    if (!toks.atSequence(tk!"identifier",tk!"::") || toks[0].value != "std")
+      continue;
+
+    string typeName = toks[2].value;
+    auto p = (typeName in includeMap);
+    if (p is null) {
+      // This would print a lot of warnings in this first implementation...
+      // lintWarning(toks.front,
+      //             text("No entry std::", typeName,
+      //                  "found in Linter's standard library include map. ",
+      //                  "Please report omission."));
+      continue;
+    }
+
+    // This fails for occurrences of type used before the proper include is
+    // defined. For example, forward declarations would fail. On the other
+    // hand, foward declaration of std::xxx results in undefined behavior.
+    auto pp = find(parsedIncludes, includeMap[typeName]);
+    if (pp.empty) {
+      lintWarning(toks.front,
+                  text("Direct include not found for std::", typeName,
+                       ", prefer to use direct #include <",
+                       includeMap[typeName],">\n"));
+      result++;
+    }
+  }
+
+  return result;
+}
