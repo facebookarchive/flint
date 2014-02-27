@@ -1129,6 +1129,10 @@ unittest {
   string s6 = "class foo : protected bar { class baz : protected bar { } }";
   tokens = tokenize(s6);
   EXPECT_EQ(checkProtectedInheritance(filename, tokens), 2);
+
+  string s7 = "class foo; class bar : protected foo {};";
+  tokens = tokenize(s7);
+  EXPECT_EQ(checkProtectedInheritance(filename, tokens), 1);
 }
 
 // testExceptionInheritance

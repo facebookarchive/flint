@@ -1813,7 +1813,7 @@ uint checkProtectedInheritance(string fpath, Token[] v) {
       }
 
       for (; it.front.type_ != tk!"\0"; it.popFront) {
-        if (it.front.type_ == tk!"{") {
+        if (it.front.type_.among(tk!"{", tk!";")) {
           break;
         }
 
