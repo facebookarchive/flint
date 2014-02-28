@@ -94,7 +94,7 @@ uint checkEntry(string path) {
       errors += checkUpcaseNull(path, tokens);
       errors += checkExceptionInheritance(path, tokens);
       errors += checkMutexHolderHasName(path, tokens);
-      errors += checkDirectStdInclude(path, tokens);
+      // errors += checkDirectStdInclude(path, tokens);
     }
     // *** Checks end
   } catch (Exception e) {
