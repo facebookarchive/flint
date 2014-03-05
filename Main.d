@@ -2,7 +2,7 @@
 // License: Boost License 1.0, http://boost.org/LICENSE_1_0.txt
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
-import std.file, std.getopt, std.stdio;
+import std.conv, std.file, std.getopt, std.stdio;
 import Checks, FileCategories, Ignored, Tokenizer;
 
 bool recursive = true;
@@ -54,7 +54,7 @@ uint checkEntry(string path) {
 
   try {
     // Get file intro memory
-    string file = path.readText;
+    string file = to!string(path.read);
     Token[] tokens;
     // Remove code that occurs in pairs of
     // "// %flint: pause" & "// %flint: resume"
@@ -98,8 +98,7 @@ uint checkEntry(string path) {
     }
     // *** Checks end
   } catch (Exception e) {
-    stderr.writef("Exception thrown during checks on %s.\n%s",
-        path, e.toString());
+    stderr.writef("Flint was unable to lint %s\n", path);
   }
   return errors;
 }
