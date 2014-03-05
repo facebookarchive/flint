@@ -2179,6 +2179,51 @@ unittest {
   EXPECT_EQ(checkFollyStringPieceByValue(filename, tokens), 0);
 }
 
+// testCheckRandomUsage
+unittest {
+  string filename = "nofile.cpp";
+  Token[] tokens;
+
+  // random_device
+  string s = "
+    random_device rd;
+    std::uniform_int_distribution<int> dist;
+    std::random_device rd2;
+    r = dist(rd);
+  ";
+  tokenize(s, filename, tokens);
+  EXPECT_EQ(checkRandomUsage(filename, tokens), 2);
+
+  // rand()
+  string s1 = "
+    int randomInt = rand();
+    tr_rand();
+  ";
+  tokens.clear();
+  tokenize(s1, filename, tokens);
+  EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
+
+  // RandomInt32
+  string s2 = "
+    RandomInt32 r;
+    GetRandomInt32();
+    uint32_t rand = r();
+  ";
+  tokens.clear();
+  tokenize(s2, filename, tokens);
+  EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
+
+  // RandomInt64
+  string s3 = "
+    RandomInt64 r;
+    GetRandomInt64();
+    uint64_t rand = r();
+  ";
+  tokens.clear();
+  tokenize(s3, filename, tokens);
+  EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
+}
+
 void main(string[] args) {
   enforce(c_mode == false);
 }

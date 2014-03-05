@@ -2388,7 +2388,48 @@ uint checkBreakInSynchronized(string fpath, Token[] v) {
   return result;
 }
 
+/*
+ * Lint check: using C rand(), random_device or
+ * RandomInt32/RandomInt64 (under common/base/Random.h)
+ * to generate random number is not a good way, use rand32() or rand64() in
+ * folly/Random.h instead
+ */
+uint checkRandomUsage(string fpath, Token[] v) {
+  uint result = 0;
 
+  string[string] random_banned = [
+    "random_device":
+      "random_device uses /dev/urandom, which is expensive. "
+      "Use follly::Random::rand32 or other methods in folly/Random.h.\n",
+    "RandomInt32" :
+      "using RandomInt32 (in common/base/Random.h) to generate random number "
+      "is discouraged, please consider folly::Random::rand32().\n",
+    "RandomInt64" :
+      "using RandomInt64 (in common/base/Random.h) to generate random number "
+      "is discouraged, please consider folly::Random::rand64().\n"
+  ];
+
+  for (; !v.empty; v.popFront) {
+    auto t = v.front;
+    if (t.type_ != tk!"identifier") continue;
+    auto mapIt = t.value_ in random_banned;
+    if (!mapIt) {
+      if (v.atSequence(tk!"identifier", tk!"(", tk!")")
+            && t.value_ == "rand") {
+          lintError(
+            t,
+            "using C rand() to generate random number causes lock contention, "
+            "please consider folly::Random::rand32().\n");
+          ++result;
+      }
+      continue;
+    }
+    lintError(t, *mapIt);
+    ++result;
+  }
+
+  return result;
+}
 
 
 /**
