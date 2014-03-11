@@ -2,8 +2,8 @@
 // License: Boost License 1.0, http://boost.org/LICENSE_1_0.txt
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
-import std.algorithm, std.array, std.ascii, std.conv, std.exception, std.stdio,
-  std.typecons, std.typetuple;
+import std.algorithm, std.array, std.ascii, std.conv, std.exception, std.regex,
+  std.stdio, std.typecons, std.typetuple;
 
 struct TokenizerGenerator(alias tokens, alias reservedTokens) {
   /**
@@ -215,7 +215,8 @@ alias Keywords = TypeTuple!(
 );
 
 static immutable string[] specialTokens = [
-  "identifier", "number", "string_literal", "char_literal"
+  "identifier", "number", "string_literal", "char_literal",
+  "preprocessor_directive"
 ];
 
 alias TokenizerGenerator!([NonAlphaTokens, Keywords], specialTokens)
@@ -302,6 +303,15 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
     if (tt is tk!"/*") {
       charsBefore += munchComment(pc, line).length;
       continue;
+    }
+
+    // #pragma/#error preprocessor directive (except #pragma once)?
+    if (tt == tk!"#" && (match(pc, ctRegex!(`^#\s*error`)) ||
+          match(pc, ctRegex!(`^#\s*pragma`)) &&
+          !match(pc, ctRegex!(`^#\s*pragma\s+once`)))) {
+      value = munchPreprocessorDirective(pc, line);
+      tt = tk!"preprocessor_directive";
+      break;
     }
 
     // Literal string?
@@ -418,6 +428,31 @@ static string munchComment(ref string pc, ref size_t line) {
     }
   }
   assert(false);
+}
+
+/**
+ * Assuming pc is positioned at the start of a specified preprocessor directive,
+ * munches it from pc and returns it.
+ */
+static string munchPreprocessorDirective(ref string pc, ref size_t line) {
+  for (size_t i = 0; ; ++i) {
+    assert(i < pc.length);
+    auto c = pc[i];
+    if (c == '\n') {
+      ++line;
+      if (i > 0 && pc[i - 1] == '\\') {
+        // multiline directive
+        continue;
+      }
+      // end of directive
+      return munchChars(pc, i);
+    }
+    if (!c) {
+      // directive at end of file
+      return munchChars(pc, i);
+    }
+  }
+  throw new Exception("Incorrect preprocessor directive");
 }
 
 /**

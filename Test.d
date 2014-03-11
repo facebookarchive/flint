@@ -135,6 +135,31 @@ lines. Nyuk-nyuk...
   assert(tokens[3].type_ == tk!"float");
 }
 
+// Test #pragma/#error preprocessor directives are tokenized
+unittest {
+  string s = "
+#error this is an error
+#pragma omp parallel for
+   #   error with some leading spaces
+#pragma   once
+#error with line \\
+break";
+  Token[] tokens = tokenize(s, "nofile.cpp");
+  assert(tokens.length == 8);
+  assert(tokens[0].type_ == tk!"preprocessor_directive" && tokens[0].value() ==
+    "#error this is an error");
+  assert(tokens[1].type_ == tk!"preprocessor_directive" && tokens[1].value() ==
+    "#pragma omp parallel for");
+  assert(tokens[2].type_ == tk!"preprocessor_directive" && tokens[2].value() ==
+    "#   error with some leading spaces");
+  assert(tokens[3].type_ == tk!"#");
+  assert(tokens[4].type_ == tk!"identifier" && tokens[4].value() == "pragma");
+  assert(tokens[5].type_ == tk!"identifier" && tokens[5].value() == "once");
+  assert(tokens[6].type_ == tk!"preprocessor_directive" && tokens[6].value() ==
+    "#error with line \\\nbreak");
+  assert(tokens[7].type_ == tk!"\0");
+}
+
 // Test numeric literals
 unittest {
   string s = "
