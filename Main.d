@@ -77,6 +77,7 @@ uint checkEntry(string path) {
     errors += checkBannedIdentifiers(path, tokens);
     errors += checkOSSIncludes(path, tokens);
     errors += checkBreakInSynchronized(path, tokens);
+    errors += checkBogusComparisons(path, tokens);
     if (!c_mode) {
       errors += checkNamespaceScopedStatics(path, tokens);
       errors += checkIncludeAssociatedHeader(path, tokens);

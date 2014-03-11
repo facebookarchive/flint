@@ -2732,3 +2732,184 @@ uint checkDirectStdInclude(string fpath, Token[] toks) {
 
   return result;
 }
+
+/*
+ * Get the right-hand-side expression starting from a comparison operator.
+*/
+string getRhsExpr(const Token[] tox, const bool[TokenType] exprTokens) {
+  string rhs = "";
+  int rhsLParenCount = 0;
+  int toxIdx = 1;
+
+  while (toxIdx < tox.length &&
+         (0 < rhsLParenCount ||
+          (tox[toxIdx].type_ in exprTokens && tox[toxIdx].type_ != tk!")"))) {
+    rhs ~= tox[toxIdx].value ~ " ";
+
+    if (tox[toxIdx].type_ == tk!"(") {
+      ++rhsLParenCount;
+    } else if (tox[toxIdx].type_ == tk!")") {
+      --rhsLParenCount;
+    }
+
+    ++toxIdx;
+  }
+
+    return rhs;
+}
+
+/*
+ * Get bogus comparisons for the tokens in comparisonTokens.
+*/
+uint getBogusComparisons(Token[] v,
+                         const bool[TokenType] comparisonTokens,
+                         const bool[TokenType] exprTokens) {
+  uint result = 0;
+  string lhs = "";
+  ulong[] specialTokenHead = [];
+  ulong[] lhsExprHead = [0];
+  ulong lhsLParenCount = 0;
+
+  for (auto tox = v; !tox.empty; tox.popFront) {
+    lhs ~= tox.front.value ~ " ";
+
+    if (tox.front.type_ in exprTokens) {
+      if (tox.front.type_ == tk!"(") {
+        lhsExprHead ~= lhs.length;
+        ++lhsLParenCount;
+      } else if (tox.front.type_ == tk!")") {
+        while (lhsExprHead.back != 0 && lhs[lhsExprHead.back - 1 - 1] != '(') {
+          lhsExprHead.popBack;
+        }
+
+        if (lhsExprHead.back != 0) {
+          lhsExprHead.popBack;
+          --lhsLParenCount;
+        }
+      } else if (tox.front.type_.among(tk!"identifier",
+                                       tk!"number",
+                                       tk!"string_literal",
+                                       tk!"char_literal")) {
+        specialTokenHead ~= lhs.length;
+      }
+
+      continue;
+    }
+    
+    if (tox.front.type_ !in comparisonTokens) {
+      if (0 < lhsLParenCount) {
+        lhsExprHead ~= lhs.length;
+      } else {
+        specialTokenHead.clear;
+        lhs.clear;
+        lhsExprHead = [0];
+        lhsLParenCount = 0;
+      }
+
+      continue;
+    }
+
+    string rhs = getRhsExpr(tox, exprTokens);
+
+    if (// Ignore less than and greater than, due to the large number of
+        // false positives
+        !tox.front.type_.among(tk!"<", tk!">") &&
+        // Ignore expressions without special tokens
+        !specialTokenHead.empty && lhsExprHead.back < specialTokenHead.back &&
+        lhs[lhsExprHead.back .. lhs.length - tox.front.value.length - 1] ==
+          rhs) {
+      lintWarning(tox.front,
+                  text("A comparison between identical expressions, ",
+                       rhs.stripRight,
+                       ".\n"));
+      ++result;
+    }
+  }
+
+  return result;
+}
+
+/*
+ * Lint check: detect bogus comparisons, e.g., EXPR == EXPR.
+*/
+uint checkBogusComparisons(string fpath, Token[] v) {
+  bool[TokenType] exprTokens = [
+    tk!"::":1,
+    tk!"++":1,
+    tk!"--":1,
+    tk!"(":1,
+    tk!")":1,
+    tk!"[":1,
+    tk!"]":1,
+    tk!".":1,
+    tk!"->":1,
+    tk!"typeid":1,
+    tk!"const_cast":1,
+    tk!"dynamic_cast":1,
+    tk!"reinterpret_cast":1,
+    tk!"static_cast":1,
+    tk!"+":1,
+    tk!"-":1,
+    tk!"!":1,
+    tk!"not":1,
+    tk!"~":1,
+    tk!"compl":1,
+    tk!"&":1,
+    tk!"sizeof":1,
+    tk!"new":1,
+    tk!"delete":1,
+    tk!".*":1,
+    tk!"->*":1,
+    tk!"*":1,
+    tk!"/":1,
+    tk!"%":1,
+    tk!"<<":1,
+    tk!">>":1,
+    tk!"#":1,
+    tk!"##":1,
+    tk!"identifier":1,
+    tk!"number":1,
+    tk!"string_literal":1,
+    tk!"char_literal":1,
+    tk!"char":1,
+    tk!"bool":1,
+    tk!"short":1,
+    tk!"int":1,
+    tk!"long":1,
+    tk!"float":1,
+    tk!"double":1,
+    tk!"wchar_t":1,
+    tk!"signed":1,
+    tk!"unsigned":1,
+  ];
+
+  const bool[TokenType] inequalityTokens = [
+    tk!"<":1,
+    tk!"<=":1,
+    tk!">":1,
+    tk!">=":1,
+  ];
+
+  // We need to execute the following statements in order.
+  // ... Inequality Tokens have higher precedence than equality tokens,
+  // ... so we need to check inequality bogus comparisons first.
+  uint inequalityBogusComparisons =
+    getBogusComparisons(v, inequalityTokens, exprTokens);
+
+  // ... Then, we merge inequality tokens into expression tokens.
+  foreach (t; inequalityTokens.keys) {
+    exprTokens[t] = true;
+  }
+
+  const bool[TokenType] equalityTokens = [
+    tk!"==":1,
+    tk!"!=":1,
+    tk!"not_eq":1,
+  ];
+
+  // ... Finally, we check equality bogus comparisons.
+  uint equalityBogusComparisons =
+    getBogusComparisons(v, equalityTokens, exprTokens);
+
+  return inequalityBogusComparisons + equalityBogusComparisons;
+}
