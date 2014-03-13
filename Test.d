@@ -2,7 +2,7 @@
 // License: Boost License 1.0, http://boost.org/LICENSE_1_0.txt
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
-import std.array, std.conv, std.exception, std.stdio;
+import std.array, std.conv, std.exception, std.random, std.stdio;
 import Checks, Tokenizer;
 
 unittest {
@@ -1394,8 +1394,10 @@ unittest {
             }
           }
 ";
-  auto f = "/tmp/cxx_replace_testing";
+  auto f = "/tmp/cxx_replace_testing"
+    ~ to!string(uniform(0,int.max)) ~ to!string(uniform(0,int.max));
   std.file.write(f, s1);
+  scope(exit) std.file.remove(f);
   import std.process;
   EXPECT_EQ(system(("_bin/linters/flint/cxx_replace 'munch' 'crunch' "
                     ~ f)),

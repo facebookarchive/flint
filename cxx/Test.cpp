@@ -1335,7 +1335,7 @@ static bool writeStringToFile(const StringPiece data, const char* filename) {
   return writeFull(f.fd(), data.data(), data.size()) == data.size();
 }
 
-TEST(Lint, testCxxReplace) {
+TEST(Lint, DISABLED_testCxxReplace) {
   if (!regularFileExists("_bin/linters/flint/cxx_replace")) {
     // No prejudice if the file is missing (this may happen e.g. if
     // running fbmake runtests with -j)
