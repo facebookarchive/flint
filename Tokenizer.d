@@ -305,10 +305,9 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
       continue;
     }
 
-    // #pragma/#error preprocessor directive (except #pragma once)?
-    if (tt == tk!"#" && (match(pc, ctRegex!(`^#\s*error`)) ||
-          match(pc, ctRegex!(`^#\s*pragma`)) &&
-          !match(pc, ctRegex!(`^#\s*pragma\s+once`)))) {
+    // #pragma/#error/#warning preprocessor directive (except #pragma once)?
+    if (tt == tk!"#" && match(pc, ctRegex!(`^#\s*(error|warning|pragma)\s`))
+          && !match(pc, ctRegex!(`^#\s*pragma\s+once`))) {
       value = munchPreprocessorDirective(pc, line);
       tt = tk!"preprocessor_directive";
       break;

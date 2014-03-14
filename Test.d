@@ -143,9 +143,10 @@ unittest {
    #   error with some leading spaces
 #pragma   once
 #error with line \\
-break";
+break
+#warning warning warning";
   Token[] tokens = tokenize(s, "nofile.cpp");
-  assert(tokens.length == 8);
+  assert(tokens.length == 9);
   assert(tokens[0].type_ == tk!"preprocessor_directive" && tokens[0].value() ==
     "#error this is an error");
   assert(tokens[1].type_ == tk!"preprocessor_directive" && tokens[1].value() ==
@@ -157,7 +158,9 @@ break";
   assert(tokens[5].type_ == tk!"identifier" && tokens[5].value() == "once");
   assert(tokens[6].type_ == tk!"preprocessor_directive" && tokens[6].value() ==
     "#error with line \\\nbreak");
-  assert(tokens[7].type_ == tk!"\0");
+  assert(tokens[7].type_ == tk!"preprocessor_directive" && tokens[7].value() ==
+    "#warning warning warning");
+  assert(tokens[8].type_ == tk!"\0");
 }
 
 // Test numeric literals
