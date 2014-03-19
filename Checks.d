@@ -246,6 +246,14 @@ struct Argument {
   ref Token last() { return tox.back; }
 }
 
+struct FunctionSpec {
+  Argument functionName;
+  Argument[] args;
+  bool isNoexcept;
+  bool explicitThrows;
+  bool isConst;
+};
+
 string formatArg(Argument arg) {
   string result;
   foreach (i, a; arg.tox) {
@@ -257,13 +265,13 @@ string formatArg(Argument arg) {
   return result;
 }
 
-string formatFunction(Argument functionName, Argument[] args) {
-  auto result = formatArg(functionName) ~ "(";
-  foreach (i; 0 .. args.length) {
+string formatFunction(FunctionSpec spec) {
+  auto result = formatArg(spec.functionName) ~ "(";
+  foreach (i; 0 .. spec.args.length) {
     if (i > 0) {
       result ~= ", ";
     }
-    result ~= formatArg(args[i]);
+    result ~= formatArg(spec.args[i]);
   }
   result ~= ")";
   return result;
@@ -335,8 +343,7 @@ bool getRealArguments(ref Token[] r, ref Argument[] args) {
  * false if we believe that something was wrong (most probably with skipping
  * template specs.)
  */
-bool getFunctionNameAndArguments(ref Token[] r, ref Argument functionName,
-    ref Argument[] args) {
+bool getFunctionSpec(ref Token[] r, ref FunctionSpec spec) {
   auto r1 = r;
   r.popFront;
   if (r.front.type_ == tk!"<") {
@@ -346,8 +353,34 @@ bool getFunctionNameAndArguments(ref Token[] r, ref Argument functionName,
     }
     r.popFront;
   }
-  functionName.tox = r1[0 .. r1.length - r.length];
-  return getRealArguments(r, args);
+  assert(r1.length >= r.length);
+  spec.functionName.tox = r1[0 .. r1.length - r.length];
+  if (!getRealArguments(r, spec.args)) {
+    return false;
+  }
+
+  auto r2 = r;
+  assert(r2.front.type_ == tk!")");
+  r2.popFront;
+  while (true) {
+    if (r2.front.precedingWhitespace_.canFind("/* may throw */")) {
+      spec.explicitThrows = true;
+    }
+
+    if (r2.front.type_ == tk!"noexcept") {
+      spec.isNoexcept = true;
+      r2.popFront;
+      continue;
+    }
+    if (r2.front.type_ == tk!"const") {
+      spec.isConst = true;
+      r2.popFront;
+      continue;
+    }
+    break;
+  }
+
+  return true;
 }
 
 uint checkInitializeFromItself(string fpath, Token[] tokens) {
@@ -738,6 +771,7 @@ uint checkIfEndifBalance(string fpath, Token[] v) {
  *  - single-argument constructors that aren't marked as explicit, to avoid them
  *    being used for implicit type conversion (C++ only)
  *  - Non-const copy constructors, or useless const move constructors.
+ *  - Move constructors that aren't marked noexcept
  */
 uint checkConstructors(string fpath, Token[] tokensV) {
   if (getFileCategory(fpath) == FileCategory.source_c) {
@@ -747,7 +781,7 @@ uint checkConstructors(string fpath, Token[] tokensV) {
   uint result = 0;
   string[] nestedClasses;
 
-  const string lintOverride = "/""* implicit *""/";
+  const string explicitOverride = "/""* implicit *""/";
   const CppLexer.TokenType2[] stdInitializerSequence =
     [tk!"identifier", tk!"::", tk!"identifier", tk!"<"];
   const CppLexer.TokenType2[] voidConstructorSequence =
@@ -818,10 +852,11 @@ uint checkConstructors(string fpath, Token[] tokensV) {
       continue;
     }
 
-    // Skip past any functions that begin with an "explicit" keyword
+    // Handle an "explicit" keyword
+    bool checkImplicit = true;
     if (tox.front.type_ == tk!"explicit") {
-      tox = skipFunctionDeclaration(tox);
-      continue;
+      checkImplicit = false;
+      tox.popFront;
     }
 
     // Skip anything that doesn't look like a constructor
@@ -833,9 +868,8 @@ uint checkConstructors(string fpath, Token[] tokensV) {
     }
 
     // Suppress error and skip past functions clearly marked as implicit
-    if (tox.front.precedingWhitespace_.canFind(lintOverride)) {
-      tox = skipFunctionDeclaration(tox);
-      continue;
+    if (tox.front.precedingWhitespace_.canFind(explicitOverride)) {
+      checkImplicit = false;
     }
 
     // Allow zero-argument void constructors
@@ -844,21 +878,21 @@ uint checkConstructors(string fpath, Token[] tokensV) {
       continue;
     }
 
-    Argument[] args;
-    auto functionName = Argument(tox[0 .. 1]);
-    if (!tox.getFunctionNameAndArguments(functionName, args)) {
+    FunctionSpec spec;
+    spec.functionName = Argument(tox[0 .. 1]);
+    if (!tox.getFunctionSpec(spec)) {
       // Parse fail can be due to limitations in skipTemplateSpec, such as with:
       // fn(std::vector<boost::shared_ptr<ProjectionOperator>> children);)
       return result;
     }
 
     // Allow zero-argument constructors
-    if (args.empty) {
+    if (spec.args.empty) {
       tox = skipFunctionDeclaration(tox);
       continue;
     }
 
-    auto argIt = args[0].tox;
+    auto argIt = spec.args[0].tox;
     bool foundConversionCtor = false;
     bool isConstArgument = false;
     if (argIt.front.type_ == tk!"const") {
@@ -866,6 +900,14 @@ uint checkConstructors(string fpath, Token[] tokensV) {
       argIt.popFront;
     }
 
+    // Allow implicit std::initializer_list constructors
+    if (argIt.atSequence(stdInitializerSequence)
+        && argIt.front.value_ == "std"
+        && argIt[2].value_ == "initializer_list") {
+      checkImplicit = false;
+    }
+
+    bool isMoveConstructor = false;
     // Copy/move constructors may have const (but not type conversion) issues
     // Note: we skip some complicated cases (e.g. template arguments) here
     if (argIt.front.value_ == nestedClasses.back) {
@@ -875,48 +917,60 @@ uint checkConstructors(string fpath, Token[] tokensV) {
           ++result;
           lintError(tox.front, text(
             "Copy constructors should take a const argument: ",
-            formatFunction(functionName, args), "\n"
+            formatFunction(spec), "\n"
             ));
         } else if (nextType == tk!"&&" && isConstArgument) {
           ++result;
           lintError(tox.front, text(
             "Move constructors should not take a const argument: ",
-            formatFunction(functionName, args), "\n"
+            formatFunction(spec), "\n"
             ));
         }
-        tox = skipFunctionDeclaration(tox);
-        continue;
+
+        if (nextType == tk!"&&") {
+          isMoveConstructor = true;
+        }
+
+        // Copy constructors and move constructors are allowed to be implict
+        checkImplicit = false;
       }
     }
 
-    // Allow std::initializer_list constructors
-    if (argIt.atSequence( stdInitializerSequence)
-        && argIt.front.value_ == "std"
-        && argIt[2].value_ == "initializer_list") {
-      tox = skipFunctionDeclaration(tox);
-      continue;
-    }
-
-    if (args.length == 1) {
-      foundConversionCtor = true;
-    } else if (args.length >= 2) {
-      // 2+ will only be an issue if the trailing arguments have defaults
-      for (argIt = args[1].tox; !argIt.empty; argIt.popFront) {
-        if (argIt.front.type_ == tk!"=") {
-          foundConversionCtor = true;
-          break;
+    // Warn about constructors that may be invoked implicitly with a single
+    // argument, unless they were marked with a comment saying that allowing
+    // implicit construction is intentional.
+    if (checkImplicit) {
+      if (spec.args.length == 1) {
+        foundConversionCtor = true;
+      } else if (spec.args.length >= 2) {
+        // 2+ will only be an issue if the trailing arguments have defaults
+        for (argIt = spec.args[1].tox; !argIt.empty; argIt.popFront) {
+          if (argIt.front.type_ == tk!"=") {
+            foundConversionCtor = true;
+            break;
+          }
         }
       }
+
+      if (foundConversionCtor) {
+        ++result;
+        lintError(tox.front, text(
+          "Single-argument constructor '",
+          formatFunction(spec),
+          "' may inadvertently be used as a type conversion constructor. "
+          "Prefix the function with the 'explicit' keyword to avoid this, or "
+          "add an /* implicit *""/ comment to suppress this warning.\n"
+          ));
+      }
     }
 
-    if (foundConversionCtor) {
+    // Warn about move constructors that are not noexcept
+    if (isMoveConstructor && !spec.isNoexcept && !spec.explicitThrows) {
       ++result;
       lintError(tox.front, text(
-        "Single-argument constructor '",
-        formatFunction(functionName, args),
-        "' may inadvertently be used as a type conversion constructor. Prefix"
-        " the function with the 'explicit' keyword to avoid this, or add an /"
-        "* implicit *""/ comment to suppress this warning.\n"
+        "Move constructor '", formatFunction(spec),
+        "' should be declared noexcept.  "
+        "Use a trailing /* may throw */ comment to suppress this warning\n"
         ));
     }
 
@@ -1715,9 +1769,8 @@ uint checkMemset(string fpath, Token[] v) {
     if (!v.atSequence(tk!"identifier", tk!"(") || v.front.value_ != "memset") {
       continue;
     }
-    Argument[] args;
-    Argument functionName;
-    if (!getFunctionNameAndArguments(v, functionName, args)) {
+    FunctionSpec spec;
+    if (!getFunctionSpec(v, spec)) {
       return result;
     }
 
@@ -1725,20 +1778,21 @@ uint checkMemset(string fpath, Token[] v) {
     // with skipTemplateSpec but the iterator didn't reach the EOF (because of
     // a '>' somewhere later in the code). So we only deal with the case where
     // the number of arguments is correct.
-    if (args.length == 3) {
+    if (spec.args.length == 3) {
       // wrong calls include memset(..., ..., 0) and memset(..., sizeof..., 1)
       bool error =
-        (args[2].tox.length == 1) &&
+        (spec.args[2].tox.length == 1) &&
         (
-          (args[2].first.value_ == "0") ||
-          (args[2].first.value_ == "1" && args[1].first.type_ == tk!"sizeof")
+          (spec.args[2].first.value_ == "0") ||
+          (spec.args[2].first.value_ == "1" &&
+           spec.args[1].first.type_ == tk!"sizeof")
         );
       if (!error) {
         continue;
       }
-      swap(args[1], args[2]);
-      lintError(functionName.first,
-        "Did you mean " ~ formatFunction(functionName, args) ~ "?\n");
+      swap(spec.args[1], spec.args[2]);
+      lintError(spec.functionName.first,
+        "Did you mean " ~ formatFunction(spec) ~ "?\n");
       result++;
     }
   }

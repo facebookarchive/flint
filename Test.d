@@ -409,7 +409,25 @@ class CC {
   code = "
 class AA {
   AA(const AA& acceptable);
-  AA(AA&& acceptable);
+  AA(AA&& acceptable) noexcept;
+};
+";
+  assert(checkConstructors("nofile.cpp", tokenize(code)) == 0);
+
+  // Move constructors should be declared noexcept
+  code = "
+class AA {
+  AA(const AA& acceptable);
+  AA(AA&& mightThrow);
+};
+";
+  assert(checkConstructors("nofile.cpp", tokenize(code)) == 1);
+
+  // Move constructors that throw should be explicitly marked as such
+  code = "
+class AA {
+  AA(const AA& acceptable);
+  AA(AA&& mightThrow) /* may throw */;
 };
 ";
   assert(checkConstructors("nofile.cpp", tokenize(code)) == 0);
@@ -421,7 +439,7 @@ class AA {
   AA(const AA&& shouldNotBeConst);
 };
 ";
-  assert(checkConstructors("nofile.cpp", tokenize(code)) == 2);
+  assert(checkConstructors("nofile.cpp", tokenize(code)) == 3);
 
   // Don't warn for single-argument std::initializer_list<...>
   code = "
