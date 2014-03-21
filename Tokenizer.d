@@ -261,10 +261,13 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
   string value;
   CppLexer.TokenType2 tt;
   auto initialPc = pc;
+  auto initialLine = line;
+  size_t tokenLine;
 
   for (;;) {
     auto t = CppLexer.match(pc);
     line += t[0];
+    tokenLine = line;
     charsBefore += t[1];
     tt = t[2];
 
@@ -281,7 +284,7 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
         break;
       } else {
         writeln("Illegal character: ", cast(uint) c, " [", c, "]");
-        assert(0);
+        throw new Exception("Internal flint error");
       }
     }
 
@@ -361,10 +364,35 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
     pc = pc[tt.sym.length .. $];
     break;
   }
+
+  version (unittest) {
+    // make sure the we munched the right number of characters
+    auto delta = initialPc.length - pc.length;
+    if (tt is tk!"\0") delta += 1;
+    auto tsz = charsBefore + (value ? value.length : tt.sym().length);
+    if (tsz != delta) {
+      stderr.writeln("Flint tokenization error: Wrong size for token type '",
+          tt.sym(), "': '", initialPc[0 .. charsBefore], "'~'", value, "' ",
+          "of size ", tsz, " != '", initialPc[0 .. delta], "' of size ",
+          delta);
+      throw new Exception("Internal flint error");
+    }
+
+    // make sure that line was incremented the correct number of times
+    auto lskip = std.algorithm.count(initialPc[0 .. delta], '\n');
+    if (initialLine + lskip != line) {
+      stderr.writeln("Flint tokenization error: muched '",
+          initialPc[0 .. delta], "' (token type '", tt.sym(), "'), "
+          "which contains ", lskip, " newlines, "
+          "but line has been incremented by ", line - initialLine);
+      throw new Exception("Internal flint error");
+    }
+  }
+
   return CppLexer.Token(
     tt, value,
     initialPc[0 .. charsBefore],
-    line);
+    tokenLine);
 }
 
 /**
@@ -438,9 +466,9 @@ static string munchPreprocessorDirective(ref string pc, ref size_t line) {
     assert(i < pc.length);
     auto c = pc[i];
     if (c == '\n') {
-      ++line;
       if (i > 0 && pc[i - 1] == '\\') {
         // multiline directive
+        ++line;
         continue;
       }
       // end of directive
@@ -570,15 +598,15 @@ static string munchCharLiteral(ref string pc, ref size_t line) {
   assert(pc[0] == '\'');
   for (size_t i = 1; ; ++i) {
     auto const c = pc[i];
+    if (c == '\n') {
+      ++line;
+    }
     if (c == '\'') {
       // That's about it
       return munchChars(pc, i + 1);
     }
     if (c == '\\') {
       ++i;
-      if (pc[i] == '\n') {
-        ++line;
-      }
       continue;
     }
     enforce(c, "Unterminated character constant: ", pc);
