@@ -40,6 +40,16 @@ void foo() {
 }
 
 unittest {
+  import std.file;
+  string fpath = "linters/flint/test_files/Test1.cpp";
+  if (fpath.exists()) {
+    string file = fpath.readText;
+    auto tokens = tokenize(file, fpath);
+    EXPECT_EQ(checkDirectStdInclude(fpath, tokens), 3);
+  }
+}
+
+unittest {
   string s = "
 #include <stdio.h>
 int main() {

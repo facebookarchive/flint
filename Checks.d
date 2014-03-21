@@ -2526,9 +2526,10 @@ uint checkDirectStdInclude(string fpath, Token[] toks) {
     "future" : [
       "future", "future_error", "promise", "shared_future"
     ],
-    "initializer_list" : [
-      "initializer_list"
-    ],
+    // Do not include initializer_list
+    // "initializer_list" : [
+    //   "initializer_list"
+    // ],
     "ios" : [
       "basic_ios", "ios_base"
     ],
@@ -2610,9 +2611,10 @@ uint checkDirectStdInclude(string fpath, Token[] toks) {
     "stack" : [
       "stack"
     ],
-    "stdexcept" : [
-      "for"
-    ],
+    // grep bug
+    // "stdexcept" : [
+    //   "for"
+    // ],
     "streambuf" : [
       "basic_streambuf"
     ],
@@ -2657,6 +2659,65 @@ uint checkDirectStdInclude(string fpath, Token[] toks) {
     "vector" : ["vector"]
   ];
 
+  // Results of a second grep after missing a few things:
+  // find /data/users/ntv/libcxx/include/ -name "*" -type f  | grep -v "\.h" |
+  // grep -v "\.tcc" | xargs egrep "class |struct " | grep -v "\*" | grep -v
+  // "#include" | grep -v ";" | grep -v // | grep -v "<" | grep -v "\.\.\." |
+  // sed "s:/usr/include/c++/4.4.6/::g" | sed "s/: / /g" | grep -v "std::" |
+  // grep -v "()" | grep -v "#" | grep -v enum | grep -v __ | egrep -v "<|>|=" |
+  // sed "s:/data/users/ntv/libcxx/include/::g" | sed "s/_LIBCPP_TYPE_VIS//g" |
+  // sed "s/_ONLY//g" | sed "s/:/ /g" | sed "s/  / /g" | grep -v " _" |sort |
+  // uniq | more | sed "s/  / /g" | sed "s/class//g" | sed s/struct//g | awk
+  // {'printf("\"%s\"  : \"%s\",\n", $1, $2)'} | sort | uniq > /tmp/aaa
+  immutable auto stdHeader2ClassesAndStructsGrep2 = [
+    "cstddef"  : [
+      "nullptr_t"
+    ],
+    "functional"  : [
+      "bad_function_call", "binary_function", "binary_negate",
+      "binder1st", "binder2nd", "const_mem_fun1_ref_t", "hash",
+      "pointer_to_binary_function", "pointer_to_unary_function",
+      "reference_wrapper", "unary_function", "unary_negate"
+    ],
+    "locale"  : [
+      "locale", "messages", "messages_base", "messages_byname",
+      "money_base", "money_get", "moneypunct", "moneypunct_byname",
+      "money_put", "num_get", "num_put", "time_base", "time_get",
+      "time_get_byname", "time_put", "time_put_byname",
+      "wbuffer_convert", "wstring_convert"
+    ],
+    "memory"  : [
+      "pointer_safety"
+    ],
+    "ratio"  : [
+      "ratio", "ratio_add", "ratio_divide", "ratio_equal",
+      "ratio_greater", "ratio_greater_equal", "ratio_less",
+      "ratio_less_equal", "ratio_multiply", "ratio_not_equal",
+      "ratio_scoped"
+    ],
+    "subtract_allocator"  : [
+      "rebind", "scoped_allocator_adaptor"
+    ],
+    "type_traits"  : [
+      "aligned_storage", "aligned_union", "common_type",
+      "decay", "integral_constant", "is_assignable",
+      "is_base_of", "is_conible", "is_copy_conible",
+      "is_default_conible", "is_deible", "is_empty",
+      "is_move_conible", "is_nothrow_assignable",
+      "is_nothrow_conible", "is_nothrow_deible",
+      "is_polymorphic", "is_trivially_assignable",
+      "is_trivially_conible", "make_signed", "make_unsigned",
+      "underlying_type"
+    ]
+  ];
+
+  // Manual entries for things that may still be missing
+  immutable auto stdHeader2ClassesAndStructsManual = [
+    "string" : [
+      "string"
+    ]
+  ];
+
   // These were created by hand
   immutable auto methods = [
     "algorithm" : [
@@ -2687,6 +2748,16 @@ uint checkDirectStdInclude(string fpath, Token[] toks) {
       includeMap[v[i]] = k;
     }
   }
+  foreach (k, v; stdHeader2ClassesAndStructsGrep2) {
+    for (size_t i = 0; i < v.length; i++) {
+      includeMap[v[i]] = k;
+    }
+  }
+  foreach (k, v; stdHeader2ClassesAndStructsManual) {
+    for (size_t i = 0; i < v.length; i++) {
+      includeMap[v[i]] = k;
+    }
+  }
   foreach (k, v; methods) {
     for (size_t i = 0; i < v.length; i++) {
       includeMap[v[i]] = k;
@@ -2695,22 +2766,53 @@ uint checkDirectStdInclude(string fpath, Token[] toks) {
 
   int result;
   string[] parsedIncludes;
-  for (; !toks.empty; toks.popFront) {
-    if (toks.atSequence(tk!"#",tk!"identifier") && toks[1].value == "include") {
+
+  // Also Tokenize the corresponding include's contents
+  import std.file;
+  Token[] tokens;
+  string includePath1 = tr(fpath, ".cpp", ".h", "s");
+  string includePath2 = tr(fpath, ".cpp", ".hpp");
+  string includePath3 = tr(fpath, ".cpp", ".hxx");
+  string includePath  = "";
+  if (includePath1.exists &&
+      getFileCategory(includePath1) == FileCategory.header) {
+    includePath = includePath1;
+  } else if (includePath2.exists &&
+             getFileCategory(includePath2) == FileCategory.header) {
+    includePath = includePath2;
+  } else if (includePath3.exists &&
+             getFileCategory(includePath3) == FileCategory.header) {
+    includePath = includePath3;
+  }
+
+  if (includePath.length >= 1) {
+    string file = includePath.readText;
+    tokens = tokenize(file, includePath) ~ toks;
+  } else {
+    tokens = toks;
+  }
+
+  Token[][string] warningMap;
+  for (; !tokens.empty; tokens.popFront) {
+    if (tokens.atSequence(tk!"#", tk!"identifier") &&
+        tokens[1].value == "include") {
       // Skip relative include paths atm.
-      if (toks[2].value == "<") {
-        parsedIncludes ~= toks[3].value;
+      if (tokens[2].value == "<") {
+        parsedIncludes ~= tokens[3].value;
       }
       continue;
     }
-    if (!toks.atSequence(tk!"identifier",tk!"::") || toks[0].value != "std")
+    if (!tokens.atSequence(tk!"identifier", tk!"::") ||
+        tokens[0].value != "std")
       continue;
 
-    string typeName = toks[2].value;
+    // Advance token to xxx in std::xxx
+    tokens.popFrontN(2);
+    string typeName = tokens[0].value;
     auto p = (typeName in includeMap);
     if (p is null) {
       // This would print a lot of warnings in this first implementation...
-      // lintWarning(toks.front,
+      // lintWarning(tokens.front,
       //             text("No entry std::", typeName,
       //                  "found in Linter's standard library include map. ",
       //                  "Please report omission."));
@@ -2722,16 +2824,31 @@ uint checkDirectStdInclude(string fpath, Token[] toks) {
     // hand, foward declaration of std::xxx results in undefined behavior.
     auto pp = find(parsedIncludes, includeMap[typeName]);
     if (pp.empty) {
-      lintWarning(toks.front,
-                  text("Direct include not found for std::", typeName,
-                       ", prefer to use direct #include <",
-                       includeMap[typeName],">\n"));
+      string includeStr = includeMap[typeName];
+      warningMap[includeStr] ~= tokens[0];
       result++;
     }
   }
 
+  if (result > 0) {
+    foreach (key; warningMap.byKey()) {
+      string occurrences = "";
+      foreach (ref elem; warningMap[key]) {
+        occurrences ~= " std::" ~ elem.value;
+      }
+      lintWarning(warningMap[key][0],
+                  text("Direct include ",
+                       "not found in either cpp or include file",
+                       " for", occurrences, ", prefer to use direct",
+                       " #include <", key, "> (found ", warningMap[key].length,
+                       " total occurrence(s) for this missing include)\n"));
+    }
+  }
+
+
   return result;
 }
+
 
 /*
  * Get the right-hand-side expression starting from a comparison operator.
@@ -2795,7 +2912,7 @@ uint getBogusComparisons(Token[] v,
 
       continue;
     }
-    
+
     if (tox.front.type_ !in comparisonTokens) {
       if (0 < lhsLParenCount) {
         lhsExprHead ~= lhs.length;

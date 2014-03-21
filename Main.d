@@ -6,6 +6,7 @@ import std.conv, std.file, std.getopt, std.stdio;
 import Checks, FileCategories, Ignored, Tokenizer;
 
 bool recursive = true;
+bool include_what_you_use = false;
 
 /**
  * Entry point. Reads in turn and verifies each file passed onto the
@@ -14,7 +15,8 @@ bool recursive = true;
 int main(string[] args) {
   getopt(args,
     "recursive", &recursive,
-    "c_mode", &c_mode);
+    "c_mode", &c_mode,
+    "include_what_you_use", &include_what_you_use);
 
   // Check each file
   uint errors = 0;
@@ -95,7 +97,9 @@ uint checkEntry(string path) {
       errors += checkUpcaseNull(path, tokens);
       errors += checkExceptionInheritance(path, tokens);
       errors += checkMutexHolderHasName(path, tokens);
-      // errors += checkDirectStdInclude(path, tokens);
+      if (include_what_you_use) {
+        errors += checkDirectStdInclude(path, tokens);
+      }
     }
     // *** Checks end
   } catch (Exception e) {
