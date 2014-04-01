@@ -2019,7 +2019,7 @@ TEST(Lint, testCheckMutexHolderHasName) {
   vector<Token> tokens;
   string filename = "nofile.cpp";
   tokenize(s, filename, tokens);
-  EXPECT_EQ(checkMutexHolderHasName(filename, tokens), 5);
+  EXPECT_EQ(checkMutexHolderHasName(filename, tokens), 3);
 
   string s2 = "\
     void foo() {\n\
