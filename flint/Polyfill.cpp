@@ -44,7 +44,7 @@ namespace flint {
 	bool fsContainsNoLint(const string &path) {
 
 		string fileName = path + FS_SEP + ".nolint";
-		return (fsObjectExists(fileName.c_str()) == FSType::IS_FILE);
+		return (fsObjectExists(fileName) == FSType::IS_FILE);
 	};
 
 	/**
