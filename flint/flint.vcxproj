@@ -10,6 +10,20 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="FileCategories.cpp" />
+    <ClCompile Include="Ignored.cpp" />
+    <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Polyfill.cpp" />
+    <ClCompile Include="Tokenizer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="FileCategories.hpp" />
+    <ClInclude Include="Ignored.hpp" />
+    <ClInclude Include="Polyfill.hpp" />
+    <ClInclude Include="StringPiece.hpp" />
+    <ClInclude Include="Tokenizer.hpp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7E01FF7E-4ED6-43F7-85C4-C07BFFDA9DD9}</ProjectGuid>
     <RootNamespace>flint</RootNamespace>
@@ -44,6 +58,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>C:\CPP Includes;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -63,8 +78,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
