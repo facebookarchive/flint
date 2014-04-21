@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Checks.cpp" />
     <ClCompile Include="FileCategories.cpp" />
     <ClCompile Include="Ignored.cpp" />
     <ClCompile Include="Main.cpp" />
@@ -18,10 +19,10 @@
     <ClCompile Include="Tokenizer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Checks.hpp" />
     <ClInclude Include="FileCategories.hpp" />
     <ClInclude Include="Ignored.hpp" />
     <ClInclude Include="Polyfill.hpp" />
-    <ClInclude Include="StringPiece.hpp" />
     <ClInclude Include="Tokenizer.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

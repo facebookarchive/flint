@@ -30,6 +30,9 @@
     <ClCompile Include="Tokenizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Checks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Polyfill.hpp">
@@ -44,7 +47,7 @@
     <ClInclude Include="FileCategories.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="StringPiece.hpp">
+    <ClInclude Include="Checks.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
