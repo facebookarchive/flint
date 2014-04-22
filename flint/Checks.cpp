@@ -448,7 +448,8 @@ namespace flint {
 		*		Returns true if we believe (sorta) that everything went okay,
 		*		false if something bad happened (maybe)
 		*/
-		bool getFunctionNameAndArguments(const vector<Token> &tokens, size_t &pos, Argument &func, vector<Argument> &args) {
+		bool getFunctionNameAndArguments(const vector<Token> &tokens, size_t &pos
+			, Argument &func, vector<Argument> &args) {
 			
 			func.first = pos;
 			++pos;
@@ -500,7 +501,7 @@ namespace flint {
 
 				if (isMember && (tokens[outerPos].value_.compare(tokens[innerPos].value_) == 0)) {
 					lintError(tokens[outerPos], "Looks like you're initializing class member [" 
-												+ tokens[outerPos].value_ + "] with itself.\n");
+						+ tokens[outerPos].value_ + "] with itself.\n");
 					++result;
 				}
 			}
@@ -661,21 +662,24 @@ namespace flint {
 				if (okNames.find(sym) != okNames.end()) {
 					continue;
 				}
-				lintWarning(tok, "Symbol " + sym + " invalid. A symbol may not start with an underscore followed by a capital letter.\n");
+				lintWarning(tok, "Symbol " + sym 
+					+ " invalid. A symbol may not start with an underscore followed by a capital letter.\n");
 				++result;
 			}
 			else if (sym.size() >= 2 && sym[0] == '_' && sym[1] == '_') {
 				if (okNames.find(sym) != okNames.end()) {
 					continue;
 				}
-				lintWarning(tok, "Symbol " + sym + " invalid. A symbol may not begin with two adjacent underscores.\n");
+				lintWarning(tok, "Symbol " + sym 
+					+ " invalid. A symbol may not begin with two adjacent underscores.\n");
 				++result;
 			}
 			else if (sym.find("__") != string::npos) { // !FLAGS_c_mode /* C is less restrictive about this */ && 
 				if (okNames.find(sym) != okNames.end()) {
 					continue;
 				}
-				lintWarning(tok, "Symbol " + sym + " invalid. A symbol may not contain two adjacent underscores.\n");
+				lintWarning(tok, "Symbol " + sym 
+					+ " invalid. A symbol may not contain two adjacent underscores.\n");
 				++result;
 			}
 		}
@@ -742,7 +746,8 @@ namespace flint {
 			if (tokens[focal].type_ != TK_IDENTIFIER) {
 				
 				const Token &tok = tokens[focal];
-				lintWarning(tok, "Symbol " + tok.value_ + " invalid in catch clause.  You may only catch user-defined types.\n");
+				lintWarning(tok, "Symbol " + tok.value_ 
+					+ " invalid in catch clause.  You may only catch user-defined types.\n");
 				++result;
 				continue;
 			}
@@ -793,4 +798,33 @@ namespace flint {
 
 		return result;
 	};
+
+	/**
+	* Any usage of throw specifications is a lint error.
+	*
+	* We track whether we are at either namespace or class scope by
+	* looking for class/namespace tokens and tracking nesting level.  Any
+	* time we go into a { } block that's not a class or namespace, we
+	* disable the lint checks (this is to avoid false positives for throw
+	* expressions).
+	*
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	* @return
+	*		Returns the number of errors this check found in the token stream
+	*/
+	uint checkThrowSpecification(const string &path, const vector<Token> &tokens) {
+
+		uint result = 0;
+
+		// Check for throw specifications inside classes
+		result += iterateClasses(tokens, [&](const vector<Token> &tokens, size_t pos) -> uint {
+			return 0;
+		});
+
+		return result;
+	};
+
 };
