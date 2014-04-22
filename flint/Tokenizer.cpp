@@ -5,226 +5,230 @@
 
 namespace flint {
 	
-	// Black magic code expansion from Token Definitions
-	// See header...
-	static map<string, TokenType> initializeKeywords() {
-		map<string, TokenType> result;
-#define CPPLINT_ASSIGN(s, tk) result[string(s)] = tk;
-		CPPLINT_FORALL_KEYWORDS(CPPLINT_ASSIGN)
-#undef CPPLINT_ASSIGN
+	namespace { // Anonymous Namespace for Tokenizing and munching functions
+		
+		// Black magic code expansion from Token Definitions
+		// See header...
+		static map<string, TokenType> initializeKeywords() {
+			map<string, TokenType> result;
+		#define CPPLINT_ASSIGN(s, tk) result[string(s)] = tk;
+			CPPLINT_FORALL_KEYWORDS(CPPLINT_ASSIGN)
+		#undef CPPLINT_ASSIGN
+				return result;
+		};
+
+		// Oh good lord... Keep this for now, 
+		// then code review and find a cleaner method
+		#define FBEXCEPTION(e) \
+		do { throw runtime_error(string((e))); } while (0)
+
+		#define ENFORCE(e, m) \
+		if (e) {} else { FBEXCEPTION(m); }
+
+		/**
+		* Map containing mappings of the kind "virtual" -> TK_VIRTUAL.
+		*/
+		static map<string, TokenType> keywords = initializeKeywords();
+
+		/**
+		* Eats howMany characters out of pc, avances pc appropriately, and
+		* returns the eaten portion.
+		*/
+		static string munchChars(string &pc, size_t howMany) {
+			assert(pc.size() >= howMany);
+			string result = pc.substr(0, howMany);
+			pc = pc.substr(howMany);
 			return result;
-	};
+		};
 
-	// Oh good lord... Keep this for now, 
-	// then code review and find a cleaner method
-#define FBEXCEPTION(e) \
-	do { throw runtime_error(string((e))); } while (0)
-
-#define ENFORCE(e, ...) \
-	if (e) {} else { FBEXCEPTION(__VA_ARGS__); }
-
-	/**
-	* Map containing mappings of the kind "virtual" -> TK_VIRTUAL.
-	*/
-	static map<string, TokenType> keywords = initializeKeywords();
-
-	/**
-	* Eats howMany characters out of pc, avances pc appropriately, and
-	* returns the eaten portion.
-	*/
-	static string munchChars(string &pc, size_t howMany) {
-		assert(pc.size() >= howMany);
-		string result = pc.substr(0, howMany);
-		pc = pc.substr(howMany);
-		return result;
-	};
-
-	/**
-	* Assuming pc is positioned at the start of an identifier, munches it
-	* from pc and returns it.
-	*/
-	static string munchIdentifier(string &pc) {
-		for (size_t i = 0;; ++i) {
-			assert(i < pc.size());
-			auto const c = pc[i];
-			// g++ allows '$' in identifiers. Also, some crazy inline
-			// assembler uses '@' in identifiers, see e.g.
-			// fbcode/external/cryptopp/rijndael.cpp, line 527
-			if (!isalnum(c) && c != '_' && c != '$' && c != '@') {
-				// done
-				ENFORCE(i > 0, "Invalid identifier: " + pc);
-				return munchChars(pc, i);
-			}
-		}
-		assert(false);
-	};
-
-	/**
-	* Assuming pc is positioned at the start of a C-style comment,
-	* munches it from pc and returns it.
-	*/
-	static string munchComment(string &pc, size_t &line) {
-		assert(pc[0] == '/' && pc[1] == '*');
-		for (size_t i = 2;; ++i) {
-			assert(i < pc.size());
-			auto c = pc[i];
-			if (c == '\n') {
-				++line;
-			}
-			else if (c == '*') {
-				if (pc[i + 1] == '/') {
-					// end of comment
-					return munchChars(pc, i + 2);
-				}
-			}
-			else if (!c) {
-				// end of input
-				FBEXCEPTION("Unterminated comment: " + pc);
-			}
-		}
-		assert(false);
-	};
-
-	/**
-	* Assuming pc is positioned at the start of a single-line comment,
-	* munches it from pc and returns it.
-	*/
-	static string munchSingleLineComment(string &pc, size_t &line) {
-		assert(pc[0] == '/' && pc[1] == '/');
-		for (size_t i = 2;; ++i) {
-			assert(i < pc.size());
-			auto c = pc[i];
-			if (c == '\n') {
-				++line;
-				if (i > 0 && pc[i - 1] == '\\') {
-					// multiline single-line comment (sic)
-					continue;
-				}
-				// end of comment
-				return munchChars(pc, i + 1);
-			}
-			if (!c) {
-				// single-line comment at end of file, meh
-				return munchChars(pc, i);
-			}
-		}
-		assert(false);
-	};
-
-	/**
-	* Assuming pc is positioned at the start of a number (be it decimal
-	* or floating-point), munches it off pc and returns it. Note that the
-	* number is assumed to be correct so a number of checks are not
-	* necessary.
-	*/
-	static string munchNumber(string &pc) {
-		bool sawDot = false, sawExp = false, sawX = false, sawSuffix = false;
-		for (size_t i = 0;; ++i) {
-			assert(i < pc.size());
-			auto const c = pc[i];
-			if (c == '.' && !sawDot && !sawExp && !sawSuffix) {
-				sawDot = true;
-			}
-			else if (isdigit(c)) {
-				// Nothing to do
-			}
-			else if (sawX && !sawExp && c && strchr("AaBbCcDdEeFf", c)) {
-				// Hex digit; nothing to do. The condition includes !sawExp
-				// because the exponent is decimal even in a hex floating-point
-				// number!
-			}
-			else if (c == '+' || c == '-') {
-				// Sign may appear at the start or right after E or P
-				if (i > 0 && !strchr("EePp", pc[i - 1])) {
-					// Done, the sign is the next token
+		/**
+		* Assuming pc is positioned at the start of an identifier, munches it
+		* from pc and returns it.
+		*/
+		static string munchIdentifier(string &pc) {
+			for (size_t i = 0;; ++i) {
+				assert(i < pc.size());
+				auto const c = pc[i];
+				// g++ allows '$' in identifiers. Also, some crazy inline
+				// assembler uses '@' in identifiers, see e.g.
+				// fbcode/external/cryptopp/rijndael.cpp, line 527
+				if (!isalnum(c) && c != '_' && c != '$' && c != '@') {
+					// done
+					ENFORCE(i > 0, "Invalid identifier: " + pc);
 					return munchChars(pc, i);
 				}
 			}
-			else if (!sawExp && !sawSuffix && !sawX && (c == 'e' || c == 'E')) {
-				sawExp = true;
-			}
-			else if (sawX && !sawExp && !sawSuffix && (c == 'p' || c == 'P')) {
-				sawExp = true;
-			}
-			else if ((c == 'x' || c == 'X') && i == 1 && pc[0] == '0') {
-				sawX = true;
-			}
-			else if (c && strchr("FfLlUu", c)) {
-				// It's a suffix. There could be several of them (including
-				// repeats a la LL), so let's not return just yet
-				sawSuffix = true;
-			}
-			else {
-				// done
-				ENFORCE(i > 0, "Invalid number: " + pc);
-				return munchChars(pc, i);
-			}
-		}
-		assert(false);
-	};
+			assert(false);
+		};
 
-	/**
-	* Assuming pc is positioned at the start of a character literal,
-	* munches it from pc and returns it. A reference to line is passed in
-	* order to track multiline character literals (yeah, that can
-	* actually happen) correctly.
-	*/
-	static string munchCharLiteral(string &pc, size_t &line) {
-		assert(pc[0] == '\'');
-		for (size_t i = 1;; ++i) {
-			auto const c = pc[i];
-			if (c == '\'') {
-				// That's about it
-				return munchChars(pc, i + 1);
-			}
-			if (c == '\\') {
-				++i;
-				if (pc[i] == '\n') {
+		/**
+		* Assuming pc is positioned at the start of a C-style comment,
+		* munches it from pc and returns it.
+		*/
+		static string munchComment(string &pc, size_t &line) {
+			assert(pc[0] == '/' && pc[1] == '*');
+			for (size_t i = 2;; ++i) {
+				assert(i < pc.size());
+				auto c = pc[i];
+				if (c == '\n') {
 					++line;
 				}
-				continue;
-			}
-			ENFORCE(c, "Unterminated character constant: " + pc);
-		}
-	};
-
-	/**
-	* Assuming pc is positioned at the start of a string literal, munches
-	* it from pc and returns it. A reference to line is passed in order
-	* to track multiline strings correctly.
-	*/
-	static string munchString(string &pc, size_t &line) {
-		assert(pc[0] == '"');
-		for (size_t i = 1;; ++i) {
-			auto const c = pc[i];
-			if (c == '"') {
-				// That's about it
-				return munchChars(pc, i + 1);
-			}
-			if (c == '\\') {
-				++i;
-				if (pc[i] == '\n') {
-					++line;
+				else if (c == '*') {
+					if (pc[i + 1] == '/') {
+						// end of comment
+						return munchChars(pc, i + 2);
+					}
 				}
-				continue;
+				else if (!c) {
+					// end of input
+					FBEXCEPTION("Unterminated comment: " + pc);
+				}
 			}
-			ENFORCE(c, "Unterminated string constant: " + pc);
-		}
-	};
+			assert(false);
+		};
 
-	/**
-	* Munches horizontal spaces from pc. If we want to disallow tabs in
-	* sources, here is the place. No need for end=of-input checks as the
-	* input always has a '\0' at the end.
-	*/
-	static string munchSpaces(string &pc) {
-		size_t i = 0;
-		for (; pc[i] == ' ' || pc[i] == '\t'; ++i) {
-		}
-		auto const result = pc.substr(0, i);
-		pc = pc.substr(i);
-		return result;
-	}
+		/**
+		* Assuming pc is positioned at the start of a single-line comment,
+		* munches it from pc and returns it.
+		*/
+		static string munchSingleLineComment(string &pc, size_t &line) {
+			assert(pc[0] == '/' && pc[1] == '/');
+			for (size_t i = 2;; ++i) {
+				assert(i < pc.size());
+				auto c = pc[i];
+				if (c == '\n') {
+					++line;
+					if (i > 0 && pc[i - 1] == '\\') {
+						// multiline single-line comment (sic)
+						continue;
+					}
+					// end of comment
+					return munchChars(pc, i + 1);
+				}
+				if (!c) {
+					// single-line comment at end of file, meh
+					return munchChars(pc, i);
+				}
+			}
+			assert(false);
+		};
+
+		/**
+		* Assuming pc is positioned at the start of a number (be it decimal
+		* or floating-point), munches it off pc and returns it. Note that the
+		* number is assumed to be correct so a number of checks are not
+		* necessary.
+		*/
+		static string munchNumber(string &pc) {
+			bool sawDot = false, sawExp = false, sawX = false, sawSuffix = false;
+			for (size_t i = 0;; ++i) {
+				assert(i < pc.size());
+				auto const c = pc[i];
+				if (c == '.' && !sawDot && !sawExp && !sawSuffix) {
+					sawDot = true;
+				}
+				else if (isdigit(c)) {
+					// Nothing to do
+				}
+				else if (sawX && !sawExp && c && strchr("AaBbCcDdEeFf", c)) {
+					// Hex digit; nothing to do. The condition includes !sawExp
+					// because the exponent is decimal even in a hex floating-point
+					// number!
+				}
+				else if (c == '+' || c == '-') {
+					// Sign may appear at the start or right after E or P
+					if (i > 0 && !strchr("EePp", pc[i - 1])) {
+						// Done, the sign is the next token
+						return munchChars(pc, i);
+					}
+				}
+				else if (!sawExp && !sawSuffix && !sawX && (c == 'e' || c == 'E')) {
+					sawExp = true;
+				}
+				else if (sawX && !sawExp && !sawSuffix && (c == 'p' || c == 'P')) {
+					sawExp = true;
+				}
+				else if ((c == 'x' || c == 'X') && i == 1 && pc[0] == '0') {
+					sawX = true;
+				}
+				else if (c && strchr("FfLlUu", c)) {
+					// It's a suffix. There could be several of them (including
+					// repeats a la LL), so let's not return just yet
+					sawSuffix = true;
+				}
+				else {
+					// done
+					ENFORCE(i > 0, "Invalid number: " + pc);
+					return munchChars(pc, i);
+				}
+			}
+			assert(false);
+		};
+
+		/**
+		* Assuming pc is positioned at the start of a character literal,
+		* munches it from pc and returns it. A reference to line is passed in
+		* order to track multiline character literals (yeah, that can
+		* actually happen) correctly.
+		*/
+		static string munchCharLiteral(string &pc, size_t &line) {
+			assert(pc[0] == '\'');
+			for (size_t i = 1;; ++i) {
+				auto const c = pc[i];
+				if (c == '\'') {
+					// That's about it
+					return munchChars(pc, i + 1);
+				}
+				if (c == '\\') {
+					++i;
+					if (pc[i] == '\n') {
+						++line;
+					}
+					continue;
+				}
+				ENFORCE(c, "Unterminated character constant: " + pc);
+			}
+		};
+
+		/**
+		* Assuming pc is positioned at the start of a string literal, munches
+		* it from pc and returns it. A reference to line is passed in order
+		* to track multiline strings correctly.
+		*/
+		static string munchString(string &pc, size_t &line) {
+			assert(pc[0] == '"');
+			for (size_t i = 1;; ++i) {
+				auto const c = pc[i];
+				if (c == '"') {
+					// That's about it
+					return munchChars(pc, i + 1);
+				}
+				if (c == '\\') {
+					++i;
+					if (pc[i] == '\n') {
+						++line;
+					}
+					continue;
+				}
+				ENFORCE(c, "Unterminated string constant: " + pc);
+			}
+		};
+
+		/**
+		* Munches horizontal spaces from pc. If we want to disallow tabs in
+		* sources, here is the place. No need for end=of-input checks as the
+		* input always has a '\0' at the end.
+		*/
+		static string munchSpaces(string &pc) {
+			size_t i = 0;
+			for (; pc[i] == ' ' || pc[i] == '\t'; ++i) {
+			}
+			auto const result = pc.substr(0, i);
+			pc = pc.substr(i);
+			return result;
+		};
+
+	}; // Anonymous Namespace
 
 	/**
 	* Tests if a given string starts with a prefix
@@ -239,7 +243,7 @@ namespace flint {
 	bool startsWith(const string &str, const string &prefix) {
 		return (str.size() >= prefix.size()) &&
 			   (str.compare(0, prefix.size(), prefix) == 0);
-	}
+	};
 
 	/**
 	* Given the contents of a C++ file and a filename, tokenizes the
@@ -513,7 +517,7 @@ namespace flint {
 			}
 		}
 		assert(false);
-	}
+	};
 
 	/**
 	* Converts e.g. TK_VIRTUAL to "TK_VIRTUAL".
@@ -538,6 +542,6 @@ namespace flint {
 #undef CPPLINT_X4
 
 			FBEXCEPTION("Unknown token type: " + t);
-	}
+	};
 
 };
