@@ -245,11 +245,10 @@ namespace flint {
 	* Given the contents of a C++ file and a filename, tokenizes the
 	* contents and places it in output.
 	*/
-	void tokenize(const string &input, const string &initialFilename, vector<Token> &output) {
+	void tokenize(const string &input, const string &file, vector<Token> &output) {
 		output.resize(0);
 		// The string piece includes the terminating nul character
 		string pc = string(input);
-		string file = string(initialFilename);
 		size_t line = 1;
 
 		TokenType t;
@@ -383,7 +382,7 @@ namespace flint {
 			case '\0':
 				assert(pc.size() == 0);
 				// Push last token, the EOF
-				output.push_back(Token(TK_EOF, pc, &file, line, preTokenPtr, preTokenLen));
+				output.push_back(Token(TK_EOF, pc, file, line, preTokenPtr, preTokenLen));
 				return;
 				// *** Verboten characters (do allow '@' and '$' as extensions)
 			case '`':
@@ -395,7 +394,7 @@ namespace flint {
 			ITS_A_NUMBER : {
 				auto symbol = munchNumber(pc);
 				assert(symbol.size() > 0);
-				output.push_back(Token(TK_NUMBER, symbol, &file, line, preTokenPtr, preTokenLen));
+				output.push_back(Token(TK_NUMBER, symbol, file, line, preTokenPtr, preTokenLen));
 			}
 				break;
 				// *** Number, member selector, ellipsis, or .*
@@ -416,14 +415,14 @@ namespace flint {
 				// *** Character literal
 			case '\'': {
 				auto charLit = munchCharLiteral(pc, line);
-				output.push_back(Token(TK_CHAR_LITERAL, charLit, &file, line,
+				output.push_back(Token(TK_CHAR_LITERAL, charLit, file, line,
 					preTokenPtr, preTokenLen));
 			}
 				break;
 				// *** String literal
 			case '"': {
 				auto str = munchString(pc, line);
-				output.push_back(Token(TK_STRING_LITERAL, str, &file, line,
+				output.push_back(Token(TK_STRING_LITERAL, str, file, line,
 					preTokenPtr, preTokenLen));
 			}
 				break;
@@ -489,24 +488,24 @@ namespace flint {
 					auto iter = keywords.find(symbol);
 					if (iter != keywords.end()) {
 						// keyword, baby
-						output.push_back(Token(iter->second, symbol, &file, line,
+						output.push_back(Token(iter->second, symbol, file, line,
 							preTokenPtr, preTokenLen));
 					}
 					else {
 						// Some identifier
 						assert(symbol.size() > 0);
-						output.push_back(Token(TK_IDENTIFIER, symbol, &file, line,
+						output.push_back(Token(TK_IDENTIFIER, symbol, file, line,
 							preTokenPtr, preTokenLen));
 					}
 				}
 				else {
 					// what could this be? (BOM?)
-					FBEXCEPTION("Unrecognized character in " + initialFilename + ":" + to_string(line));
+					FBEXCEPTION("Unrecognized character in " + file + ":" + to_string(line));
 				}
 				break;
 				// *** All
 			INSERT_TOKEN:
-				output.push_back(Token(t, munchChars(pc, tokenLen), &file, line,
+				output.push_back(Token(t, munchChars(pc, tokenLen), file, line,
 					preTokenPtr, preTokenLen));
 				preTokenPtr = (char*)pc.c_str();
 				preTokenLen = 0;
