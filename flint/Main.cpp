@@ -9,7 +9,7 @@
 #include "FileCategories.hpp"
 #include "Ignored.hpp"
 #include "Tokenizer.hpp"
-//#include "Checks.hpp"
+#include "Checks.hpp"
 
 using namespace std;
 using namespace flint;
