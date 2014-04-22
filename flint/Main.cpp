@@ -89,7 +89,8 @@ uint checkEntry(const string &path) {
 		errors += checkInitializeFromItself(path, tokens);
 
 		if (!FLAGS_cmode) {
-			
+
+			errors += checkCatchByReference(path, tokens);	
 		}
 	} catch (exception const &e) {
 		fprintf(stderr, "Exception thrown during checks on %s.\n%s", path.c_str(), e.what());

@@ -712,7 +712,83 @@ namespace flint {
 				continue;
 			}
 
-			
+			size_t focal = pos + 1;
+			if (tokens[focal].type_ != TK_LPAREN) { // a "(" comes always after catch
+				throw runtime_error(tokens[focal].file_ + ":" + to_string(tokens[focal].line_) 
+					+ ": Invalid C++ source code, please compile before lint.");
+			}
+			++focal;
+
+			if (tokens[focal].type_ == TK_ELLIPSIS) {
+				// catch (...
+				continue;
+			}
+			if (tokens[focal].type_ == TK_CONST) {
+				// catch (const
+				++focal;
+			}
+			if (tokens[focal].type_ == TK_TYPENAME) {
+				// catch ([const] typename
+				++focal;
+			}
+			if (tokens[focal].type_ == TK_DOUBLE_COLON) {
+				// catch ([const] [typename] ::
+				++focal;
+			}
+
+			// At this position we must have an identifier - the type caught,
+			// e.g. FBException, or the first identifier in an elaborate type
+			// specifier, such as facebook::FancyException<int, string>.
+			if (tokens[focal].type_ != TK_IDENTIFIER) {
+				
+				const Token &tok = tokens[focal];
+				lintWarning(tok, "Symbol " + tok.value_ + " invalid in catch clause.  You may only catch user-defined types.\n");
+				++result;
+				continue;
+			}
+			++focal;
+
+			// We move the focus to the closing paren to detect the "&". We're
+			// balancing parens because there are weird corner cases like
+			// catch (Ex<(1 + 1)> & e).
+			for (size_t parens = 0;; ++focal) {
+				if (focal >= tokens.size()) {
+					throw runtime_error(tokens[focal].file_ + ":" + to_string(tokens[focal].line_) 
+						+ ": Invalid C++ source code, please compile before lint.");
+				}
+				if (tokens[focal].type_ == TK_RPAREN) {
+					if (parens == 0) break;
+					--parens;
+				}
+				else if (tokens[focal].type_ == TK_LPAREN) {
+					++parens;
+				}
+			}
+
+			// At this point we're straight on the closing ")". Backing off
+			// from there we should find either "& identifier" or "&" meaning
+			// anonymous identifier.
+			if (tokens[focal - 1].type_ == TK_AMPERSAND) {
+				// check! catch (whatever &)
+				continue;
+			}
+			if (tokens[focal - 1].type_ == TK_IDENTIFIER &&
+				tokens[focal - 2].type_ == TK_AMPERSAND) {
+				// check! catch (whatever & ident)
+				continue;
+			}
+
+			// Oopsies times
+			const Token &tok = tokens[focal - 1];
+			// Get the type string
+			string theType = "";
+			for (size_t j = 2; j <= focal - 1; ++j) {
+				if (j > 2) theType += " ";
+				theType += tokens[j].value_;
+			}
+			lintError(tok, "Symbol " + tok.value_ + " of type " + theType 
+				+ " caught by value.  Use catch by (preferably const) reference throughout.\n");
+			++result;
 		}
 
 		return result;
