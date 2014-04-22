@@ -591,7 +591,7 @@ namespace flint {
 	uint checkBlacklistedIdentifiers(const string &path, const vector<Token> &tokens) {
 
 
-		static const std::map<string, string> blacklist = {
+		static const map<string, string> blacklist = {
 			{ "strtok",
 			"strtok() is not thread safe, and has safer alternatives. Consider strtok_r.\n" 
 			}
@@ -609,6 +609,74 @@ namespace flint {
 						continue;
 					}
 				}
+			}
+		}
+
+		return result;
+	};
+
+	/**
+	* No #defined names use an identifier reserved to the
+	* implementation.
+	*
+	* These are enforcing rules that actually apply to all identifiers,
+	* but we're only raising warnings for #define'd ones right now.
+	*
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	* @return
+	*		Returns the number of errors this check found in the token stream
+	*/
+	uint checkDefinedNames(const string &path, const vector<Token> &tokens) {
+
+		// Exceptions to the check
+		static const set<string> okNames = {
+			"__STDC_LIMIT_MACROS",
+			"__STDC_FORMAT_MACROS",
+			"_GNU_SOURCE",
+			"_XOPEN_SOURCE"
+		};
+
+		uint result = 0;
+
+		for (int pos = 0; pos < tokens.size(); ++pos) {
+			if (tokens[pos].type_ != TK_DEFINE) {
+				continue;
+			}
+			
+			Token tok = tokens[pos + 1];
+			string sym = tok.value_;
+
+			if (tok.type_ != TK_IDENTIFIER) {
+				// This actually happens because people #define private public
+				//   for unittest reasons
+				lintWarning(tok, "You're not supposed to #define " + sym + "\n");
+				++result;
+				continue;
+			}
+
+			if (sym.size() >= 2 && sym[0] == '_' && isupper(sym[1])) {
+				if (okNames.find(sym) != okNames.end()) {
+					continue;
+				}
+				lintWarning(tok, "Symbol " + sym + " invalid. A symbol may not start with an underscore followed by a capital letter.\n");
+				++result;
+			}
+			else if (sym.size() >= 2 && sym[0] == '_' && sym[1] == '_') {
+				if (okNames.find(sym) != okNames.end()) {
+					continue;
+				}
+				lintWarning(tok, "Symbol " + sym + " invalid. A symbol may not begin with two adjacent underscores.\n");
+				++result;
+			}
+			else if (sym.find("__") != string::npos) { // !FLAGS_c_mode /* C is less restrictive about this */ && 
+				if (okNames.find(sym) != okNames.end()) {
+					continue;
+				}
+				lintWarning(tok, "Symbol " + sym + " invalid. A symbol may not contain two adjacent underscores.\n");
+				++result;
 			}
 		}
 

@@ -65,7 +65,7 @@ uint checkEntry(const string &path) {
 	}
 
 	if (FLAGS_verbose) {
-		cout << "Linting File: " << path << endl;
+		cout << endl << "Linting File: " << path << endl;
 	}
 	
 	string file;
@@ -84,6 +84,7 @@ uint checkEntry(const string &path) {
 		
 		errors += checkBlacklistedSequences(path, tokens);
 		errors += checkBlacklistedIdentifiers(path, tokens);
+		errors += checkDefinedNames(path, tokens);
 
 		errors += checkInitializeFromItself(path, tokens);
 
@@ -105,7 +106,7 @@ int main(int argc, char *argv[]) {
 
 	// Check each file
 	uint errors = 0;
-	for (int i = 1; i < argc; i++) {
+	for (int i = 1; i < argc; ++i) {
 		errors += checkEntry(string(argv[i]));
 	}
 
