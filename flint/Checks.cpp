@@ -47,9 +47,9 @@ namespace flint {
 		* @return
 		*		Returns true if we were at the start of a given sequence
 		*/
-		bool atSequence(const vector<Token> &tokens, int pos, const vector<TokenType> &list) {
+		bool atSequence(const vector<Token> &tokens, size_t pos, const vector<TokenType> &list) {
 
-			for (int i = 0; i < list.size(); i++, ++pos) {
+			for (size_t i = 0; i < list.size(); i++, ++pos) {
 				if (tokens[pos].type_ != list[i]) {
 					return false;
 				}
@@ -82,7 +82,7 @@ namespace flint {
 		* @return
 		*		Returns the position of the closing angle bracket
 		*/
-		int skipTemplateSpec(const vector<Token> &tokens, int pos, bool *containsArray = nullptr) {
+		size_t skipTemplateSpec(const vector<Token> &tokens, size_t pos, bool *containsArray = nullptr) {
 			assert(tokens[pos].type_ == TK_LESS);
 
 			uint angleNest = 1; // Because we began on the leading '<'
@@ -146,7 +146,7 @@ namespace flint {
 		* @return
 		*		Returns true is the token as pos is a built in type
 		*/
-		bool atBuiltinType(const vector<Token> &tokens, int pos) {
+		bool atBuiltinType(const vector<Token> &tokens, size_t pos) {
 
 			const vector<TokenType> builtIns = {
 				TK_DOUBLE,
@@ -163,7 +163,7 @@ namespace flint {
 			};
 
 			TokenType tok = tokens[pos].type_;
-			for (int i = 0; i < builtIns.size(); ++i) {
+			for (size_t i = 0; i < builtIns.size(); ++i) {
 				if (tok == builtIns[i]) {
 					return true;
 				}
@@ -183,7 +183,7 @@ namespace flint {
 		*		Returns a vector of all the identifier values involved, or an
 		*		empty vector if no identifier was detected.
 		*/
-		vector<string> readQualifiedIdentifier(const vector<Token> &tokens, int &pos) {
+		vector<string> readQualifiedIdentifier(const vector<Token> &tokens, size_t &pos) {
 
 			vector<string> ret;
 			for (; tokens[pos].type_ == TK_IDENTIFIER || tokens[pos].type_ == TK_DOUBLE_COLON; ++pos) {
@@ -204,7 +204,7 @@ namespace flint {
 		* @return
 		*		Returns the position of the closing curly bracket
 		*/
-		int skipBlock(const vector<Token> &tokens, int pos) {
+		size_t skipBlock(const vector<Token> &tokens, size_t pos) {
 			assert(tokens[pos].type_ == TK_LCURL);
 
 			uint openBraces = 1; // Because we began on the leading '{'
@@ -248,7 +248,7 @@ namespace flint {
 
 			uint result = 0;
 
-			for (int pos = 0; tokens[pos].type_ != TK_EOF; ++pos) {
+			for (size_t pos = 0; tokens[pos].type_ != TK_EOF; ++pos) {
 				// Skip template sequence if we find ... template< ...
 				if (atSequence(tokens, pos, { TK_TEMPLATE, TK_LESS })) {
 					pos = skipTemplateSpec(tokens, pos);
@@ -278,7 +278,7 @@ namespace flint {
 		* @return
 		*		Returns the position of the closing curly bracket or semicolon
 		*/
-		int skipFunctionDeclaration(const vector<Token> &tokens, int pos) {
+		size_t skipFunctionDeclaration(const vector<Token> &tokens, size_t pos) {
 
 			for (; tokens[pos].type_ != TK_EOF; ++pos) {
 				TokenType tok = tokens[pos].type_;
@@ -302,10 +302,10 @@ namespace flint {
 		* argument.
 		*/
 		struct Argument {
-			int first;
-			int last;
+			size_t first;
+			size_t last;
 
-			Argument(int a, int b) : first(a), last(b) {
+			Argument(size_t a, size_t b) : first(a), last(b) {
 				// Just to check the port hasn't broken Token traversal somehow
 				assert(first < last); 
 			};
@@ -324,7 +324,7 @@ namespace flint {
 		string formatArg(const vector<Token> &tokens, const Argument &arg) {
 			string result;
 
-			for (int pos = arg.first; pos <= arg.last; ++pos) {
+			for (size_t pos = arg.first; pos <= arg.last; ++pos) {
 				if (pos != arg.first && !(tokens[pos].precedingWhitespace_.empty())) {
 					result.push_back(' ');
 				}
@@ -350,7 +350,7 @@ namespace flint {
 
 			string result = formatArg(tokens, func) + "(";
 
-			for (int i = 0; i < args.size(); ++i) {
+			for (size_t i = 0; i < args.size(); ++i) {
 				if (i > 0) {
 					result += ", ";
 				}
@@ -378,10 +378,10 @@ namespace flint {
 		*		Returns true if we believe (sorta) that everything went okay,
 		*		false if something bad happened (maybe)
 		*/
-		bool getRealArguments(const vector<Token> &tokens, int &pos, vector<Argument> &args) {
+		bool getRealArguments(const vector<Token> &tokens, size_t &pos, vector<Argument> &args) {
 			assert(tokens[pos].type_ == TK_LPAREN);
 
-			int argStart = pos + 1; // First arg starts after parenthesis
+			size_t argStart = pos + 1; // First arg starts after parenthesis
 			int parenCount = 1;
 
 			for (; tokens[pos].type_ != TK_EOF; ++pos) {
@@ -448,7 +448,7 @@ namespace flint {
 		*		Returns true if we believe (sorta) that everything went okay,
 		*		false if something bad happened (maybe)
 		*/
-		bool getFunctionNameAndArguments(const vector<Token> &tokens, int &pos, Argument &func, vector<Argument> &args) {
+		bool getFunctionNameAndArguments(const vector<Token> &tokens, size_t &pos, Argument &func, vector<Argument> &args) {
 			
 			func.first = pos;
 			++pos;
@@ -489,7 +489,7 @@ namespace flint {
 
 		uint result = 0;
 
-		for (int pos = 0; pos < tokens.size(); ++pos) {
+		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 			if (atSequence(tokens, pos, firstInitializer) || atSequence(tokens, pos, nthInitializer)) {
 
 				int outerPos = ++pos;     // +1 for identifier
@@ -548,7 +548,7 @@ namespace flint {
 		uint result = 0;
 		bool isException = false;
 
-		for (int pos = 0; pos < tokens.size(); ++pos) {
+		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 			
 			// Make sure we aren't at an exception to the blacklist
 			for (const auto &e : exceptions) {
@@ -599,7 +599,7 @@ namespace flint {
 
 		uint result = 0;
 
-		for (int pos = 0; pos < tokens.size(); ++pos) {
+		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 
 			if (tokens[pos].type_ == TK_IDENTIFIER) {
 				for (const auto &entry : blacklist) {
@@ -641,7 +641,7 @@ namespace flint {
 
 		uint result = 0;
 
-		for (int pos = 0; pos < tokens.size(); ++pos) {
+		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 			if (tokens[pos].type_ != TK_DEFINE) {
 				continue;
 			}
@@ -678,6 +678,41 @@ namespace flint {
 				lintWarning(tok, "Symbol " + sym + " invalid. A symbol may not contain two adjacent underscores.\n");
 				++result;
 			}
+		}
+
+		return result;
+	};
+
+	/**
+	* Only the following forms of catch are allowed:
+	*
+	* catch (Type &)
+	* catch (const Type &)
+	* catch (Type const &)
+	* catch (Type & e)
+	* catch (const Type & e)
+	* catch (Type const & e)
+	*
+	* Type cannot be built-in; this function enforces that it's
+	* user-defined.
+	*
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	* @return
+	*		Returns the number of errors this check found in the token stream
+	*/
+	uint checkCatchByReference(const string &path, const vector<Token> &tokens) {
+
+		uint result = 0;
+
+		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+			if (tokens[pos].type_ != TK_CATCH) {
+				continue;
+			}
+
+			
 		}
 
 		return result;
