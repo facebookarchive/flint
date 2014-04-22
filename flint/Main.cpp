@@ -83,6 +83,7 @@ uint checkEntry(const string &path) {
 		tokenize(file, path, tokens);
 		
 		errors += checkBlacklistedSequences(path, tokens);
+		errors += checkBlacklistedIdentifiers(path, tokens);
 
 		errors += checkInitializeFromItself(path, tokens);
 

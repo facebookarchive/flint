@@ -577,4 +577,41 @@ namespace flint {
 
 		return result;
 	};
+
+	/**
+	* Check for blacklisted identifiers
+	*
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	* @return
+	*		Returns the number of errors this check found in the token stream
+	*/
+	uint checkBlacklistedIdentifiers(const string &path, const vector<Token> &tokens) {
+
+
+		static const std::map<string, string> blacklist = {
+			{ "strtok",
+			"strtok() is not thread safe, and has safer alternatives. Consider strtok_r.\n" 
+			}
+		};
+
+		uint result = 0;
+
+		for (int pos = 0; pos < tokens.size(); ++pos) {
+
+			if (tokens[pos].type_ == TK_IDENTIFIER) {
+				for (const auto &entry : blacklist) {
+					if (tokens[pos].value_.compare(entry.first) == 0) {
+						lintError(tokens[pos], entry.second);
+						++result;
+						continue;
+					}
+				}
+			}
+		}
+
+		return result;
+	};
 };
