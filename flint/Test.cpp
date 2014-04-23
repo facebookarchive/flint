@@ -8,13 +8,29 @@ using namespace std;
 
 // Function Throw Checks
 void funcTest() throw () {};
-class Foo {
-private:
-	void Bar() throw () {};
-	void Bar2() {};
-};
-struct FooU {
-	void Bar() throw () {};
+
+namespace GRR {
+	
+	class Foo {
+	private:
+
+		void Bar() throw () {};
+		void Bar2() {};
+
+	public:
+
+		Foo(int i) {};
+		Foo() {};
+
+		Foo(void) {};
+
+		Foo(const Foo &other);
+		Foo(Foo &other);
+	};
+
+	struct FooU {
+		void Bar() throw () {};
+	};
 };
 
 int main() {

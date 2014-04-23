@@ -92,7 +92,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 		checkIfEndifBalance(errors, path, tokens);
 
 		if (!FLAGS_cmode) {
-
+			checkConstructors(errors, path, tokens);
 			checkCatchByReference(errors, path, tokens);
 			checkThrowSpecification(errors, path, tokens);
 		}

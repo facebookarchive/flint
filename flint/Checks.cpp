@@ -2,7 +2,10 @@
 
 #include <map>
 #include <set>
+#include <stack>
 #include <cassert>
+
+#include "FileCategories.hpp"
 
 namespace flint {
 
@@ -102,7 +105,7 @@ namespace flint {
 				*containsArray = false;
 			}
 
-			for (; !isTok(tokens[pos], TK_EOF); ++pos) {
+			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_LPAREN) {
@@ -286,7 +289,7 @@ namespace flint {
 		*/
 		size_t skipFunctionDeclaration(const vector<Token> &tokens, size_t pos) {
 
-			for (; !isTok(tokens[pos], TK_EOF); ++pos) {
+			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_SEMICOLON) { // Function Prototype
@@ -313,7 +316,7 @@ namespace flint {
 
 			Argument(size_t a, size_t b) : first(a), last(b) {
 				// Just to check the port hasn't broken Token traversal somehow
-				assert(first < last); 
+				assert(first <= last); 
 			};
 		};
 
@@ -390,7 +393,7 @@ namespace flint {
 			size_t argStart = pos + 1; // First arg starts after parenthesis
 			int parenCount = 1;
 
-			for (; !isTok(tokens[pos], TK_EOF); ++pos) {
+			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_LPAREN) {
@@ -406,6 +409,7 @@ namespace flint {
 					}
 					continue;
 				}
+				/*
 				if (tok == TK_LESS) {
 					// This is a heuristic which would fail when < is used with
 					// the traditional meaning in an argument, e.g.
@@ -418,6 +422,7 @@ namespace flint {
 					pos = skipTemplateSpec(tokens, pos);
 					continue;
 				}
+				*/
 				if (tok == TK_COMMA) {
 					if (parenCount == 1) {
 						// end an argument of the function we are looking at
@@ -428,7 +433,7 @@ namespace flint {
 				}
 			}
 
-			if (isTok(tokens[pos], TK_EOF)) {
+			if (pos < tokens.size() || isTok(tokens[pos], TK_EOF)) {
 				return false;
 			}
 
@@ -460,10 +465,10 @@ namespace flint {
 			func.first = pos;
 			++pos;
 
-			if (isTok(tokens[pos], TK_LESS)) {
+			if (pos < tokens.size() && isTok(tokens[pos], TK_LESS)) {
 				pos = skipTemplateSpec(tokens, pos);
 
-				if (isTok(tokens[pos], TK_EOF)) {
+				if (pos >= tokens.size() || isTok(tokens[pos], TK_EOF)) {
 					return false;
 				}
 				++pos;
@@ -927,7 +932,7 @@ namespace flint {
 
 			if (atSequence(tokens, pos, iteratorPlus) || atSequence(tokens, pos, iteratorMinus)) {
 				lintAdvice(tokens[pos], "Postfix iterators inject a copy operation, almost doubling the workload. "
-					"Instead use prefix notation i.e. '" + tokens[pos+1].value_ + tokens[pos].value_ + "' if possible.\n");
+					"Instead, consider using prefix notation '" + tokens[pos+1].value_ + tokens[pos].value_ + "'.\n");
 				++errors.advice;
 			}
 		}
@@ -981,7 +986,215 @@ namespace flint {
 		}
 	};
 
+	/**
+	* Warn about common errors with constructors, such as:
+	*  - single-argument constructors that aren't marked as explicit, to avoid them
+	*    being used for implicit type conversion (C++ only)
+	*  - Non-const copy constructors, or useless const move constructors.
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkConstructors(Errors &errors, const string &path, const vector<Token> &tokens) {
+		if (getFileCategory(path) == FileCategory::SOURCE_C) {
+			return;
+		}
 
+		stack<string> nestedClasses;
+
+		const string lintOverride = "/* implicit */";
+
+		const vector<TokenType> stdInitializerSequence = { 
+			TK_IDENTIFIER, TK_DOUBLE_COLON, TK_IDENTIFIER, TK_LESS 
+		};
+		const vector<TokenType> voidConstructorSequence = { 
+			TK_IDENTIFIER, TK_LPAREN, TK_VOID, TK_RPAREN 
+		};
+
+		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+			Token tok = tokens[pos];
+
+			// Avoid mis-identifying a class context due to use of the "class"
+			// keyword inside a template parameter list.
+			if (atSequence(tokens, pos, { TK_TEMPLATE, TK_LESS })) { 
+				pos = skipTemplateSpec(tokens, ++pos);
+				continue;
+			}
+
+			// Parse within namespace blocks, but don't do top-level constructor checks.
+			// To do this, we treat namespaces like unnamed classes so any later
+			// function name checks will not match against an empty string.
+			if (isTok(tok, TK_NAMESPACE)) {
+				++pos;
+				for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
+					if (isTok(tokens[pos], TK_SEMICOLON)) {
+						break;
+					}
+					else if (isTok(tokens[pos], TK_LCURL)) {
+						nestedClasses.push("");
+						break;
+					}
+				}
+				continue;
+			}
+
+			// Extract the class name if a class/struct definition is found
+			if (isTok(tok, TK_CLASS) || isTok(tok, TK_STRUCT)) {
+				++pos;
+
+				// If we hit any C-style structs, we'll handle them like we do namespaces:
+				// continue to parse within the block but don't show any lint errors.
+				if (isTok(tokens[pos], TK_LCURL)) {
+					nestedClasses.push("");
+				}
+				else if (isTok(tokens[pos], TK_IDENTIFIER)) {
+
+					size_t classPos = pos;
+					for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
+						if (isTok(tokens[pos], TK_SEMICOLON)) {
+							break;
+						}
+						else if (isTok(tokens[pos], TK_LCURL)) {
+							nestedClasses.push(tokens[classPos].value_);
+							break;
+						}
+					}
+				}
+				continue;
+			}
+
+			// Closing curly braces end the current scope, and should always be balanced
+			if (isTok(tok, TK_RCURL)) {
+				if (nestedClasses.empty()) { // parse fail
+					return;
+				}
+				nestedClasses.pop();
+				continue;
+			}
+
+			// Skip unrecognized blocks. We only want to parse top-level class blocks.
+			if (isTok(tok, TK_LCURL)) {
+				pos = skipBlock(tokens, pos);
+				continue;
+			}
+
+			// Only check for constructors if we've previously entered a class block
+			if (nestedClasses.empty()) {
+				continue;
+			}
+
+			// Skip past any functions that begin with an "explicit" keyword
+			if (isTok(tok, TK_EXPLICIT)) {
+				pos = skipFunctionDeclaration(tokens, ++pos);
+				continue;
+			}
+
+			// Skip anything that doesn't look like a constructor
+			if (!atSequence(tokens, pos, { TK_IDENTIFIER, TK_LPAREN })) {
+				continue;
+			}
+			
+			if (!cmpTok(tok, nestedClasses.top())) {
+				pos = skipFunctionDeclaration(tokens, pos);
+				continue;
+			}
+
+			// Suppress error and skip past functions clearly marked as implicit
+			if (tok.precedingWhitespace_.find_first_of(lintOverride) != string::npos) {
+				pos = skipFunctionDeclaration(tokens, pos);		
+				continue;
+			}
+
+			// Allow zero-argument void constructors
+			if (atSequence(tokens, pos, voidConstructorSequence)) {
+				pos = skipFunctionDeclaration(tokens, pos);
+
+				assert(0 == 1);
+				continue;
+			}
+
+			vector<Argument> args;
+			Argument functionName(pos, pos);
+			if (!getFunctionNameAndArguments(tokens, pos, functionName, args)) {
+				// Parse fail can be due to limitations in skipTemplateSpec, such as with:
+				// fn(std::vector<boost::shared_ptr<ProjectionOperator>> children);)
+				return;
+			}
+
+			// Allow zero-argument constructors
+			if (args.empty()) {
+				pos = skipFunctionDeclaration(tokens, pos);
+				continue;
+			}
+
+			size_t argPos = args[0].first;
+			bool foundConversionCtor = false;
+			bool isConstArgument = false;
+			if (isTok(tokens[argPos], TK_CONST)) {
+				isConstArgument = true;
+				++argPos;
+			}
+
+			// Copy/move constructors may have const (but not type conversion) issues
+			// Note: we skip some complicated cases (e.g. template arguments) here
+			if (cmpTok(tokens[argPos], nestedClasses.top())) {
+				TokenType nextType = ((argPos + 1) != args[0].last) ? tokens[argPos + 1].type_ : TK_EOF;
+				
+				if (nextType != TK_STAR) {
+					if (nextType == TK_AMPERSAND && !isConstArgument) {
+						
+						lintError(tokens[pos], "Copy constructors should take a const argument: " 
+							+ formatFunction(tokens, functionName, args) + "\n");
+						++errors.errors;
+					}
+					else if (nextType == TK_LOGICAL_AND && isConstArgument) {
+						lintError(tokens[pos], "Move constructors should not take a const argument: " 
+							+ formatFunction(tokens, functionName, args) + "\n");
+						++errors.errors;
+					}
+					pos = skipFunctionDeclaration(tokens, pos);
+					continue;
+				}
+			}
+
+			// Allow std::initializer_list constructors
+			if (atSequence(tokens, argPos, stdInitializerSequence)
+				&& cmpTok(tokens[argPos], "std")
+				&& cmpTok(tokens[argPos + 2], "initializer_list")) {
+				pos = skipFunctionDeclaration(tokens, pos);
+				continue;
+			}
+
+			if (args.size() == 1) {
+				foundConversionCtor = true;
+			}
+			else if (args.size() >= 2) {
+				// 2+ will only be an issue if the second argument is a default argument
+				for (argPos = args[1].first; argPos < tokens.size() && argPos < args[1].last; ++argPos) {
+					if (isTok(tokens[argPos], TK_ASSIGN)) {
+						foundConversionCtor = true;
+						break;
+					}
+				}
+			}
+
+			if (foundConversionCtor) {
+				lintError(tokens[pos], "Single-argument constructor '" 
+					+ formatFunction(tokens, functionName, args) + 
+					"' may inadvertently be used as a type conversion constructor. Prefix"
+					" the function with the 'explicit' keyword to avoid this, or add an "
+					"/* implicit */ comment to suppress this warning.\n");
+				++errors.errors;
+			}
+
+			pos = skipFunctionDeclaration(tokens, pos);
+		}
+
+	};
 
 // Shorthand for comparing two strings
 #undef cmpStr
