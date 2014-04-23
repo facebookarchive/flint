@@ -1,9 +1,7 @@
 #include "Checks.hpp"
 
 #include <map>
-#include <unordered_map>
 #include <set>
-#include <stack>
 #include <cassert>
 
 namespace flint {
@@ -934,6 +932,56 @@ namespace flint {
 			}
 		}
 	};
+
+	/**
+	* Balance of #if(#ifdef, #ifndef)/#endif.
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkIfEndifBalance(Errors &errors, const string &path, const vector<Token> &tokens) {
+
+		uint openIf = 0;
+
+		// Return after the first found error, because otherwise
+		// even one missed #if can be cause of a lot of errors.
+		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+			Token tok = tokens[pos];
+
+			if (isTok(tok, TK_IFNDEF)
+				|| isTok(tok, TK_IFDEF)
+				|| isTok(tok, TK_POUNDIF)) {
+
+				++openIf;
+			}
+			else if (isTok(tok, TK_ENDIF)) {
+				
+				--openIf;
+				if (openIf < 0) {
+					lintError(tok, "Unmatched #endif.\n");
+					++errors.errors;
+				}
+			}
+			else if (isTok(tok, TK_POUNDELSE)) {
+
+				if (openIf == 0) {
+					lintError(tok, "Unmatched #else.\n");
+					++errors.errors;
+				}
+			}
+		}
+
+		if (openIf != 0) {
+			lintError(tokens.back(), "Unmatched #if/#endif.\n");
+			++errors.errors;
+		}
+	};
+
+
 
 // Shorthand for comparing two strings
 #undef cmpStr
