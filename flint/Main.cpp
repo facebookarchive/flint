@@ -22,7 +22,7 @@ bool FLAGS_verbose   = false;
 enum class Lint {
 	ERROR, WARNING, ADVICE
 };
-Lint FLAGS_level     = Lint::WARNING;
+Lint FLAGS_level     = Lint::ADVICE;
 
 /**
 * Run lint on the given path
@@ -86,6 +86,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 		++fileCount;
 		tokenize(file, path, tokens);
 		
+		// Checks which note Errors
 		checkBlacklistedIdentifiers(errors, path, tokens);
 		checkInitializeFromItself(errors, path, tokens);
 
@@ -95,6 +96,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 			checkThrowSpecification(errors, path, tokens);
 		}
 
+		// Checks which note Warnings
 		if (FLAGS_level >= Lint::WARNING) {
 
 			checkBlacklistedSequences(errors, path, tokens);
@@ -105,6 +107,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 			}
 		}
 
+		// Checks which note Advice
 		if (FLAGS_level >= Lint::ADVICE) {
 
 			checkIterators(errors, path, tokens);
