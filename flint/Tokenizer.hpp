@@ -228,11 +228,11 @@ namespace flint {
 		TokenType type_;
 		string value_;
 		string precedingWhitespace_;
-		string *file_;
+		const string file_;
 		size_t line_;
 
 		Token() : line_(0) {}
-		Token(TokenType type, string value, string *file, size_t line, char *&preTokenPtr, size_t &preTokenLen)
+		Token(TokenType type, string value, const string &file, size_t line, char *&preTokenPtr, size_t &preTokenLen)
 			: type_(type), value_(value), 
 			precedingWhitespace_(string(preTokenPtr).substr(0, preTokenLen)),
 			  file_(file), line_(line)
@@ -246,6 +246,8 @@ namespace flint {
 			return string("Line: " + to_string(line_) + " " + value_);
 		};
 	};
+
+	bool startsWith(const string &str, const string &prefix);
 
 	/**
 	* This is the quintessential function. Given a string containing C++

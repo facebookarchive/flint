@@ -2,7 +2,7 @@
 
 /**
  * This file contains many of the definitions and utility functions 
- * that were hidden away in boost or facebooks folly library...
+ * that were hidden away in boost or facebooks folly library
  */
 
 #include <string>

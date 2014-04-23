@@ -10,7 +10,7 @@ using namespace std;
 namespace flint {
 
 #define X(func)																\
-	uint check##func(const string &filename, const vector<Token> &tokens)
+	uint check##func(const string &path, const vector<Token> &tokens)
 
 	X(DefinedNames);
 	X(CatchByReference);
