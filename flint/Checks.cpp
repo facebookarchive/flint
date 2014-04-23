@@ -59,7 +59,7 @@ namespace flint {
 				return false;
 			}
 
-			for (size_t i = 0; i < list.size(); i++, ++pos) {
+			for (size_t i = 0; i < list.size(); ++i, ++pos) {
 				if (!isTok(tokens[pos], list[i])) {
 					return false;
 				}
@@ -106,11 +106,11 @@ namespace flint {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_LPAREN) {
-					parenNest++;
+					++parenNest;
 					continue;
 				}
 				if (tok == TK_RPAREN) {
-					parenNest--;
+					--parenNest;
 					continue;
 				}
 
@@ -129,13 +129,13 @@ namespace flint {
 				}
 
 				if (tok == TK_LESS) {
-					angleNest++;
+					++angleNest;
 					continue;
 				}
 				if (tok == TK_GREATER) {
 					// Removed decrement/zero-check as one line
 					// It's not a race guys, readability > length of code
-					angleNest--;
+					--angleNest;
 					if (angleNest == 0) {
 						break;
 					}
@@ -223,13 +223,13 @@ namespace flint {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_LCURL) {
-					openBraces++;
+					++openBraces;
 					continue;
 				}
 				if (tok == TK_RCURL) {
 					// Removed decrement/zero-check as one line
 					// It's not a race guys, readability > length of code
-					openBraces--;
+					--openBraces;
 					if (openBraces == 0) {
 						break;
 					}
@@ -394,13 +394,13 @@ namespace flint {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_LPAREN) {
-					parenCount++;
+					++parenCount;
 					continue;
 				}
 				if (tok == TK_RPAREN) {
 					// Removed decrement/zero-check as one line
 					// It's not a race guys, readability > length of code
-					parenCount--;
+					--parenCount;
 					if (parenCount == 0) {
 						break;
 					}

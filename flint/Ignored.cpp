@@ -47,7 +47,7 @@ namespace flint {
 				if (posResume == string::npos) {
 
 					int lineNo = count(file.begin(), file.begin() + posPause, '\n');
-					lineNo++;
+					++lineNo;
 
 					fprintf(stderr, "%s(%d): No matching \"%s\" found for \"%s\"\n",
 						path, lineNo, kIgnoreResume.c_str(), kIgnorePause.c_str());
