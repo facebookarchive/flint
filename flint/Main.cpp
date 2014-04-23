@@ -16,8 +16,13 @@ using namespace flint;
 
 // TODO: Find GFlags alternative
 bool FLAGS_recursive = true;
-bool FLAGS_cmode = false;
-bool FLAGS_verbose = true;
+bool FLAGS_cmode     = false;
+bool FLAGS_verbose   = false;
+
+enum class Lint {
+	ERROR, WARNING, ADVICE
+};
+Lint FLAGS_level     = Lint::WARNING;
 
 /**
 * Run lint on the given path
@@ -27,18 +32,16 @@ bool FLAGS_verbose = true;
 * @return
 *		Returns the number of errors found
 */
-uint checkEntry(const string &path) {
+void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 	
 	FSType fsType = fsObjectExists(path);
 	if (fsType == FSType::NO_ACCESS) {
-		return 0;
+		return;
 	}
-
-	uint errors = 0;
 
 	if (fsType == FSType::IS_DIR) {
 		if (!FLAGS_recursive || fsContainsNoLint(path)) {
-			return 0;
+			return;
 		}
 
 		// For each object in the directory
@@ -50,18 +53,18 @@ uint checkEntry(const string &path) {
 				if (FS_ISNOT_LINK(fsObj) && FS_ISNOT_GIT(fsObj)) {
 
 					string fileName = path + FS_SEP + fsObj;
-					errors += checkEntry(fileName.c_str());
+					checkEntry(errors, fileName.c_str(), fileCount);
 				}
 			}
 			closedir(pDIR);
 		}
 
-		return errors;
+		return;
 	}
 
 	FileCategory srcType = getFileCategory(path);
 	if (srcType == FileCategory::UNKNOWN) {
-		return 0;
+		return;
 	}
 
 	if (FLAGS_verbose) {
@@ -70,7 +73,7 @@ uint checkEntry(const string &path) {
 	
 	string file;
 	if (!getFileContents(path, file)) {
-		return 0;
+		return;
 	}
 
 	// Remove code that occurs in pairs of
@@ -80,25 +83,40 @@ uint checkEntry(const string &path) {
 	vector<Token> tokens;
 	
 	try {
+		++fileCount;
 		tokenize(file, path, tokens);
 		
-		errors += checkBlacklistedSequences(path, tokens);
-		errors += checkBlacklistedIdentifiers(path, tokens);
-		errors += checkDefinedNames(path, tokens);
-
-		errors += checkInitializeFromItself(path, tokens);
+		checkBlacklistedIdentifiers(errors, path, tokens);
+		checkInitializeFromItself(errors, path, tokens);
 
 		if (!FLAGS_cmode) {
 
-			errors += checkCatchByReference(path, tokens);
-
-			errors += checkThrowSpecification(path, tokens);
+			checkCatchByReference(errors, path, tokens);
+			checkThrowSpecification(errors, path, tokens);
 		}
+
+		if (FLAGS_level >= Lint::WARNING) {
+
+			checkBlacklistedSequences(errors, path, tokens);
+			checkDefinedNames(errors, path, tokens);
+
+			if (!FLAGS_cmode) {
+
+			}
+		}
+
+		if (FLAGS_level >= Lint::ADVICE) {
+
+			checkIterators(errors, path, tokens);
+
+			if (!FLAGS_cmode) {
+
+			}
+		}
+
 	} catch (exception const &e) {
 		fprintf(stderr, "Exception thrown during checks on %s.\n%s", path.c_str(), e.what());
 	}
-
-	return errors;
 };
 
 /**
@@ -108,14 +126,16 @@ int main(int argc, char *argv[]) {
 	// Parse commandline flags
 
 	// Check each file
-	uint errors = 0;
+	Errors errors;
+	uint fileCount = 0;
 	for (int i = 1; i < argc; ++i) {
-		errors += checkEntry(string(argv[i]));
+		checkEntry(errors, string(argv[i]), fileCount);
 	}
 
 	// Print summary
-	cout << endl << "Linting Finished with " << errors << " Error" 
-		 << (errors == 1 ? "" : "s") << "." << endl;
+	cout << endl << fileCount << " files linted [E: " << errors.errors 
+		<< " W: " << errors.warnings 
+		<< " A: " << errors.advice << "]" << endl;
 
 	// Stop visual studio from closing the window...
 	system("PAUSE");
