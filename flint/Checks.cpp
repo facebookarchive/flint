@@ -7,7 +7,15 @@
 #include <cassert>
 
 namespace flint {
-	
+
+// Shorthand for comparing two strings
+#define cmpStr(a,b) ((a).compare((b)) == 0)
+#define cmpTok(a,b) cmpStr((a).value_, (b))
+#define cmpToks(a,b) cmpStr((a).value_, (b).value_)
+
+// Shorthand for comparing a Token and TokenType
+#define isTok(a,b) ((a).type_ == (b))
+
 	namespace { // Anonymous Namespace for Token stream traversal functions
 		
 		/*
@@ -54,7 +62,7 @@ namespace flint {
 			}
 
 			for (size_t i = 0; i < list.size(); i++, ++pos) {
-				if (tokens[pos].type_ != list[i]) {
+				if (!isTok(tokens[pos], list[i])) {
 					return false;
 				}
 			}
@@ -87,7 +95,7 @@ namespace flint {
 		*		Returns the position of the closing angle bracket
 		*/
 		size_t skipTemplateSpec(const vector<Token> &tokens, size_t pos, bool *containsArray = nullptr) {
-			assert(tokens[pos].type_ == TK_LESS);
+			assert(isTok(tokens[pos], TK_LESS));
 
 			uint angleNest = 1; // Because we began on the leading '<'
 			uint parenNest = 0;
@@ -96,7 +104,7 @@ namespace flint {
 				*containsArray = false;
 			}
 
-			for (; tokens[pos].type_ != TK_EOF; ++pos) {
+			for (; !isTok(tokens[pos], TK_EOF); ++pos) {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_LPAREN) {
@@ -190,8 +198,8 @@ namespace flint {
 		vector<string> readQualifiedIdentifier(const vector<Token> &tokens, size_t &pos) {
 
 			vector<string> ret;
-			for (; tokens[pos].type_ == TK_IDENTIFIER || tokens[pos].type_ == TK_DOUBLE_COLON; ++pos) {
-				if (tokens[pos].type_ == TK_IDENTIFIER) {
+			for (; isTok(tokens[pos], TK_IDENTIFIER) || isTok(tokens[pos], TK_DOUBLE_COLON); ++pos) {
+				if (isTok(tokens[pos], TK_IDENTIFIER)) {
 					ret.push_back(tokens[pos].value_);
 				}
 			}
@@ -209,11 +217,11 @@ namespace flint {
 		*		Returns the position of the closing curly bracket
 		*/
 		size_t skipBlock(const vector<Token> &tokens, size_t pos) {
-			assert(tokens[pos].type_ == TK_LCURL);
+			assert(isTok(tokens[pos], TK_LCURL));
 
 			uint openBraces = 1; // Because we began on the leading '{'
 
-			for (; tokens[pos].type_ != TK_EOF; ++pos) {
+			for (; !isTok(tokens[pos], TK_EOF); ++pos) {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_LCURL) {
@@ -280,7 +288,7 @@ namespace flint {
 		*/
 		size_t skipFunctionDeclaration(const vector<Token> &tokens, size_t pos) {
 
-			for (; tokens[pos].type_ != TK_EOF; ++pos) {
+			for (; !isTok(tokens[pos], TK_EOF); ++pos) {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_SEMICOLON) { // Function Prototype
@@ -379,12 +387,12 @@ namespace flint {
 		*		false if something bad happened (maybe)
 		*/
 		bool getRealArguments(const vector<Token> &tokens, size_t &pos, vector<Argument> &args) {
-			assert(tokens[pos].type_ == TK_LPAREN);
+			assert(isTok(tokens[pos], TK_LPAREN));
 
 			size_t argStart = pos + 1; // First arg starts after parenthesis
 			int parenCount = 1;
 
-			for (; tokens[pos].type_ != TK_EOF; ++pos) {
+			for (; !isTok(tokens[pos], TK_EOF); ++pos) {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_LPAREN) {
@@ -422,7 +430,7 @@ namespace flint {
 				}
 			}
 
-			if (tokens[pos].type_ == TK_EOF) {
+			if (isTok(tokens[pos], TK_EOF)) {
 				return false;
 			}
 
@@ -454,10 +462,10 @@ namespace flint {
 			func.first = pos;
 			++pos;
 
-			if (tokens[pos].type_ == TK_LESS) {
+			if (isTok(tokens[pos], TK_LESS)) {
 				pos = skipTemplateSpec(tokens, pos);
 
-				if (tokens[pos].type_ == TK_EOF) {
+				if (isTok(tokens[pos], TK_EOF)) {
 					return false;
 				}
 				++pos;
@@ -497,7 +505,7 @@ namespace flint {
 				bool isMember = tokens[outerPos].value_.back() == '_' ||
 								startsWith(tokens[outerPos].value_, "m_");
 
-				if (isMember && (tokens[outerPos].value_.compare(tokens[innerPos].value_) == 0)) {
+				if (isMember && cmpToks(tokens[outerPos], tokens[innerPos])) {
 					lintError(tokens[outerPos], "Looks like you're initializing class member [" 
 						+ tokens[outerPos].value_ + "] with itself.\n");
 					++errors.errors;
@@ -593,9 +601,9 @@ namespace flint {
 
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 
-			if (tokens[pos].type_ == TK_IDENTIFIER) {
+			if (isTok(tokens[pos], TK_IDENTIFIER)) {
 				for (const auto &entry : blacklist) {
-					if (tokens[pos].value_.compare(entry.first) == 0) {
+					if (cmpTok(tokens[pos], entry.first)) {
 						lintError(tokens[pos], entry.second);
 						++errors.errors;
 						continue;
@@ -630,14 +638,14 @@ namespace flint {
 		};
 
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
-			if (tokens[pos].type_ != TK_DEFINE) {
+			if (!isTok(tokens[pos], TK_DEFINE)) {
 				continue;
 			}
 			
 			Token tok = tokens[pos + 1];
 			string sym = tok.value_;
 
-			if (tok.type_ != TK_IDENTIFIER) {
+			if (!isTok(tok, TK_IDENTIFIER)) {
 				// This actually happens because people #define private public
 				//   for unittest reasons
 				lintWarning(tok, "You're not supposed to #define " + sym + "\n");
@@ -695,30 +703,30 @@ namespace flint {
 	void checkCatchByReference(Errors &errors, const string &path, const vector<Token> &tokens) {
 
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
-			if (tokens[pos].type_ != TK_CATCH) {
+			if (!isTok(tokens[pos], TK_CATCH)) {
 				continue;
 			}
 
 			size_t focal = pos + 1;
-			if (tokens[focal].type_ != TK_LPAREN) { // a "(" comes always after catch
+			if (!isTok(tokens[focal], TK_LPAREN)) { // a "(" comes always after catch
 				throw runtime_error(tokens[focal].file_ + ":" + to_string(tokens[focal].line_) 
 					+ ": Invalid C++ source code, please compile before lint.");
 			}
 			++focal;
 
-			if (tokens[focal].type_ == TK_ELLIPSIS) {
+			if (isTok(tokens[focal], TK_ELLIPSIS)) {
 				// catch (...
 				continue;
 			}
-			if (tokens[focal].type_ == TK_CONST) {
+			if (isTok(tokens[focal], TK_CONST)) {
 				// catch (const
 				++focal;
 			}
-			if (tokens[focal].type_ == TK_TYPENAME) {
+			if (isTok(tokens[focal], TK_TYPENAME)) {
 				// catch ([const] typename
 				++focal;
 			}
-			if (tokens[focal].type_ == TK_DOUBLE_COLON) {
+			if (isTok(tokens[focal], TK_DOUBLE_COLON)) {
 				// catch ([const] [typename] ::
 				++focal;
 			}
@@ -726,7 +734,7 @@ namespace flint {
 			// At this position we must have an identifier - the type caught,
 			// e.g. FBException, or the first identifier in an elaborate type
 			// specifier, such as facebook::FancyException<int, string>.
-			if (tokens[focal].type_ != TK_IDENTIFIER) {
+			if (!isTok(tokens[focal], TK_IDENTIFIER)) {
 				
 				const Token &tok = tokens[focal];
 				lintWarning(tok, "Symbol " + tok.value_ 
@@ -744,11 +752,11 @@ namespace flint {
 					throw runtime_error(tokens[focal].file_ + ":" + to_string(tokens[focal].line_) 
 						+ ": Invalid C++ source code, please compile before lint.");
 				}
-				if (tokens[focal].type_ == TK_RPAREN) {
+				if (isTok(tokens[focal], TK_RPAREN)) {
 					if (parens == 0) break;
 					--parens;
 				}
-				else if (tokens[focal].type_ == TK_LPAREN) {
+				else if (isTok(tokens[focal], TK_LPAREN)) {
 					++parens;
 				}
 			}
@@ -756,12 +764,12 @@ namespace flint {
 			// At this point we're straight on the closing ")". Backing off
 			// from there we should find either "& identifier" or "&" meaning
 			// anonymous identifier.
-			if (tokens[focal - 1].type_ == TK_AMPERSAND) {
+			if (isTok(tokens[focal - 1], TK_AMPERSAND)) {
 				// check! catch (whatever &)
 				continue;
 			}
-			if (tokens[focal - 1].type_ == TK_IDENTIFIER &&
-				tokens[focal - 2].type_ == TK_AMPERSAND) {
+			if (isTok(tokens[focal - 1], TK_IDENTIFIER) &&
+				isTok(tokens[focal - 2], TK_AMPERSAND)) {
 				// check! catch (whatever & ident)
 				continue;
 			}
@@ -801,7 +809,101 @@ namespace flint {
 		// Check for throw specifications inside classes
 		iterateClasses(errors, tokens, [&](Errors &errors, const vector<Token> &tokens, size_t pos) -> void {
 			
+			const vector<TokenType> destructorSequence = { 
+				TK_TILDE, TK_IDENTIFIER, TK_LPAREN, TK_RPAREN, TK_THROW, TK_LPAREN, TK_RPAREN 
+			};
+			const vector<TokenType> whatSequence = { 
+				TK_LPAREN, TK_RPAREN, TK_CONST, TK_THROW, TK_LPAREN, TK_RPAREN 
+			};
+
+			// Move to opening object '{'
+			for (; pos < tokens.size() && !isTok(tokens[pos], TK_LCURL); ++pos) {}
+
+			// Return if we didn't find a '{'
+			if (!isTok(tokens[pos], TK_LCURL)) {
+				return;
+			}
+			++pos;
+
+			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
+				Token tok = tokens[pos];
+
+				// Skip warnings for empty throw specifications on destructors,
+				// because sometimes it is necessary to put a throw() clause on
+				// classes deriving from std::exception.
+				if (atSequence(tokens, pos, destructorSequence)) {
+					pos += destructorSequence.size();
+					continue;
+				}
+
+				// This avoids warning if the function is named "what", to allow
+				// inheriting from std::exception without upsetting lint.
+				if (isTok(tok, TK_IDENTIFIER) && cmpTok(tok, "what")) {
+					++pos;
+					if (atSequence(tokens, pos, whatSequence)) {
+						pos += whatSequence.size();
+					}
+					continue;
+				}
+
+				// Any time we find an open curly skip straight to the closing one
+				if (isTok(tok, TK_LCURL)) {
+					pos = skipBlock(tokens, pos);
+					continue;
+				}
+
+				// If we actually find a closing one we know it's the object's closing bracket
+				if (isTok(tok, TK_RCURL)) {
+					break;
+				}
+
+				// Because we skip the bodies of functions the only throws we should find are function throws
+				if (isTok(tok, TK_THROW) && isTok(tokens[pos + 1], TK_LPAREN)) {
+					lintWarning(tok, "Throw specifications on functions are deprecated.\n");
+					++errors.warnings;
+					continue;
+				}
+			}
 		});
+
+		// Check for throw specifications in functional style code
+		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+			Token tok = tokens[pos];
+
+			// Don't accidentally identify a using statement as a namespace
+			if (isTok(tok, TK_USING)) {
+				if (isTok(tokens[pos + 1], TK_NAMESPACE)) {
+					++pos;
+				}
+				continue;
+			}
+
+			// Skip namespaces, classes, and blocks
+			if (isTok(tok, TK_NAMESPACE)
+				|| isTok(tok, TK_CLASS)
+				|| isTok(tok, TK_STRUCT)
+				|| isTok(tok, TK_UNION)
+				|| isTok(tok, TK_LCURL)) {
+
+				// Move to opening object '{'
+				for (; !isTok(tokens[pos], TK_LCURL) && !isTok(tokens[pos], TK_EOF); ++pos) {}
+
+				// Return if we didn't find a '{'
+				if (!isTok(tokens[pos], TK_LCURL)) {
+					return;
+				}
+
+				// Skip to closing '}'
+				pos = skipBlock(tokens, pos);
+			}
+
+			// Because we skip the bodies of functions the only throws we should find are function throws
+			if (isTok(tok, TK_THROW) && isTok(tokens[pos + 1], TK_LPAREN)) {
+				lintWarning(tok, "Throw specifications on functions are deprecated.\n");
+				++errors.warnings;
+				continue;
+			}
+		}
 	};
 
 	/**
@@ -832,5 +934,13 @@ namespace flint {
 			}
 		}
 	};
+
+// Shorthand for comparing two strings
+#undef cmpStr
+#undef cmpTok
+#undef cmpToks
+
+// Shorthand for comparing a Token and TokenType
+#undef isTok
 
 };
