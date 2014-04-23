@@ -24,6 +24,9 @@
     <ClCompile Include="Ignored.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Polyfill.cpp" />
+    <ClCompile Include="Test.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Tokenizer.cpp" />
   </ItemGroup>
   <ItemGroup>
