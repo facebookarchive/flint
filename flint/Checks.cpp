@@ -49,6 +49,10 @@ namespace flint {
 		*/
 		bool atSequence(const vector<Token> &tokens, size_t pos, const vector<TokenType> &list) {
 
+			if ((pos + list.size()) >= tokens.size()) {
+				return false;
+			}
+
 			for (size_t i = 0; i < list.size(); i++, ++pos) {
 				if (tokens[pos].type_ != list[i]) {
 					return false;
@@ -248,10 +252,10 @@ namespace flint {
 
 			uint result = 0;
 
-			for (size_t pos = 0; tokens[pos].type_ != TK_EOF; ++pos) {
+			for (size_t pos = 0; pos < tokens.size() - 1; ++pos) {
 				// Skip template sequence if we find ... template< ...
 				if (atSequence(tokens, pos, { TK_TEMPLATE, TK_LESS })) {
-					pos = skipTemplateSpec(tokens, pos);
+					pos = skipTemplateSpec(tokens, ++pos);
 					continue;
 				}
 

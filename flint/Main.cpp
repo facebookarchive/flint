@@ -92,7 +92,7 @@ uint checkEntry(const string &path) {
 
 			errors += checkCatchByReference(path, tokens);
 
-			//errors += checkThrowSpecification(path, tokens);
+			errors += checkThrowSpecification(path, tokens);
 		}
 	} catch (exception const &e) {
 		fprintf(stderr, "Exception thrown during checks on %s.\n%s", path.c_str(), e.what());
