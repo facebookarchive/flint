@@ -1,3 +1,5 @@
+// DO NOT COMPILE ME!!!
+
 using namespace std;
 
 // Define Warning Checks
@@ -30,6 +32,15 @@ int main() {
 	catch (int e) {
 
 	}
+
+	// #if Checks
+#if
+
+#ifdef A
+
+#endif
+
+#else
 
 	return 0;
 };
