@@ -89,6 +89,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 		// Checks which note Errors
 		checkBlacklistedIdentifiers(errors, path, tokens);
 		checkInitializeFromItself(errors, path, tokens);
+		checkIfEndifBalance(errors, path, tokens);
 
 		if (!FLAGS_cmode) {
 
