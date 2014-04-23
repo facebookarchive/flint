@@ -49,7 +49,7 @@ namespace flint {
 		*/
 		bool atSequence(const vector<Token> &tokens, size_t pos, const vector<TokenType> &list) {
 
-			if ((pos + list.size()) >= tokens.size()) {
+			if ((pos + list.size() + 1) >= tokens.size()) {
 				return false;
 			}
 
@@ -238,19 +238,17 @@ namespace flint {
 		* Traverses the token list and runs a Callback function on each
 		* class/struct/union it finds
 		*
+		* @param errors
+		*		Struct to track how many errors/warnings/advice occured
 		* @param tokens
 		*		The token list for the file
 		* @param pos
 		*		The current index position inside the token list
 		* @param callback
 		*		The function to run on each code object
-		* @return
-		*		Returns the sum of running callback on each object
 		*/
 		template<class Callback>
-		uint iterateClasses(const vector<Token> &tokens, const Callback &callback) {
-
-			uint result = 0;
+		void iterateClasses(Errors &errors, const vector<Token> &tokens, const Callback &callback) {
 
 			for (size_t pos = 0; pos < tokens.size() - 1; ++pos) {
 				// Skip template sequence if we find ... template< ...
@@ -261,11 +259,9 @@ namespace flint {
 
 				TokenType tok = tokens[pos].type_;
 				if (tok == TK_CLASS || tok == TK_STRUCT || tok == TK_UNION) {
-					result += callback(tokens, pos);
+					callback(errors, tokens, pos);
 				}
 			}
-
-			return result;
 		};
 
 		/**
@@ -482,7 +478,7 @@ namespace flint {
 	* @return
 	*		Returns the number of errors this check found in the token stream
 	*/
-	uint checkInitializeFromItself(const string &path, const vector<Token> &tokens) {
+	void checkInitializeFromItself(Errors &errors, const string &path, const vector<Token> &tokens) {
 		
 		// Token Sequences for parameter initializers
 		const vector<TokenType> firstInitializer = {
@@ -491,8 +487,6 @@ namespace flint {
 		const vector<TokenType> nthInitializer = {
 			TK_COMMA, TK_IDENTIFIER, TK_LPAREN, TK_IDENTIFIER, TK_RPAREN
 		};
-
-		uint result = 0;
 
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 			if (atSequence(tokens, pos, firstInitializer) || atSequence(tokens, pos, nthInitializer)) {
@@ -506,12 +500,10 @@ namespace flint {
 				if (isMember && (tokens[outerPos].value_.compare(tokens[innerPos].value_) == 0)) {
 					lintError(tokens[outerPos], "Looks like you're initializing class member [" 
 						+ tokens[outerPos].value_ + "] with itself.\n");
-					++result;
+					++errors.errors;
 				}
 			}
 		}
-
-		return result;
 	};
 
 	/**
@@ -524,7 +516,7 @@ namespace flint {
 	* @return
 	*		Returns the number of errors this check found in the token stream
 	*/
-	uint checkBlacklistedSequences(const string &path, const vector<Token> &tokens) {
+	void checkBlacklistedSequences(Errors &errors, const string &path, const vector<Token> &tokens) {
 
 		struct BlacklistEntry {
 			vector<TokenType> tokens;
@@ -550,7 +542,6 @@ namespace flint {
 			{ TK_ASM, TK_VOLATILE }
 		};
 
-		uint result = 0;
 		bool isException = false;
 
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
@@ -576,24 +567,22 @@ namespace flint {
 				}*/
 
 				lintWarning(tokens[pos], entry.descr);
-				++result;
+				++errors.warnings;
 			}
 		}
-
-		return result;
 	};
 
 	/**
 	* Check for blacklisted identifiers
 	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
 	* @param path
 	*		The path to the file currently being linted
 	* @param tokens
 	*		The token list for the file
-	* @return
-	*		Returns the number of errors this check found in the token stream
 	*/
-	uint checkBlacklistedIdentifiers(const string &path, const vector<Token> &tokens) {
+	void checkBlacklistedIdentifiers(Errors &errors, const string &path, const vector<Token> &tokens) {
 
 
 		static const map<string, string> blacklist = {
@@ -602,22 +591,18 @@ namespace flint {
 			}
 		};
 
-		uint result = 0;
-
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 
 			if (tokens[pos].type_ == TK_IDENTIFIER) {
 				for (const auto &entry : blacklist) {
 					if (tokens[pos].value_.compare(entry.first) == 0) {
 						lintError(tokens[pos], entry.second);
-						++result;
+						++errors.errors;
 						continue;
 					}
 				}
 			}
 		}
-
-		return result;
 	};
 
 	/**
@@ -627,14 +612,14 @@ namespace flint {
 	* These are enforcing rules that actually apply to all identifiers,
 	* but we're only raising warnings for #define'd ones right now.
 	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
 	* @param path
 	*		The path to the file currently being linted
 	* @param tokens
 	*		The token list for the file
-	* @return
-	*		Returns the number of errors this check found in the token stream
 	*/
-	uint checkDefinedNames(const string &path, const vector<Token> &tokens) {
+	void checkDefinedNames(Errors &errors, const string &path, const vector<Token> &tokens) {
 
 		// Exceptions to the check
 		static const set<string> okNames = {
@@ -643,8 +628,6 @@ namespace flint {
 			"_GNU_SOURCE",
 			"_XOPEN_SOURCE"
 		};
-
-		uint result = 0;
 
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 			if (tokens[pos].type_ != TK_DEFINE) {
@@ -658,7 +641,7 @@ namespace flint {
 				// This actually happens because people #define private public
 				//   for unittest reasons
 				lintWarning(tok, "You're not supposed to #define " + sym + "\n");
-				++result;
+				++errors.warnings;
 				continue;
 			}
 
@@ -668,7 +651,7 @@ namespace flint {
 				}
 				lintWarning(tok, "Symbol " + sym 
 					+ " invalid. A symbol may not start with an underscore followed by a capital letter.\n");
-				++result;
+				++errors.warnings;
 			}
 			else if (sym.size() >= 2 && sym[0] == '_' && sym[1] == '_') {
 				if (okNames.find(sym) != okNames.end()) {
@@ -676,7 +659,7 @@ namespace flint {
 				}
 				lintWarning(tok, "Symbol " + sym 
 					+ " invalid. A symbol may not begin with two adjacent underscores.\n");
-				++result;
+				++errors.warnings;
 			}
 			else if (sym.find("__") != string::npos) { // !FLAGS_c_mode /* C is less restrictive about this */ && 
 				if (okNames.find(sym) != okNames.end()) {
@@ -684,11 +667,9 @@ namespace flint {
 				}
 				lintWarning(tok, "Symbol " + sym 
 					+ " invalid. A symbol may not contain two adjacent underscores.\n");
-				++result;
+				++errors.warnings;
 			}
 		}
-
-		return result;
 	};
 
 	/**
@@ -704,16 +685,14 @@ namespace flint {
 	* Type cannot be built-in; this function enforces that it's
 	* user-defined.
 	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
 	* @param path
 	*		The path to the file currently being linted
 	* @param tokens
 	*		The token list for the file
-	* @return
-	*		Returns the number of errors this check found in the token stream
 	*/
-	uint checkCatchByReference(const string &path, const vector<Token> &tokens) {
-
-		uint result = 0;
+	void checkCatchByReference(Errors &errors, const string &path, const vector<Token> &tokens) {
 
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 			if (tokens[pos].type_ != TK_CATCH) {
@@ -752,7 +731,7 @@ namespace flint {
 				const Token &tok = tokens[focal];
 				lintWarning(tok, "Symbol " + tok.value_ 
 					+ " invalid in catch clause.  You may only catch user-defined types.\n");
-				++result;
+				++errors.warnings;
 				continue;
 			}
 			++focal;
@@ -797,10 +776,8 @@ namespace flint {
 			}
 			lintError(tok, "Symbol " + tok.value_ + " of type " + theType 
 				+ " caught by value.  Use catch by (preferably const) reference throughout.\n");
-			++result;
+			++errors.errors;
 		}
-
-		return result;
 	};
 
 	/**
@@ -812,23 +789,48 @@ namespace flint {
 	* disable the lint checks (this is to avoid false positives for throw
 	* expressions).
 	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
 	* @param path
 	*		The path to the file currently being linted
 	* @param tokens
 	*		The token list for the file
-	* @return
-	*		Returns the number of errors this check found in the token stream
 	*/
-	uint checkThrowSpecification(const string &path, const vector<Token> &tokens) {
-
-		uint result = 0;
+	void checkThrowSpecification(Errors &errors, const string &path, const vector<Token> &tokens) {
 
 		// Check for throw specifications inside classes
-		result += iterateClasses(tokens, [&](const vector<Token> &tokens, size_t pos) -> uint {
-			return 0;
+		iterateClasses(errors, tokens, [&](Errors &errors, const vector<Token> &tokens, size_t pos) -> void {
+			
 		});
+	};
 
-		return result;
+	/**
+	* Check for postfix iterators
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkIterators(Errors &errors, const string &path, const vector<Token> &tokens) {
+
+		const vector<TokenType> iteratorPlus = {
+			TK_IDENTIFIER, TK_INCREMENT
+		};
+		const vector<TokenType> iteratorMinus = {
+			TK_IDENTIFIER, TK_DECREMENT
+		};
+
+		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+
+			if (atSequence(tokens, pos, iteratorPlus) || atSequence(tokens, pos, iteratorMinus)) {
+				lintAdvice(tokens[pos], "Postfix iterators inject a copy operation, almost doubling the workload. "
+					"Instead use prefix notation i.e. '" + tokens[pos+1].value_ + tokens[pos].value_ + "' if possible.\n");
+				++errors.advice;
+			}
+		}
 	};
 
 };
