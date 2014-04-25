@@ -257,10 +257,8 @@ namespace flint {
 
 		TokenType t;
 		size_t tokenLen;
-		//StringPiece comment;
-		size_t preTokenLen = 0;
-		char *preTokenPtr = (char*)pc.c_str();
-
+		string whitespace = "";
+		
 		while (1) {
 			const char c = pc[0];
 
@@ -324,12 +322,12 @@ namespace flint {
 			case '/':
 				if (pc[1] == '*') {
 					//comment = munchComment(pc, line);
-					preTokenLen += munchComment(pc, line).size();
+					whitespace += munchComment(pc, line);
 					break;
 				}
 				if (pc[1] == '/') {
 					//comment = munchSingleLineComment(pc, line);
-					preTokenLen += munchSingleLineComment(pc, line).size();
+					whitespace += munchSingleLineComment(pc, line);
 					break;
 				}
 				if (pc[1] == '=') {
@@ -343,19 +341,19 @@ namespace flint {
 			case '\\':
 				ENFORCE(pc[1] == '\n' || pc[1] == '\r', "Misplaced backslash in " + file + ":" + to_string(line));
 				++line;
+				whitespace += pc.substr(0, 2);
 				pc = pc.substr(2);
-				preTokenLen += 2;
 				break;
 				// *** Newline
 			case '\n':
+				whitespace += pc.substr(0, 1);
 				pc = pc.substr(1);
-				++preTokenLen;
 				++line;
 				break;
 				// *** Part of a DOS newline; ignored
 			case '\r':
+				whitespace += pc.substr(0, 1);
 				pc = pc.substr(1);
-				++preTokenLen;
 				break;
 				// *** ->, --, -=, ->*, and -
 			case '-':
@@ -380,13 +378,13 @@ namespace flint {
 				goto INSERT_TOKEN;
 				// *** Whitespace
 			case ' ': case '\t':
-				preTokenLen += munchSpaces(pc).size();
+				whitespace += munchSpaces(pc);
 				break;
 				// *** Done parsing!
 			case '\0':
 				assert(pc.size() == 0);
 				// Push last token, the EOF
-				output.push_back(Token(TK_EOF, pc, file, line, preTokenPtr, preTokenLen));
+				output.push_back(Token(TK_EOF, pc, file, line, whitespace));
 				return;
 				// *** Verboten characters (do allow '@' and '$' as extensions)
 			case '`':
@@ -398,7 +396,8 @@ namespace flint {
 			ITS_A_NUMBER : {
 				auto symbol = munchNumber(pc);
 				assert(symbol.size() > 0);
-				output.push_back(Token(TK_NUMBER, symbol, file, line, preTokenPtr, preTokenLen));
+				output.push_back(Token(TK_NUMBER, symbol, file, line, whitespace));
+				whitespace = "";
 			}
 				break;
 				// *** Number, member selector, ellipsis, or .*
@@ -420,14 +419,16 @@ namespace flint {
 			case '\'': {
 				auto charLit = munchCharLiteral(pc, line);
 				output.push_back(Token(TK_CHAR_LITERAL, charLit, file, line,
-					preTokenPtr, preTokenLen));
+					whitespace));
+				whitespace = "";
 			}
 				break;
 				// *** String literal
 			case '"': {
 				auto str = munchString(pc, line);
 				output.push_back(Token(TK_STRING_LITERAL, str, file, line,
-					preTokenPtr, preTokenLen));
+					whitespace));
+				whitespace = "";
 			}
 				break;
 			case '#': {
@@ -483,8 +484,8 @@ namespace flint {
 				// *** Everything else
 			default:
 				if (iscntrl(c)) {
+					whitespace += pc.substr(0, 1);
 					pc = pc.substr(1);
-					++preTokenLen;
 				}
 				else if (isalpha(c) || c == '_' || c == '$' || c == '@') {
 					// it's a word
@@ -493,13 +494,15 @@ namespace flint {
 					if (iter != keywords.end()) {
 						// keyword, baby
 						output.push_back(Token(iter->second, symbol, file, line,
-							preTokenPtr, preTokenLen));
+							whitespace));
+						whitespace = "";
 					}
 					else {
 						// Some identifier
 						assert(symbol.size() > 0);
 						output.push_back(Token(TK_IDENTIFIER, symbol, file, line,
-							preTokenPtr, preTokenLen));
+							whitespace));
+						whitespace = "";
 					}
 				}
 				else {
@@ -510,9 +513,8 @@ namespace flint {
 				// *** All
 			INSERT_TOKEN:
 				output.push_back(Token(t, munchChars(pc, tokenLen), file, line,
-					preTokenPtr, preTokenLen));
-				preTokenPtr = (char*)pc.c_str();
-				preTokenLen = 0;
+					whitespace));
+				whitespace = "";
 				break;
 			}
 		}
