@@ -1,5 +1,8 @@
 // DO NOT COMPILE ME!!!
 
+#include <string>
+#include <cstdlib>
+
 using namespace std;
 
 // Define Warning Checks
@@ -19,6 +22,13 @@ namespace GRR {
 
 	public:
 
+		struct FooU {
+			void Bar() throw () {};
+
+			/* implicit */ FooU(int i) {};
+			FooU(string i) {};
+		};
+
 		Foo(int i) {};
 		Foo() {};
 
@@ -28,15 +38,17 @@ namespace GRR {
 		Foo(Foo &other);
 	};
 
-	struct FooU {
-		void Bar() throw () {};
-
-		/* implicit */ FooU(int i) {};
-	};
+	
 };
 
 int main() {
 	
+	// Memset Checks
+	GRR::Foo *ptr;
+	memset(ptr, sizeof(GRR::Foo), 1);
+
+	memset(ptr, 0, sizeof(GRR::Foo));
+
 	// Postfix Advice Checks
 	int i = 0;
 	i--;

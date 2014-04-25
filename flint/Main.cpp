@@ -90,6 +90,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 		checkBlacklistedIdentifiers(errors, path, tokens);
 		checkInitializeFromItself(errors, path, tokens);
 		checkIfEndifBalance(errors, path, tokens);
+		checkMemset(errors, path, tokens);
 
 		if (!FLAGS_cmode) {
 			checkConstructors(errors, path, tokens);
