@@ -24,12 +24,14 @@ namespace GRR {
 
 		Foo(void) {};
 
-		Foo(const Foo &other);
+		Foo(const Foo&& other);
 		Foo(Foo &other);
 	};
 
 	struct FooU {
 		void Bar() throw () {};
+
+		/* implicit */ FooU(int i) {};
 	};
 };
 
