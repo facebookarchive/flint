@@ -232,15 +232,10 @@ namespace flint {
 		size_t line_;
 
 		Token() : line_(0) {}
-		Token(TokenType type, string value, const string &file, size_t line, char *&preTokenPtr, size_t &preTokenLen)
+		Token(TokenType type, string value, const string &file, size_t line, string whitespace)
 			: type_(type), value_(value), 
-			precedingWhitespace_(string(preTokenPtr).substr(0, preTokenLen)),
-			  file_(file), line_(line)
-		{
-			// The comment is read destructively
-			preTokenPtr = &value_[value.size()];
-			preTokenLen = 0;
-		};
+			precedingWhitespace_(whitespace),
+			  file_(file), line_(line) {};
 
 		string toString() const {
 			return string("Line: " + to_string(line_) + " " + value_);
