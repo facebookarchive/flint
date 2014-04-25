@@ -87,21 +87,21 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 		tokenize(file, path, tokens);
 		
 		// Checks which note Errors
-		checkBlacklistedIdentifiers(errors, path, tokens);
-		checkInitializeFromItself(errors, path, tokens);
-		checkIfEndifBalance(errors, path, tokens);
+		//checkBlacklistedIdentifiers(errors, path, tokens);
+		//checkInitializeFromItself(errors, path, tokens);
+		//checkIfEndifBalance(errors, path, tokens);
 
 		if (!FLAGS_cmode) {
 			checkConstructors(errors, path, tokens);
-			checkCatchByReference(errors, path, tokens);
-			checkThrowSpecification(errors, path, tokens);
+			//checkCatchByReference(errors, path, tokens);
+			//checkThrowSpecification(errors, path, tokens);
 		}
 
 		// Checks which note Warnings
 		if (FLAGS_level >= Lint::WARNING) {
 
-			checkBlacklistedSequences(errors, path, tokens);
-			checkDefinedNames(errors, path, tokens);
+			//checkBlacklistedSequences(errors, path, tokens);
+			//checkDefinedNames(errors, path, tokens);
 
 			if (!FLAGS_cmode) {
 
@@ -111,7 +111,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 		// Checks which note Advice
 		if (FLAGS_level >= Lint::ADVICE) {
 
-			checkIterators(errors, path, tokens);
+			//checkIterators(errors, path, tokens);
 
 			if (!FLAGS_cmode) {
 
