@@ -46,7 +46,7 @@ namespace flint {
 		* from pc and returns it.
 		*/
 		static string munchIdentifier(string &pc) {
-			for (size_t i = 0;; ++i) {
+			for (size_t i = 0; i < pc.size(); ++i) {
 				assert(i < pc.size());
 				auto const c = pc[i];
 				// g++ allows '$' in identifiers. Also, some crazy inline
@@ -58,7 +58,7 @@ namespace flint {
 					return munchChars(pc, i);
 				}
 			}
-			assert(false);
+			return munchChars(pc, pc.size());
 		};
 
 		/**
