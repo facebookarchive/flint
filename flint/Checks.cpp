@@ -1168,7 +1168,6 @@ namespace flint {
 				}
 			}
 		});
-
 	};
 
 	/**
@@ -1227,6 +1226,202 @@ namespace flint {
 				++errors.errors;
 			}
 		}
+	};
+
+	/**
+	* Ensures .cpp files include their associated header first
+	* (this catches #include-time dependency bugs where .h files don't
+	* include things they depend on)
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkIncludeAssociatedHeader(Errors &errors, const string &path, const vector<Token> &tokens) {
+		if (!isSource(path)) {
+			return;
+		}
+
+		string file(path);
+		size_t fpos = file.find_last_of("/\\");
+		if (fpos != string::npos) {
+			file = file.substr(fpos + 1);
+		}
+		string fileBase = getFileNameBase(file);
+
+		uint includesFound = 0;
+
+		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+			
+			if (!isTok(tokens[pos], TK_INCLUDE)) {
+				continue;
+			}
+
+			++pos;
+
+			if (cmpTok(tokens[pos], "PRECOMPILED")) {
+				continue;
+			}
+
+			++includesFound;
+
+			if (!isTok(tokens[pos], TK_STRING_LITERAL)) {
+				continue;
+			}
+
+			string includedFile = getIncludedPath(tokens[pos].value_);
+			size_t ipos = includedFile.find_last_of("/\\");
+			if (ipos != string::npos) {
+				continue;
+			}
+
+			if (cmpStr(getFileNameBase(includedFile), fileBase)) {
+				if (includesFound > 1) {
+
+					lintError(tokens[pos - 1], "The associated header file of .cpp "
+						"files should be included before any other includes.\n(This "
+						"helps catch missing header file dependencies in the .h)\n");
+					++errors.errors;
+					break;
+				}
+			}
+		}
+	};
+
+	/**
+	* Warn about implicit casts
+	*
+	* Implicit casts not marked as explicit can be dangerous if not used carefully
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkImplicitCast(Errors &errors, const string &path, const vector<Token> &tokens) {
+		if (getFileCategory(path) == FileCategory::SOURCE_C) {
+			return;
+		}
+
+		// Check for constructor specifications inside classes
+		iterateClasses(errors, tokens, [&](Errors &errors, const vector<Token> &tokens, size_t pos) -> void {
+
+			const string lintOverride = "/* implicit */";
+
+			const vector<TokenType> explicitConstOperator = {
+				TK_EXPLICIT, TK_CONSTEXPR, TK_OPERATOR
+			};
+			const vector<TokenType> explicitOperator = {
+				TK_EXPLICIT, TK_OPERATOR
+			};
+			const vector<TokenType> doubleColonOperator = {
+				TK_DOUBLE_COLON, TK_OPERATOR
+			};
+			
+			const vector<TokenType> boolOperator = {
+				TK_OPERATOR, TK_BOOL, TK_LPAREN, TK_RPAREN
+			};
+			const vector<TokenType> operatorDelete = {
+				TK_ASSIGN, TK_DELETE
+			};
+			const vector<TokenType> operatorConstDelete = {
+				TK_CONST, TK_ASSIGN, TK_DELETE
+			};
+
+			if (!(isTok(tokens[pos], TK_STRUCT) || isTok(tokens[pos], TK_CLASS))) {
+				return;
+			}
+
+			// Skip to opening '{'
+			for (; pos < tokens.size() && !isTok(tokens[pos], TK_LCURL); ++pos) {
+				if (!(pos < tokens.size()) || isTok(tokens[pos], TK_SEMICOLON)) {
+					return;
+				}
+			}
+			++pos;
+
+			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
+				Token tok = tokens[pos];
+
+				// Any time we find an open curly skip straight to the closing one
+				if (isTok(tok, TK_LCURL)) {
+					pos = skipBlock(tokens, pos);
+					continue;
+				}
+
+				// If we actually find a closing one we know it's the object's closing bracket
+				if (isTok(tok, TK_RCURL)) {
+					break;
+				}
+
+				// Skip explicit functions
+				if (atSequence(tokens, pos, explicitConstOperator)) {
+					++(++pos);
+					continue;
+				}
+				if (atSequence(tokens, pos, explicitOperator) || atSequence(tokens, pos, doubleColonOperator)) {
+					++pos;
+					continue;
+				}
+
+				// bool Operator case
+				if (atSequence(tokens, pos, boolOperator)) {
+					if (atSequence(tokens, pos + 4, operatorDelete) || atSequence(tokens, pos + 4, operatorConstDelete)) {
+						// Deleted implicit operators are ok.
+						continue;
+					}
+
+					lintError(tok, "operator bool() is dangerous. "
+						"In C++11 use explicit conversion (explicit operator bool()), "
+						"otherwise use something like the safe-bool idiom if the syntactic "
+						"convenience is justified in this case, or consider defining a "
+						"function (see http://www.artima.com/cppsource/safebool.html for more "
+						"details).\n");
+					++errors.errors;
+					continue;
+				}
+
+				// Only want to process operators which do not have the overide
+				if (!isTok(tok, TK_OPERATOR) 
+					|| tok.precedingWhitespace_.find(lintOverride) != string::npos) {
+					continue;
+				}
+
+				// Assume it is an implicit conversion unless proven otherwise
+				bool isImplicitConversion = false;
+				string typeString = "";
+				for (size_t typePos = pos + 1; typePos < tokens.size(); ++typePos) {
+					if (isTok(tokens[typePos], TK_LPAREN)) {
+						break;
+					}
+
+					if (atBuiltinType(tokens, typePos) || isTok(tokens[typePos], TK_IDENTIFIER)) {
+						isImplicitConversion = true;
+					}
+
+					if (!typeString.empty()) {
+						typeString += ' ';
+					}
+					typeString += tokens[typePos].value_;
+				}
+
+				// The operator my not have been an implicit conversion
+				if (!isImplicitConversion) {
+					continue;
+				}
+
+				lintWarning(tok, "Implicit conversion to '" + typeString 
+					+ "' may inadvertently be used. Prefix the function with the 'explicit'"
+					" keyword to avoid this, or add an /* implicit *""/ comment to"
+					" suppress this warning.\n");
+				++errors.warnings;
+			}
+		});
 	};
 
 // Shorthand for comparing two strings
