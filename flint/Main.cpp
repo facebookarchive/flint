@@ -91,6 +91,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 		checkInitializeFromItself(errors, path, tokens);
 		checkIfEndifBalance(errors, path, tokens);
 		checkMemset(errors, path, tokens);
+		checkIncludeAssociatedHeader(errors, path, tokens);
 
 		if (!FLAGS_cmode) {
 			checkConstructors(errors, path, tokens);
@@ -105,7 +106,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 			checkDefinedNames(errors, path, tokens);
 
 			if (!FLAGS_cmode) {
-
+				checkImplicitCast(errors, path, tokens);
 			}
 		}
 
