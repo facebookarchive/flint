@@ -104,24 +104,24 @@ namespace flint {
 		for (const string &ext : extsHeader) {
 			string inlext = "-inl" + ext;
 			if (hasSuffix(path, inlext)) {
-				return path.substr(0, path.size() - inlext.size() - 1);
+				return path.substr(0, path.size() - inlext.size());
 			}
 			else if (hasSuffix(path, ext)) {
-				return path.substr(0, path.size() - ext.size() - 1);
+				return path.substr(0, path.size() - ext.size());
 			}
 		}
 
 		// Test C extensions
 		for (const string &ext : extsSourceC) {
 			if (hasSuffix(path, ext)) {
-				return path.substr(0, path.size() - ext.size() - 1);
+				return path.substr(0, path.size() - ext.size());
 			}
 		}
 
 		// Test CPP extensions
 		for (const string &ext : extsSourceCpp) {
 			if (hasSuffix(path, ext)) {
-				return path.substr(0, path.size() - ext.size() - 1);
+				return path.substr(0, path.size() - ext.size());
 			}
 		}
 
