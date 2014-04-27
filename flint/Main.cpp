@@ -32,7 +32,7 @@ Lint FLAGS_level     = Lint::ADVICE;
 * @return
 *		Returns the number of errors found
 */
-void checkEntry(Errors &errors, const string &path, uint &fileCount) {
+void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth = 0) {
 	
 	FSType fsType = fsObjectExists(path);
 	if (fsType == FSType::NO_ACCESS) {
@@ -40,7 +40,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 	}
 
 	if (fsType == FSType::IS_DIR) {
-		if (!FLAGS_recursive || fsContainsNoLint(path)) {
+		if ((!FLAGS_recursive && depth > 0) || fsContainsNoLint(path)) {
 			return;
 		}
 
@@ -53,7 +53,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 				if (FS_ISNOT_LINK(fsObj) && FS_ISNOT_GIT(fsObj)) {
 
 					string fileName = path + FS_SEP + fsObj;
-					checkEntry(errors, fileName.c_str(), fileCount);
+					checkEntry(errors, fileName.c_str(), fileCount, depth + 1);
 				}
 			}
 			closedir(pDIR);
