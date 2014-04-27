@@ -6,7 +6,7 @@ void funcTest() throw () {};
 
 namespace GRR {
 	
-	class Foo {
+	class Foo : protected Bar {
 	private:
 
 		void Bar() throw () {};

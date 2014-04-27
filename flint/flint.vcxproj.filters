@@ -36,9 +36,6 @@
     <ClCompile Include="tests\Memset.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
-    <ClCompile Include="tests\Define.cpp">
-      <Filter>Resource Files</Filter>
-    </ClCompile>
     <ClCompile Include="tests\Constructor.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
@@ -52,6 +49,12 @@
       <Filter>Resource Files</Filter>
     </ClCompile>
     <ClCompile Include="tests\Blacklist.cpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\Define.hpp">
+      <Filter>Resource Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tests\Throw.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -20,5 +20,8 @@ int main() {
 	char *ptr, delim = ' ';
 	strtok(ptr, &delim);
 
+	int *a = NULL;
+	int *b = nullptr;
+
 	return 0;
 };
