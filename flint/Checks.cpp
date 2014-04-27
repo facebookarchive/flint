@@ -1292,6 +1292,72 @@ namespace flint {
 	};
 
 	/**
+	* If header file contains include guard.
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkIncludeGuard(Errors &errors, const string &path, const vector<Token> &tokens) {
+		if (getFileCategory(path) != FileCategory::HEADER) {
+			return;
+		}
+
+		const vector<TokenType> pragmaOnce = {
+			TK_PRAGMA, TK_IDENTIFIER
+		};
+
+		// Allow #pragma once as an inclue guard
+		if (atSequence(tokens, 0, pragmaOnce) && cmpTok(tokens[1], "once")) {
+			return;
+		}
+
+		const vector<TokenType> includeGuard = {
+			TK_IFNDEF, TK_IDENTIFIER, TK_DEFINE, TK_IDENTIFIER
+		};
+
+		if (!atSequence(tokens, 0, includeGuard)) {
+			lintError(tokens[0], "Missing include guard.\n");
+			++errors.errors;
+			return;
+		}
+
+		if (!cmpToks(tokens[1], tokens[3])) {
+			lintError(tokens[1], "Include guard name mismatch; expected " 
+				+	tokens[1].value_ + ", saw " + tokens[3].value_ + ".\n");
+			++errors.errors;
+		}
+		
+		uint openIf = 1;
+
+		size_t pos;
+		for (pos = 1; pos < tokens.size(); ++pos) {
+
+			if (isTok(tokens[pos], TK_IFNDEF) || isTok(tokens[pos], TK_IFDEF) || isTok(tokens[pos], TK_POUNDIF)) {
+				++openIf;
+				continue;
+			}
+			if (isTok(tokens[pos], TK_ENDIF)) {
+				
+				--openIf;
+				if (openIf == 0) {
+					break;
+				}
+				continue;
+			}
+		}
+
+		if (openIf != 0 || pos < tokens.size() - 2) {
+			lintError(tokens.back(), "Include guard doesn't cover the entire file.\n");
+			++errors.errors;
+			return;
+		}
+	};
+
+	/**
 	* Warn about implicit casts
 	*
 	* Implicit casts not marked as explicit can be dangerous if not used carefully
@@ -1422,6 +1488,209 @@ namespace flint {
 				++errors.warnings;
 			}
 		});
+	};
+
+	/**
+	* Don't allow heap allocated exception, i.e. throw new Class()
+	*
+	* A simple check for two consecutive tokens "throw new"
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkThrowsHeapException(Errors &errors, const string &path, const vector<Token> &tokens) {
+		
+		const vector<TokenType> throwNew = {
+			TK_THROW, TK_NEW
+		};
+
+		const vector<TokenType> throwConstructor = {
+			TK_LPAREN, TK_IDENTIFIER, TK_RPAREN
+		};
+
+		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+			if (atSequence(tokens, pos, throwNew)) {
+				
+				string msg;
+				size_t focal = pos + 2;
+				if (isTok(tokens[focal], TK_IDENTIFIER)) {
+					msg = "Heap-allocated exception: throw new " 
+						+ tokens[focal].value_ + "();";
+				}
+				else if (atSequence(tokens, focal, throwConstructor)) {
+					// Alternate syntax throw new (Class)()
+					++focal;
+					msg = "Heap-allocated exception: throw new (" 
+						+ tokens[focal].value_ + ")();";
+				}
+				else {
+					// Some other usage of throw new Class().
+					msg = "Heap-allocated exception: throw new was used.";
+				}
+
+				lintError(tokens[focal], msg + " This is usually a mistake in c++. \n");
+				++errors.errors;
+			}
+		}
+		
+	};
+
+	/**
+	* Ensures that no files contain deprecated includes.
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkDeprecatedIncludes(Errors &errors, const string &path, const vector<Token> &tokens) {
+
+		// Set storing the deprecated includes. Add new headers here if you'd like
+		// to deprecate them
+		static const set<string> deprecatedIncludes = {
+			"common/base/Base.h",
+			"common/base/StringUtil.h",
+		};
+
+		for (size_t pos = 0; pos < tokens.size() - 1; ++pos) {
+			
+			if (!isTok(tokens[pos], TK_INCLUDE)) {
+				continue;
+			}
+
+			++pos;
+			if (!isTok(tokens[pos], TK_STRING_LITERAL) || cmpTok(tokens[pos], "PRECOMPILED")) {
+				continue;
+			}
+
+			string includedFile = getIncludedPath(tokens[pos].value_);
+			if (deprecatedIncludes.find(includedFile) != deprecatedIncludes.end()) {
+				lintWarning(tokens[pos-1], "Including deprecated header '" 
+					+ includedFile + "'\n");
+				++errors.warnings;
+			}
+		}
+
+	};
+
+	/**
+	* Makes sure inl headers are included correctly
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkInlHeaderInclusions(Errors &errors, const string &path, const vector<Token> &tokens) {
+
+		const vector<TokenType> includeSequence = {
+			TK_INCLUDE, TK_STRING_LITERAL
+		};
+
+		string file(path);
+		size_t fpos = file.find_last_of("/\\");
+		if (fpos != string::npos) {
+			file = file.substr(fpos + 1);
+		}
+		string fileBase = getFileNameBase(file);
+
+		for (size_t pos = 0; pos < tokens.size() - 1; ++pos) {
+
+			if (!atSequence(tokens, pos, includeSequence)) {
+				continue;
+			}
+			++pos;
+
+			string includedFile = getIncludedPath(tokens[pos].value_);
+			
+			if (getFileCategory(includedFile) != FileCategory::INL_HEADER) {
+				continue;
+			}
+
+			file = includedFile;
+			fpos = includedFile.find_last_of("/\\");
+			if (fpos != string::npos) {
+				file = includedFile.substr(fpos + 1);
+			}
+			string includedBase = getFileNameBase(file);
+
+			if (cmpStr(fileBase, includedBase)) {
+				continue;
+			}
+
+			lintError(tokens[pos], "A -inl file (" + includedFile
+				+ ") was included even though this is not its associated header. "
+				"Usually files like Foo-inl.h are implementation details and should "
+				"not be included outside of Foo.h.\n");
+			++errors.errors;
+		}
+
+	};
+
+	/**
+	* Classes should not have protected inheritance.
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkProtectedInheritance(Errors &errors, const string &path, const vector<Token> &tokens) {
+
+		iterateClasses(errors, tokens, [&](Errors &errors, const vector<Token> &tokens, size_t pos) -> void {
+			
+			const vector<TokenType> protectedSequence = {
+				TK_COLON, TK_PROTECTED, TK_IDENTIFIER
+			};
+
+			for (; pos < tokens.size() - 2; ++pos) {
+				
+				if (isTok(tokens[pos], TK_LCURL) || isTok(tokens[pos], TK_SEMICOLON)) {
+					break;
+				}
+
+				if (atSequence(tokens, pos, protectedSequence)) {
+					lintWarning(tokens[pos], "Protected inheritance is sometimes not a good idea. Read "
+						"http://stackoverflow.com/questions/6484306/effective-c-discouraging-protected-inheritance "
+						"for more information.\n");
+					++errors.warnings;
+				}
+			}
+		});
+	};
+
+	/**
+	* Advise nullptr over NULL in C++ files
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkUpcaseNull(Errors &errors, const string &path, const vector<Token> &tokens) {
+
+		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+
+			if (isTok(tokens[pos], TK_IDENTIFIER) && cmpTok(tokens[pos], "NULL")) {
+				lintAdvice(tokens[pos],	"Prefer `nullptr' to `NULL' in new C++ code.  Unlike `NULL', "
+					"`nullptr' can't accidentally be used in arithmetic or as an integer. See "
+					"http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2431.pdf"
+					" for details.\n");
+				++errors.advice;
+			}
+		}
 	};
 
 // Shorthand for comparing two strings

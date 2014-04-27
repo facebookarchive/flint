@@ -92,11 +92,14 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 		checkIfEndifBalance(errors, path, tokens);
 		checkMemset(errors, path, tokens);
 		checkIncludeAssociatedHeader(errors, path, tokens);
-
+		checkIncludeGuard(errors, path, tokens);
+		checkInlHeaderInclusions(errors, path, tokens);
+		
 		if (!FLAGS_cmode) {
 			checkConstructors(errors, path, tokens);
 			checkCatchByReference(errors, path, tokens);
 			checkThrowSpecification(errors, path, tokens);
+			checkThrowsHeapException(errors, path, tokens);
 		}
 
 		// Checks which note Warnings
@@ -104,9 +107,11 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 
 			checkBlacklistedSequences(errors, path, tokens);
 			checkDefinedNames(errors, path, tokens);
+			checkDeprecatedIncludes(errors, path, tokens);
 
 			if (!FLAGS_cmode) {
 				checkImplicitCast(errors, path, tokens);
+				checkProtectedInheritance(errors, path, tokens);
 			}
 		}
 
@@ -116,7 +121,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount) {
 			checkIterators(errors, path, tokens);
 
 			if (!FLAGS_cmode) {
-
+				checkUpcaseNull(errors, path, tokens);
 			}
 		}
 
