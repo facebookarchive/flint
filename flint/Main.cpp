@@ -5,6 +5,7 @@
 #include <vector>
 #include <dirent.h>
 
+#include "Options.hpp"
 #include "Polyfill.hpp"
 #include "FileCategories.hpp"
 #include "Ignored.hpp"
@@ -13,11 +14,6 @@
 
 using namespace std;
 using namespace flint;
-
-// TODO: Find GFlags alternative
-bool FLAGS_recursive = true;
-bool FLAGS_cmode     = false;
-bool FLAGS_verbose   = false;
 
 enum class Lint {
 	ERROR, WARNING, ADVICE
@@ -40,7 +36,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 	}
 
 	if (fsType == FSType::IS_DIR) {
-		if ((!FLAGS_recursive && depth > 0) || fsContainsNoLint(path)) {
+		if ((!Options.RECURSIVE && depth > 0) || fsContainsNoLint(path)) {
 			return;
 		}
 
@@ -65,10 +61,6 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 	FileCategory srcType = getFileCategory(path);
 	if (srcType == FileCategory::UNKNOWN) {
 		return;
-	}
-
-	if (FLAGS_verbose) {
-		cout << endl << "Linting File: " << path << endl;
 	}
 	
 	string file;
@@ -95,7 +87,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 		checkIncludeGuard(errors, path, tokens);
 		checkInlHeaderInclusions(errors, path, tokens);
 		
-		if (!FLAGS_cmode) {
+		if (!Options.CMODE) {
 			checkConstructors(errors, path, tokens);
 			checkCatchByReference(errors, path, tokens);
 			checkThrowSpecification(errors, path, tokens);
@@ -109,7 +101,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 			checkDefinedNames(errors, path, tokens);
 			checkDeprecatedIncludes(errors, path, tokens);
 
-			if (!FLAGS_cmode) {
+			if (!Options.CMODE) {
 				checkImplicitCast(errors, path, tokens);
 				checkProtectedInheritance(errors, path, tokens);
 			}
@@ -120,7 +112,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 
 			checkIterators(errors, path, tokens);
 
-			if (!FLAGS_cmode) {
+			if (!Options.CMODE) {
 				checkUpcaseNull(errors, path, tokens);
 			}
 		}
@@ -135,6 +127,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
  */
 int main(int argc, char *argv[]) {
 	// Parse commandline flags
+	parseArgs(argc, argv);
 
 	// Check each file
 	Errors errors;
@@ -148,8 +141,10 @@ int main(int argc, char *argv[]) {
 		<< " W: " << errors.warnings 
 		<< " A: " << errors.advice << "]" << endl;
 
+#ifdef _DEBUG 
 	// Stop visual studio from closing the window...
 	system("PAUSE");
+#endif
 	return 0;
 };
 

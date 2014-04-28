@@ -2,9 +2,9 @@
 
 #include <map>
 #include <set>
-#include <stack>
 #include <cassert>
 
+#include "Options.hpp"
 #include "FileCategories.hpp"
 
 namespace flint {
@@ -34,7 +34,7 @@ namespace flint {
 		*/
 
 		void lintError(const Token &tok, const string &error) {
-			fprintf(stderr, "%s(%u): %s", tok.file_.c_str(), tok.line_, error.c_str());
+			fprintf(stderr, "%s (Line %u): \n\n%s\n", tok.file_.c_str(), tok.line_, error.c_str());
 		};
 
 		void lintWarning(const Token &tok, const string &warning) {
@@ -559,7 +559,7 @@ namespace flint {
 
 		static const vector<BlacklistEntry> blacklist = {
 			{ { TK_VOLATILE },
-			"'volatile' does not make your code thread-safe. If multiple threads are "
+			"'volatile' does not make your code thread-safe. \n\nIf multiple threads are "
 			"sharing data, use std::atomic or locks. In addition, 'volatile' may "
 			"force the compiler to generate worse code than it could otherwise. "
 			"For more about why 'volatile' doesn't do what you think it does, see "
@@ -948,7 +948,7 @@ namespace flint {
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 
 			if (atSequence(tokens, pos, iteratorPlus) || atSequence(tokens, pos, iteratorMinus)) {
-				lintAdvice(tokens[pos], "Postfix iterators inject a copy operation, almost doubling the workload. "
+				lintAdvice(tokens[pos], "Postfix iterators inject a copy operation, almost doubling the workload. \n\n"
 					"Instead, consider using prefix notation '" + tokens[pos+1].value_ + tokens[pos].value_ + "'.\n");
 				++errors.advice;
 			}
@@ -1117,7 +1117,7 @@ namespace flint {
 							if (nextType == TK_AMPERSAND && !isConstArgument) {
 								
 								lintError(tok, "Copy constructors should take a const argument: " 
-									+	formatFunction(tokens, func, args) + "\n");
+									+ formatFunction(tokens, func, args) + "\n");
 								++errors.errors;
 							}
 							else if (nextType == TK_LOGICAL_AND && isConstArgument) {
@@ -1156,7 +1156,7 @@ namespace flint {
 					if (foundConversionCtor) {
 						lintError(tok, "Single - argument constructor '"
 							+ formatFunction(tokens, func, args) 
-							+ "' may inadvertently be used as a type conversion constructor. Prefix"
+							+ "' may inadvertently be used as a type conversion constructor. \n\nPrefix"
 							" the function with the 'explicit' keyword to avoid this, or add an /"
 							"* implicit *""/ comment to suppress this warning.\n");
 						++errors.errors; 
@@ -1282,8 +1282,8 @@ namespace flint {
 				if (includesFound > 1) {
 
 					lintError(tokens[pos - 1], "The associated header file of .cpp "
-						"files should be included before any other includes.\n(This "
-						"helps catch missing header file dependencies in the .h)\n");
+						"files should be included before any other includes.\n\nThis "
+						"helps catch missing header file dependencies in the .h\n");
 					++errors.errors;
 					break;
 				}
@@ -1442,7 +1442,7 @@ namespace flint {
 						continue;
 					}
 
-					lintError(tok, "operator bool() is dangerous. "
+					lintError(tok, "operator bool() is dangerous. \n\n"
 						"In C++11 use explicit conversion (explicit operator bool()), "
 						"otherwise use something like the safe-bool idiom if the syntactic "
 						"convenience is justified in this case, or consider defining a "
@@ -1482,7 +1482,7 @@ namespace flint {
 				}
 
 				lintWarning(tok, "Implicit conversion to '" + typeString 
-					+ "' may inadvertently be used. Prefix the function with the 'explicit'"
+					+ "' may inadvertently be used. \n\nPrefix the function with the 'explicit'"
 					" keyword to avoid this, or add an /* implicit *""/ comment to"
 					" suppress this warning.\n");
 				++errors.warnings;
@@ -1626,8 +1626,8 @@ namespace flint {
 				continue;
 			}
 
-			lintError(tokens[pos], "A -inl file (" + includedFile
-				+ ") was included even though this is not its associated header. "
+			lintError(tokens[pos], "An -inl file (" + includedFile
+				+ ") was included even though this is not its associated header. \n\n"
 				"Usually files like Foo-inl.h are implementation details and should "
 				"not be included outside of Foo.h.\n");
 			++errors.errors;
@@ -1660,7 +1660,7 @@ namespace flint {
 				}
 
 				if (atSequence(tokens, pos, protectedSequence)) {
-					lintWarning(tokens[pos], "Protected inheritance is sometimes not a good idea. Read "
+					lintWarning(tokens[pos], "Protected inheritance is sometimes not a good idea. \n\nRead "
 						"http://stackoverflow.com/questions/6484306/effective-c-discouraging-protected-inheritance "
 						"for more information.\n");
 					++errors.warnings;
@@ -1684,7 +1684,7 @@ namespace flint {
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 
 			if (isTok(tokens[pos], TK_IDENTIFIER) && cmpTok(tokens[pos], "NULL")) {
-				lintAdvice(tokens[pos],	"Prefer `nullptr' to `NULL' in new C++ code.  Unlike `NULL', "
+				lintAdvice(tokens[pos],	"Prefer `nullptr' to `NULL' in new C++ code. \n\nUnlike `NULL', "
 					"`nullptr' can't accidentally be used in arithmetic or as an integer. See "
 					"http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2431.pdf"
 					" for details.\n");
