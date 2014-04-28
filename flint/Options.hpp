@@ -64,7 +64,7 @@ namespace flint {
 			{ "-v",				Options.VERBOSE },
 			{ "--verbose",		Options.VERBOSE },
 
-			{ "-h",				HELP },
+			{ "-h",				HELP }, 
 			{ "--help",			HELP }
 		};
 
