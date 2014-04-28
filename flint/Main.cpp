@@ -10,6 +10,7 @@
 #include "Ignored.hpp"
 #include "Tokenizer.hpp"
 #include "Checks.hpp"
+#include "CSON.hpp"
 
 using namespace std;
 using namespace flint;
@@ -140,7 +141,7 @@ int main(int argc, char *argv[]) {
 	Errors errors;
 	uint fileCount = 0;
 	for (int i = 1; i < argc; ++i) {
-		checkEntry(errors, string(argv[i]), fileCount);
+		//checkEntry(errors, string(argv[i]), fileCount);
 	}
 
 	// Print summary
