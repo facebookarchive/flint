@@ -16,7 +16,6 @@ namespace flint {
 		bool RECURSIVE;
 		bool CMODE;
 		bool JSON;
-		bool VERBOSE;
 
 		int  LEVEL;
 	} Options;
@@ -33,7 +32,6 @@ namespace flint {
 			   "			      0 : Errors only\n"
 			   "			      1 : Errors & Warnings\n"
 			   "			      2 : All feedback\n\n"
-			   "\t-v, --verbose		: Give detailed feedback.\n\n"
 			   "\t-h, --help		: Print usage.\n\n");
 #ifdef _DEBUG 
 		// Stop visual studio from closing the window...
@@ -59,7 +57,6 @@ namespace flint {
 		Options.RECURSIVE	= false;
 		Options.CMODE		= false;
 		Options.JSON		= false;
-		Options.VERBOSE		= false;
 		Options.LEVEL		= Lint::ADVICE;
 		bool HELP			= false;
 
@@ -77,7 +74,6 @@ namespace flint {
 		Arg argCMode		= { ArgType::BOOL, &Options.CMODE };
 		Arg argJSON			= { ArgType::BOOL, &Options.JSON };
 		Arg argLevel		= { ArgType::INT,  &Options.LEVEL };
-		Arg argVerbose		= { ArgType::BOOL, &Options.VERBOSE };
 
 		static const map<string, Arg &> params = {
 			{ "-h", argHelp },
@@ -93,10 +89,7 @@ namespace flint {
 			{ "--json", argJSON },
 
 			{ "-l", argLevel },
-			{ "--level", argLevel },
-
-			{ "-v", argVerbose },
-			{ "--verbose", argVerbose }
+			{ "--level", argLevel }
 		};
 
 		// Loop over the given argument list

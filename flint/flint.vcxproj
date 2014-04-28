@@ -52,6 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Checks.hpp" />
+    <ClInclude Include="ErrorReport.hpp" />
     <ClInclude Include="FileCategories.hpp" />
     <ClInclude Include="Ignored.hpp" />
     <ClInclude Include="Options.hpp" />

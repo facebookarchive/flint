@@ -6,6 +6,7 @@
 #include <dirent.h>
 
 #include "Options.hpp"
+#include "ErrorReport.hpp"
 #include "Polyfill.hpp"
 #include "FileCategories.hpp"
 #include "Ignored.hpp"
@@ -18,12 +19,16 @@ using namespace flint;
 /**
 * Run lint on the given path
 *
+* @param errors
+*		An object to hold the error details
 * @param path
 *		The path to lint
+* @param depth
+*		Tracks the recursion depth
 * @return
 *		Returns the number of errors found
 */
-void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth = 0) {
+void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
 	
 	FSType fsType = fsObjectExists(path);
 	if (fsType == FSType::NO_ACCESS) {
@@ -44,7 +49,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 				if (FS_ISNOT_LINK(fsObj) && FS_ISNOT_GIT(fsObj)) {
 
 					string fileName = path + FS_SEP + fsObj;
-					checkEntry(errors, fileName.c_str(), fileCount, depth + 1);
+					checkEntry(errors, fileName.c_str(), depth + 1);
 				}
 			}
 			closedir(pDIR);
@@ -66,51 +71,53 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 	// Remove code that occurs in pairs of
 	// "// %flint: pause" & "// %flint: resume"
 	file = removeIgnoredCode(file, path);
-
-	vector<Token> tokens;
 	
 	try {
-		++fileCount;
+		ErrorFile errorFile(path);
+
+		vector<Token> tokens;
 		tokenize(file, path, tokens);
 		
 		// Checks which note Errors
-		checkBlacklistedIdentifiers(errors, path, tokens);
-		checkInitializeFromItself(errors, path, tokens);
-		checkIfEndifBalance(errors, path, tokens);
-		checkMemset(errors, path, tokens);
-		checkIncludeAssociatedHeader(errors, path, tokens);
-		checkIncludeGuard(errors, path, tokens);
-		checkInlHeaderInclusions(errors, path, tokens);
+		checkBlacklistedIdentifiers(errorFile, path, tokens);
+		checkInitializeFromItself(errorFile, path, tokens);
+		checkIfEndifBalance(errorFile, path, tokens);
+		checkMemset(errorFile, path, tokens);
+		checkIncludeAssociatedHeader(errorFile, path, tokens);
+		checkIncludeGuard(errorFile, path, tokens);
+		checkInlHeaderInclusions(errorFile, path, tokens);
 		
 		if (!Options.CMODE) {
-			checkConstructors(errors, path, tokens);
-			checkCatchByReference(errors, path, tokens);
-			checkThrowsHeapException(errors, path, tokens);
+			checkConstructors(errorFile, path, tokens);
+			checkCatchByReference(errorFile, path, tokens);
+			checkThrowsHeapException(errorFile, path, tokens);
 		}
 
 		// Checks which note Warnings
 		if (Options.LEVEL >= Lint::WARNING) {
 
-			checkBlacklistedSequences(errors, path, tokens);
-			checkDefinedNames(errors, path, tokens);
-			checkDeprecatedIncludes(errors, path, tokens);
+			checkBlacklistedSequences(errorFile, path, tokens);
+			checkDefinedNames(errorFile, path, tokens);
+			checkDeprecatedIncludes(errorFile, path, tokens);
 
 			if (!Options.CMODE) {
-				checkImplicitCast(errors, path, tokens);
-				checkProtectedInheritance(errors, path, tokens);
-				checkThrowSpecification(errors, path, tokens);
+				checkImplicitCast(errorFile, path, tokens);
+				checkProtectedInheritance(errorFile, path, tokens);
+				checkThrowSpecification(errorFile, path, tokens);
 			}
 		}
 
 		// Checks which note Advice
 		if (Options.LEVEL >= Lint::ADVICE) {
 
-			checkIterators(errors, path, tokens);
+			checkIterators(errorFile, path, tokens);
 
 			if (!Options.CMODE) {
-				checkUpcaseNull(errors, path, tokens);
+				checkUpcaseNull(errorFile, path, tokens);
 			}
 		}
+
+		errors.addFile(errorFile);
 
 	} catch (exception const &e) {
 		fprintf(stderr, "Exception thrown during checks on %s.\n%s", path.c_str(), e.what());
@@ -126,16 +133,13 @@ int main(int argc, char *argv[]) {
 	parseArgs(argc, argv, paths);
 
 	// Check each file
-	Errors errors;
-	uint fileCount = 0;
+	ErrorReport errors;
 	for (int i = 0; i < paths.size(); ++i) {
-		checkEntry(errors, paths[i], fileCount);
+		checkEntry(errors, paths[i]);
 	}
 
 	// Print summary
-	cout << endl << fileCount << " files linted [E: " << errors.errors 
-		<< " W: " << errors.warnings 
-		<< " A: " << errors.advice << "]" << endl;
+	cout << errors.toString() << endl;
 
 #ifdef _DEBUG 
 	// Stop visual studio from closing the window...

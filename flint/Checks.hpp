@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include "ErrorReport.hpp"
 #include "Polyfill.hpp"
 #include "Tokenizer.hpp"
 
@@ -9,16 +10,8 @@ using namespace std;
 
 namespace flint {
 
-	struct Errors {
-		uint errors;
-		uint warnings;
-		uint advice;
-
-		Errors() : errors(0), warnings(0), advice(0) {};
-	};
-
 #define X(func)																\
-	void check##func(Errors &errors, const string &path, const vector<Token> &tokens)
+	void check##func(ErrorFile &errors, const string &path, const vector<Token> &tokens)
 
 	X(Iterators);
 	X(DefinedNames);
