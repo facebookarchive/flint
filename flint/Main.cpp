@@ -15,11 +15,6 @@
 using namespace std;
 using namespace flint;
 
-enum class Lint {
-	ERROR, WARNING, ADVICE
-};
-Lint FLAGS_level     = Lint::ADVICE;
-
 /**
 * Run lint on the given path
 *
@@ -90,12 +85,11 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 		if (!Options.CMODE) {
 			checkConstructors(errors, path, tokens);
 			checkCatchByReference(errors, path, tokens);
-			checkThrowSpecification(errors, path, tokens);
 			checkThrowsHeapException(errors, path, tokens);
 		}
 
 		// Checks which note Warnings
-		if (FLAGS_level >= Lint::WARNING) {
+		if (Options.LEVEL >= Lint::WARNING) {
 
 			checkBlacklistedSequences(errors, path, tokens);
 			checkDefinedNames(errors, path, tokens);
@@ -104,11 +98,12 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 			if (!Options.CMODE) {
 				checkImplicitCast(errors, path, tokens);
 				checkProtectedInheritance(errors, path, tokens);
+				checkThrowSpecification(errors, path, tokens);
 			}
 		}
 
 		// Checks which note Advice
-		if (FLAGS_level >= Lint::ADVICE) {
+		if (Options.LEVEL >= Lint::ADVICE) {
 
 			checkIterators(errors, path, tokens);
 
@@ -127,13 +122,14 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
  */
 int main(int argc, char *argv[]) {
 	// Parse commandline flags
-	parseArgs(argc, argv);
+	vector<string> paths;
+	parseArgs(argc, argv, paths);
 
 	// Check each file
 	Errors errors;
 	uint fileCount = 0;
-	for (int i = 1; i < argc; ++i) {
-		checkEntry(errors, string(argv[i]), fileCount);
+	for (int i = 0; i < paths.size(); ++i) {
+		checkEntry(errors, paths[i], fileCount);
 	}
 
 	// Print summary
