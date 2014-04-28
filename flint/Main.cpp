@@ -12,7 +12,6 @@
 #include "Ignored.hpp"
 #include "Tokenizer.hpp"
 #include "Checks.hpp"
-#include "CSON.hpp"
 
 using namespace std;
 using namespace flint;

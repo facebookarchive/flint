@@ -81,7 +81,7 @@ namespace flint {
 
 	public:
 
-		ErrorFile(const string &path) : m_path(path) {};
+		explicit ErrorFile(const string &path) : m_path(path) {};
 
 		void addError(ErrorObject error) {
 			if (error.getType() == Lint::ERROR) {

@@ -1057,6 +1057,11 @@ namespace flint {
 				if (isTok(tok, TK_RCURL)) {
 					break;
 				}
+
+				if (isTok(tok, TK_EXPLICIT)) {
+					pos = skipFunctionDeclaration(tokens, pos);
+					break;
+				}
 								
 				// Are we on a potential constructor?
 				if (atSequence(tokens, pos, constructorSequence) && cmpTok(tok, objName)) {
