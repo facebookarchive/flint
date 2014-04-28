@@ -23,5 +23,7 @@ int main() {
 	int *a = NULL;
 	int *b = nullptr;
 
+	i++;
+
 	return 0;
 };
