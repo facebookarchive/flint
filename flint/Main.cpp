@@ -5,6 +5,8 @@
 #include <vector>
 #include <dirent.h>
 
+#include "Options.hpp"
+#include "ErrorReport.hpp"
 #include "Polyfill.hpp"
 #include "FileCategories.hpp"
 #include "Ignored.hpp"
@@ -15,25 +17,19 @@
 using namespace std;
 using namespace flint;
 
-// TODO: Find GFlags alternative
-bool FLAGS_recursive = true;
-bool FLAGS_cmode     = false;
-bool FLAGS_verbose   = false;
-
-enum class Lint {
-	ERROR, WARNING, ADVICE
-};
-Lint FLAGS_level     = Lint::ADVICE;
-
 /**
 * Run lint on the given path
 *
+* @param errors
+*		An object to hold the error details
 * @param path
 *		The path to lint
+* @param depth
+*		Tracks the recursion depth
 * @return
 *		Returns the number of errors found
 */
-void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth = 0) {
+void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
 	
 	FSType fsType = fsObjectExists(path);
 	if (fsType == FSType::NO_ACCESS) {
@@ -41,7 +37,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 	}
 
 	if (fsType == FSType::IS_DIR) {
-		if ((!FLAGS_recursive && depth > 0) || fsContainsNoLint(path)) {
+		if ((!Options.RECURSIVE && depth > 0) || fsContainsNoLint(path)) {
 			return;
 		}
 
@@ -54,7 +50,7 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 				if (FS_ISNOT_LINK(fsObj) && FS_ISNOT_GIT(fsObj)) {
 
 					string fileName = path + FS_SEP + fsObj;
-					checkEntry(errors, fileName.c_str(), fileCount, depth + 1);
+					checkEntry(errors, fileName.c_str(), depth + 1);
 				}
 			}
 			closedir(pDIR);
@@ -67,10 +63,6 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 	if (srcType == FileCategory::UNKNOWN) {
 		return;
 	}
-
-	if (FLAGS_verbose) {
-		cout << endl << "Linting File: " << path << endl;
-	}
 	
 	string file;
 	if (!getFileContents(path, file)) {
@@ -80,51 +72,53 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
 	// Remove code that occurs in pairs of
 	// "// %flint: pause" & "// %flint: resume"
 	file = removeIgnoredCode(file, path);
-
-	vector<Token> tokens;
 	
 	try {
-		++fileCount;
+		ErrorFile errorFile(path);
+
+		vector<Token> tokens;
 		tokenize(file, path, tokens);
 		
 		// Checks which note Errors
-		checkBlacklistedIdentifiers(errors, path, tokens);
-		checkInitializeFromItself(errors, path, tokens);
-		checkIfEndifBalance(errors, path, tokens);
-		checkMemset(errors, path, tokens);
-		checkIncludeAssociatedHeader(errors, path, tokens);
-		checkIncludeGuard(errors, path, tokens);
-		checkInlHeaderInclusions(errors, path, tokens);
+		checkBlacklistedIdentifiers(errorFile, path, tokens);
+		checkInitializeFromItself(errorFile, path, tokens);
+		checkIfEndifBalance(errorFile, path, tokens);
+		checkMemset(errorFile, path, tokens);
+		checkIncludeAssociatedHeader(errorFile, path, tokens);
+		checkIncludeGuard(errorFile, path, tokens);
+		checkInlHeaderInclusions(errorFile, path, tokens);
 		
-		if (!FLAGS_cmode) {
-			checkConstructors(errors, path, tokens);
-			checkCatchByReference(errors, path, tokens);
-			checkThrowSpecification(errors, path, tokens);
-			checkThrowsHeapException(errors, path, tokens);
+		if (!Options.CMODE) {
+			checkConstructors(errorFile, path, tokens);
+			checkCatchByReference(errorFile, path, tokens);
+			checkThrowsHeapException(errorFile, path, tokens);
 		}
 
 		// Checks which note Warnings
-		if (FLAGS_level >= Lint::WARNING) {
+		if (Options.LEVEL >= Lint::WARNING) {
 
-			checkBlacklistedSequences(errors, path, tokens);
-			checkDefinedNames(errors, path, tokens);
-			checkDeprecatedIncludes(errors, path, tokens);
+			checkBlacklistedSequences(errorFile, path, tokens);
+			checkDefinedNames(errorFile, path, tokens);
+			checkDeprecatedIncludes(errorFile, path, tokens);
 
-			if (!FLAGS_cmode) {
-				checkImplicitCast(errors, path, tokens);
-				checkProtectedInheritance(errors, path, tokens);
+			if (!Options.CMODE) {
+				checkImplicitCast(errorFile, path, tokens);
+				checkProtectedInheritance(errorFile, path, tokens);
+				checkThrowSpecification(errorFile, path, tokens);
 			}
 		}
 
 		// Checks which note Advice
-		if (FLAGS_level >= Lint::ADVICE) {
+		if (Options.LEVEL >= Lint::ADVICE) {
 
-			checkIterators(errors, path, tokens);
+			checkIterators(errorFile, path, tokens);
 
-			if (!FLAGS_cmode) {
-				checkUpcaseNull(errors, path, tokens);
+			if (!Options.CMODE) {
+				checkUpcaseNull(errorFile, path, tokens);
 			}
 		}
+
+		errors.addFile(errorFile);
 
 	} catch (exception const &e) {
 		fprintf(stderr, "Exception thrown during checks on %s.\n%s", path.c_str(), e.what());
@@ -136,21 +130,22 @@ void checkEntry(Errors &errors, const string &path, uint &fileCount, uint depth 
  */
 int main(int argc, char *argv[]) {
 	// Parse commandline flags
+	vector<string> paths;
+	parseArgs(argc, argv, paths);
 
 	// Check each file
-	Errors errors;
-	uint fileCount = 0;
-	for (int i = 1; i < argc; ++i) {
-		//checkEntry(errors, string(argv[i]), fileCount);
+	ErrorReport errors;
+	for (int i = 0; i < paths.size(); ++i) {
+		checkEntry(errors, paths[i]);
 	}
 
 	// Print summary
-	cout << endl << fileCount << " files linted [E: " << errors.errors 
-		<< " W: " << errors.warnings 
-		<< " A: " << errors.advice << "]" << endl;
+	cout << errors.toString() << endl;
 
+#ifdef _DEBUG 
 	// Stop visual studio from closing the window...
 	system("PAUSE");
+#endif
 	return 0;
 };
 

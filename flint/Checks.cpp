@@ -2,9 +2,11 @@
 
 #include <map>
 #include <set>
-#include <stack>
 #include <cassert>
 
+#include "Options.hpp"
+#include "Polyfill.hpp"
+#include "ErrorReport.hpp"
 #include "FileCategories.hpp"
 
 namespace flint {
@@ -33,16 +35,14 @@ namespace flint {
 		*
 		*/
 
-		void lintError(const Token &tok, const string &error) {
-			fprintf(stderr, "%s(%u): %s", tok.file_.c_str(), tok.line_, error.c_str());
+		void lintError(ErrorFile &errors, const Token &tok, const string title, const string desc = "") {
+			errors.addError(ErrorObject(Lint::ERROR, tok.line_, title, desc));
 		};
-
-		void lintWarning(const Token &tok, const string &warning) {
-			lintError(tok, "Warning: " + warning);
+		void lintWarning(ErrorFile &errors, const Token &tok, const string title, const string desc = "") {
+			errors.addError(ErrorObject(Lint::WARNING, tok.line_, title, desc));
 		};
-
-		void lintAdvice(const Token &tok, const string &advice) {
-			lintError(tok, "Advice: " + advice);
+		void lintAdvice(ErrorFile &errors, const Token &tok, const string title, const string desc = "") {
+			errors.addError(ErrorObject(Lint::ADVICE, tok.line_, title, desc));
 		};
 
 		/**
@@ -276,7 +276,7 @@ namespace flint {
 		*		The function to run on each code object
 		*/
 		template<class Callback>
-		void iterateClasses(Errors &errors, const vector<Token> &tokens, const Callback &callback) {
+		void iterateClasses(ErrorFile &errors, const vector<Token> &tokens, const Callback &callback) {
 
 			for (size_t pos = 0; pos < tokens.size() - 1; ++pos) {
 				// Skip template sequence if we find ... template< ...
@@ -509,7 +509,7 @@ namespace flint {
 	* @return
 	*		Returns the number of errors this check found in the token stream
 	*/
-	void checkInitializeFromItself(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkInitializeFromItself(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 		
 		// Token Sequences for parameter initializers
 		const vector<TokenType> firstInitializer = {
@@ -529,9 +529,9 @@ namespace flint {
 								startsWith(tokens[outerPos].value_, "m_");
 
 				if (isMember && cmpToks(tokens[outerPos], tokens[innerPos])) {
-					lintError(tokens[outerPos], "Looks like you're initializing class member [" 
-						+ tokens[outerPos].value_ + "] with itself.\n");
-					++errors.errors;
+					lintError(errors, tokens[outerPos], 
+						"Looks like you're initializing class member [" 
+						+ tokens[outerPos].value_ + "] with itself.");
 				}
 			}
 		}
@@ -547,24 +547,25 @@ namespace flint {
 	* @return
 	*		Returns the number of errors this check found in the token stream
 	*/
-	void checkBlacklistedSequences(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkBlacklistedSequences(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		struct BlacklistEntry {
 			vector<TokenType> tokens;
-			string descr;
+			string title, descr;
 			bool cpponly;
-			BlacklistEntry(const vector<TokenType> &t, const string &d, bool cpponly)
-				: tokens(t), descr(d), cpponly(cpponly) {};
+			BlacklistEntry(const vector<TokenType> &t, const string &h, const string &d, bool cpponly)
+				: tokens(t), title(h), descr(d), cpponly(cpponly) {};
 		};
 
 		static const vector<BlacklistEntry> blacklist = {
 			{ { TK_VOLATILE },
-			"'volatile' does not make your code thread-safe. If multiple threads are "
+			"'volatile' does not make your code thread-safe.", 
+			"If multiple threads are "
 			"sharing data, use std::atomic or locks. In addition, 'volatile' may "
 			"force the compiler to generate worse code than it could otherwise. "
 			"For more about why 'volatile' doesn't do what you think it does, see "
 			"http://fburl.com/volatile or http://www.kernel.org/doc/Documentation/"
-			"volatile-considered-harmful.txt.\n",
+			"volatile-considered-harmful.txt.",
 			true, // C++ only.
 			}
 		};
@@ -593,12 +594,11 @@ namespace flint {
 					isException = false;
 					continue;
 				}
-				/*if (FLAGS_cmode && entry.cpponly) {
+				if (Options.CMODE && entry.cpponly) {
 					continue;
-				}*/
+				}
 
-				lintWarning(tokens[pos], entry.descr);
-				++errors.warnings;
+				lintWarning(errors, tokens[pos], entry.title, entry.descr);
 			}
 		}
 	};
@@ -613,12 +613,12 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkBlacklistedIdentifiers(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkBlacklistedIdentifiers(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 
 		static const map<string, string> blacklist = {
 			{ "strtok",
-			"strtok() is not thread safe, and has safer alternatives. Consider strtok_r.\n" 
+			"strtok() is not thread safe, and has safer alternatives. Consider strtok_r." 
 			}
 		};
 
@@ -627,8 +627,7 @@ namespace flint {
 			if (isTok(tokens[pos], TK_IDENTIFIER)) {
 				for (const auto &entry : blacklist) {
 					if (cmpTok(tokens[pos], entry.first)) {
-						lintError(tokens[pos], entry.second);
-						++errors.errors;
+						lintError(errors, tokens[pos], entry.second);
 						continue;
 					}
 				}
@@ -650,7 +649,7 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkDefinedNames(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkDefinedNames(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		// Exceptions to the check
 		static const set<string> okNames = {
@@ -671,8 +670,7 @@ namespace flint {
 			if (!isTok(tok, TK_IDENTIFIER)) {
 				// This actually happens because people #define private public
 				//   for unittest reasons
-				lintWarning(tok, "You're not supposed to #define " + sym + "\n");
-				++errors.warnings;
+				lintWarning(errors, tok, "You're not supposed to #define " + sym);
 				continue;
 			}
 
@@ -680,25 +678,22 @@ namespace flint {
 				if (okNames.find(sym) != okNames.end()) {
 					continue;
 				}
-				lintWarning(tok, "Symbol " + sym 
-					+ " invalid. A symbol may not start with an underscore followed by a capital letter.\n");
-				++errors.warnings;
+				lintWarning(errors, tok, "Symbol " + sym + " invalid.", 
+					"A symbol may not start with an underscore followed by a capital letter.");
 			}
 			else if (sym.size() >= 2 && sym[0] == '_' && sym[1] == '_') {
 				if (okNames.find(sym) != okNames.end()) {
 					continue;
 				}
-				lintWarning(tok, "Symbol " + sym 
-					+ " invalid. A symbol may not begin with two adjacent underscores.\n");
-				++errors.warnings;
+				lintWarning(errors, tok, "Symbol " + sym + " invalid.", 
+					"A symbol may not begin with two adjacent underscores.");
 			}
 			else if (sym.find("__") != string::npos) { // !FLAGS_c_mode /* C is less restrictive about this */ && 
 				if (okNames.find(sym) != okNames.end()) {
 					continue;
 				}
-				lintWarning(tok, "Symbol " + sym 
-					+ " invalid. A symbol may not contain two adjacent underscores.\n");
-				++errors.warnings;
+				lintWarning(errors, tok, "Symbol " + sym + " invalid. ",
+					"A symbol may not contain two adjacent underscores.");
 			}
 		}
 	};
@@ -723,7 +718,7 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkCatchByReference(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkCatchByReference(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 			if (!isTok(tokens[pos], TK_CATCH)) {
@@ -760,9 +755,8 @@ namespace flint {
 			if (!isTok(tokens[focal], TK_IDENTIFIER)) {
 				
 				const Token &tok = tokens[focal];
-				lintWarning(tok, "Symbol " + tok.value_ 
-					+ " invalid in catch clause.  You may only catch user-defined types.\n");
-				++errors.warnings;
+				lintWarning(errors, tok, "Symbol " + tok.value_ + " invalid in catch clause.", 
+					"You may only catch user-defined types.");
 				continue;
 			}
 			++focal;
@@ -805,9 +799,8 @@ namespace flint {
 				if (j > 2) theType += " ";
 				theType += tokens[j].value_;
 			}
-			lintError(tok, "Symbol " + tok.value_ + " of type " + theType 
-				+ " caught by value.  Use catch by (preferably const) reference throughout.\n");
-			++errors.errors;
+			lintError(errors, tok, "Symbol " + tok.value_ + " of type " + theType
+				+ " caught by value.", "Use catch by (preferably const) reference throughout.");
 		}
 	};
 
@@ -827,10 +820,10 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkThrowSpecification(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkThrowSpecification(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		// Check for throw specifications inside classes
-		iterateClasses(errors, tokens, [&](Errors &errors, const vector<Token> &tokens, size_t pos) -> void {
+		iterateClasses(errors, tokens, [&](ErrorFile &errors, const vector<Token> &tokens, size_t pos) -> void {
 			
 			const vector<TokenType> destructorSequence = { 
 				TK_TILDE, TK_IDENTIFIER, TK_LPAREN, TK_RPAREN, TK_THROW, TK_LPAREN, TK_RPAREN 
@@ -879,8 +872,7 @@ namespace flint {
 
 				// Because we skip the bodies of functions the only throws we should find are function throws
 				if (isTok(tok, TK_THROW) && isTok(tokens[pos + 1], TK_LPAREN)) {
-					lintWarning(tok, "Throw specifications on functions are deprecated.\n");
-					++errors.warnings;
+					lintWarning(errors, tok, "Throw specifications on functions are deprecated.");
 					continue;
 				}
 			}
@@ -919,8 +911,7 @@ namespace flint {
 
 			// Because we skip the bodies of functions the only throws we should find are function throws
 			if (isTok(tok, TK_THROW) && isTok(tokens[pos + 1], TK_LPAREN)) {
-				lintWarning(tok, "Throw specifications on functions are deprecated.\n");
-				++errors.warnings;
+				lintWarning(errors, tok, "Throw specifications on functions are deprecated.");
 				continue;
 			}
 		}
@@ -936,7 +927,7 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkIterators(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkIterators(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		const vector<TokenType> iteratorPlus = {
 			TK_IDENTIFIER, TK_INCREMENT
@@ -948,9 +939,8 @@ namespace flint {
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 
 			if (atSequence(tokens, pos, iteratorPlus) || atSequence(tokens, pos, iteratorMinus)) {
-				lintAdvice(tokens[pos], "Postfix iterators inject a copy operation, almost doubling the workload. "
-					"Instead, consider using prefix notation '" + tokens[pos+1].value_ + tokens[pos].value_ + "'.\n");
-				++errors.advice;
+				lintAdvice(errors, tokens[pos], "Postfix iterators inject a copy operation, almost doubling the workload.",
+					"Instead, consider using prefix notation '" + tokens[pos+1].value_ + tokens[pos].value_ + "'.");
 			}
 		}
 	};
@@ -965,7 +955,7 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkIfEndifBalance(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkIfEndifBalance(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		uint openIf = 0;
 
@@ -984,22 +974,19 @@ namespace flint {
 				
 				--openIf;
 				if (openIf < 0) {
-					lintError(tok, "Unmatched #endif.\n");
-					++errors.errors;
+					lintError(errors, tok, "Unmatched #endif.");
 				}
 			}
 			else if (isTok(tok, TK_POUNDELSE)) {
 
 				if (openIf == 0) {
-					lintError(tok, "Unmatched #else.\n");
-					++errors.errors;
+					lintError(errors, tok, "Unmatched #else.");
 				}
 			}
 		}
 
 		if (openIf != 0) {
-			lintError(tokens.back(), "Unmatched #if/#endif.\n");
-			++errors.errors;
+			lintError(errors, tokens.back(), "Unmatched #if/#endif.");
 		}
 	};
 
@@ -1016,13 +1003,13 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkConstructors(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkConstructors(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 		if (getFileCategory(path) == FileCategory::SOURCE_C) {
 			return;
 		}
 
 		// Check for constructor specifications inside classes
-		iterateClasses(errors, tokens, [&](Errors &errors, const vector<Token> &tokens, size_t pos) -> void {
+		iterateClasses(errors, tokens, [&](ErrorFile &errors, const vector<Token> &tokens, size_t pos) -> void {
 			
 			const string lintOverride = "/* implicit */";
 
@@ -1116,15 +1103,13 @@ namespace flint {
 
 							if (nextType == TK_AMPERSAND && !isConstArgument) {
 								
-								lintError(tok, "Copy constructors should take a const argument: " 
-									+	formatFunction(tokens, func, args) + "\n");
-								++errors.errors;
+								lintError(errors, tok, "Copy constructors should take a const argument: "
+									+ formatFunction(tokens, func, args));
 							}
 							else if (nextType == TK_LOGICAL_AND && isConstArgument) {
 								
-								lintError(tok, "Move constructors should not take a const argument: "
-									+ formatFunction(tokens, func, args) + "\n");
-								++errors.errors;
+								lintError(errors, tok, "Move constructors should not take a const argument: "
+									+ formatFunction(tokens, func, args));
 							}
 
 							pos = skipFunctionDeclaration(tokens, pos);
@@ -1154,12 +1139,11 @@ namespace flint {
 					}
 
 					if (foundConversionCtor) {
-						lintError(tok, "Single - argument constructor '"
+						lintError(errors, tok, "Single - argument constructor '"
 							+ formatFunction(tokens, func, args) 
-							+ "' may inadvertently be used as a type conversion constructor. Prefix"
-							" the function with the 'explicit' keyword to avoid this, or add an /"
-							"* implicit *""/ comment to suppress this warning.\n");
-						++errors.errors; 
+							+ "' may inadvertently be used as a type conversion constructor.", 
+							"Prefix the function with the 'explicit' keyword to avoid this, or add an "
+							"/* implicit *""/ comment to suppress this warning.");
 					}
 
 					pos = skipFunctionDeclaration(tokens, pos);
@@ -1183,7 +1167,7 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkMemset(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkMemset(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		const vector<TokenType> funcSequence = {
 			TK_IDENTIFIER, TK_LPAREN
@@ -1222,8 +1206,7 @@ namespace flint {
 				}
 				
 				swap(args[1], args[2]);
-				lintError(tok, "Did you mean " + formatFunction(tokens, func, args) + " ?\n");
-				++errors.errors;
+				lintError(errors, tok, "Did you mean " + formatFunction(tokens, func, args) + " ?");
 			}
 		}
 	};
@@ -1240,7 +1223,7 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkIncludeAssociatedHeader(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkIncludeAssociatedHeader(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 		if (!isSource(path)) {
 			return;
 		}
@@ -1281,10 +1264,9 @@ namespace flint {
 			if (cmpStr(getFileNameBase(includedFile), fileBase)) {
 				if (includesFound > 1) {
 
-					lintError(tokens[pos - 1], "The associated header file of .cpp "
-						"files should be included before any other includes.\n(This "
-						"helps catch missing header file dependencies in the .h)\n");
-					++errors.errors;
+					lintError(errors, tokens[pos - 1], "The associated header file of .cpp "
+						"files should be included before any other includes.", 
+						"This helps catch missing header file dependencies in the .h");
 					break;
 				}
 			}
@@ -1301,7 +1283,7 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkIncludeGuard(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkIncludeGuard(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 		if (getFileCategory(path) != FileCategory::HEADER) {
 			return;
 		}
@@ -1320,15 +1302,13 @@ namespace flint {
 		};
 
 		if (!atSequence(tokens, 0, includeGuard)) {
-			lintError(tokens[0], "Missing include guard.\n");
-			++errors.errors;
+			lintError(errors, tokens[0], "Missing include guard.");
 			return;
 		}
 
 		if (!cmpToks(tokens[1], tokens[3])) {
-			lintError(tokens[1], "Include guard name mismatch; expected " 
-				+	tokens[1].value_ + ", saw " + tokens[3].value_ + ".\n");
-			++errors.errors;
+			lintError(errors, tokens[1], "Include guard name mismatch; expected "
+				+	tokens[1].value_ + ", saw " + tokens[3].value_);
 		}
 		
 		uint openIf = 1;
@@ -1351,8 +1331,7 @@ namespace flint {
 		}
 
 		if (openIf != 0 || pos < tokens.size() - 2) {
-			lintError(tokens.back(), "Include guard doesn't cover the entire file.\n");
-			++errors.errors;
+			lintError(errors, tokens.back(), "Include guard doesn't cover the entire file.");
 			return;
 		}
 	};
@@ -1369,13 +1348,13 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkImplicitCast(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkImplicitCast(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 		if (getFileCategory(path) == FileCategory::SOURCE_C) {
 			return;
 		}
 
 		// Check for constructor specifications inside classes
-		iterateClasses(errors, tokens, [&](Errors &errors, const vector<Token> &tokens, size_t pos) -> void {
+		iterateClasses(errors, tokens, [&](ErrorFile &errors, const vector<Token> &tokens, size_t pos) -> void {
 
 			const string lintOverride = "/* implicit */";
 
@@ -1442,13 +1421,12 @@ namespace flint {
 						continue;
 					}
 
-					lintError(tok, "operator bool() is dangerous. "
+					lintError(errors, tok, "operator bool() is dangerous.", 
 						"In C++11 use explicit conversion (explicit operator bool()), "
 						"otherwise use something like the safe-bool idiom if the syntactic "
 						"convenience is justified in this case, or consider defining a "
 						"function (see http://www.artima.com/cppsource/safebool.html for more "
-						"details).\n");
-					++errors.errors;
+						"details).");
 					continue;
 				}
 
@@ -1481,11 +1459,9 @@ namespace flint {
 					continue;
 				}
 
-				lintWarning(tok, "Implicit conversion to '" + typeString 
-					+ "' may inadvertently be used. Prefix the function with the 'explicit'"
-					" keyword to avoid this, or add an /* implicit *""/ comment to"
-					" suppress this warning.\n");
-				++errors.warnings;
+				lintWarning(errors, tok, "Implicit conversion to '" + typeString + "' may inadvertently be used.", 
+					"Prefix the function with the 'explicit' keyword to avoid this,"
+					" or add an /* implicit *""/ comment to suppress this warning.");
 			}
 		});
 	};
@@ -1502,7 +1478,7 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkThrowsHeapException(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkThrowsHeapException(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 		
 		const vector<TokenType> throwNew = {
 			TK_THROW, TK_NEW
@@ -1532,8 +1508,7 @@ namespace flint {
 					msg = "Heap-allocated exception: throw new was used.";
 				}
 
-				lintError(tokens[focal], msg + " This is usually a mistake in c++. \n");
-				++errors.errors;
+				lintError(errors, tokens[focal], msg + " This is usually a mistake in c++.");
 			}
 		}
 		
@@ -1549,7 +1524,7 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkDeprecatedIncludes(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkDeprecatedIncludes(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		// Set storing the deprecated includes. Add new headers here if you'd like
 		// to deprecate them
@@ -1571,9 +1546,8 @@ namespace flint {
 
 			string includedFile = getIncludedPath(tokens[pos].value_);
 			if (deprecatedIncludes.find(includedFile) != deprecatedIncludes.end()) {
-				lintWarning(tokens[pos-1], "Including deprecated header '" 
-					+ includedFile + "'\n");
-				++errors.warnings;
+				lintWarning(errors, tokens[pos - 1], "Including deprecated header '"
+					+ includedFile + "'");
 			}
 		}
 
@@ -1589,7 +1563,7 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkInlHeaderInclusions(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkInlHeaderInclusions(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		const vector<TokenType> includeSequence = {
 			TK_INCLUDE, TK_STRING_LITERAL
@@ -1626,11 +1600,10 @@ namespace flint {
 				continue;
 			}
 
-			lintError(tokens[pos], "A -inl file (" + includedFile
-				+ ") was included even though this is not its associated header. "
+			lintError(errors, tokens[pos], "An -inl file (" + includedFile
+				+ ") was included even though this is not its associated header.",
 				"Usually files like Foo-inl.h are implementation details and should "
-				"not be included outside of Foo.h.\n");
-			++errors.errors;
+				"not be included outside of Foo.h.");
 		}
 
 	};
@@ -1645,9 +1618,9 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkProtectedInheritance(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkProtectedInheritance(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
-		iterateClasses(errors, tokens, [&](Errors &errors, const vector<Token> &tokens, size_t pos) -> void {
+		iterateClasses(errors, tokens, [&](ErrorFile &errors, const vector<Token> &tokens, size_t pos) -> void {
 			
 			const vector<TokenType> protectedSequence = {
 				TK_COLON, TK_PROTECTED, TK_IDENTIFIER
@@ -1660,10 +1633,9 @@ namespace flint {
 				}
 
 				if (atSequence(tokens, pos, protectedSequence)) {
-					lintWarning(tokens[pos], "Protected inheritance is sometimes not a good idea. Read "
-						"http://stackoverflow.com/questions/6484306/effective-c-discouraging-protected-inheritance "
-						"for more information.\n");
-					++errors.warnings;
+					lintWarning(errors, tokens[pos], "Protected inheritance is sometimes not a good idea.", 
+						"Read http://stackoverflow.com/questions/6484306/effective-c-discouraging-protected-inheritance "
+						"for more information.");
 				}
 			}
 		});
@@ -1679,16 +1651,15 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkUpcaseNull(Errors &errors, const string &path, const vector<Token> &tokens) {
+	void checkUpcaseNull(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 
 			if (isTok(tokens[pos], TK_IDENTIFIER) && cmpTok(tokens[pos], "NULL")) {
-				lintAdvice(tokens[pos],	"Prefer `nullptr' to `NULL' in new C++ code.  Unlike `NULL', "
-					"`nullptr' can't accidentally be used in arithmetic or as an integer. See "
+				lintAdvice(errors, tokens[pos], "Prefer `nullptr' to `NULL' in new C++ code.", 
+					"Unlike `NULL', `nullptr' can't accidentally be used in arithmetic or as an integer. See "
 					"http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2431.pdf"
-					" for details.\n");
-				++errors.advice;
+					" for details.");
 			}
 		}
 	};
