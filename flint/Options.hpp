@@ -26,11 +26,15 @@ namespace flint {
 	*/
 	static void printHelp() {
 		printf("Usage: flint [options:] [files:]\n\n"
-			   "\t-r, --recursive	: Search subfolders for files.\n\n"
-			   "\t-c, --cmode	: Only perform C based lint checks.\n\n"
-			   "\t-j, --json	: Output report in JSON format.\n\n"
-			   "\t-v, --verbose	: Give detailed feedback.\n\n"
-			   "\t-h, --help	: Print usage.\n\n");
+			   "\t-r, --recursive		: Search subfolders for files.\n\n"
+			   "\t-c, --cmode		: Only perform C based lint checks.\n\n"
+			   "\t-j, --json		: Output report in JSON format.\n\n"
+			   "\t-l, --level [value:]	: Set the lint level.\n"
+			   "			      0 : Errors only\n"
+			   "			      1 : Errors & Warnings\n"
+			   "			      2 : All feedback\n\n"
+			   "\t-v, --verbose		: Give detailed feedback.\n\n"
+			   "\t-h, --help		: Print usage.\n\n");
 #ifdef _DEBUG 
 		// Stop visual studio from closing the window...
 		system("PAUSE");
@@ -128,7 +132,14 @@ namespace flint {
 			}
 		}
 
-		if (HELP) {
+		// Make sure level was given a correct value
+		Options.LEVEL = ((Options.LEVEL > Lint::ADVICE) ? 
+			Lint::ADVICE : 
+			((Options.LEVEL < Lint::ERROR) ? 
+				Lint::ERROR : 
+				Options.LEVEL));
+
+		if (HELP || argc == 1 || paths.size() == 0) {
 			printHelp();
 		}
 	};
