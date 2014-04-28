@@ -22,7 +22,7 @@ int main(string[] args) {
     errors += checkEntry(arg);
   }
 
-  return 0;
+  return errors;
 }
 
 bool dontLintPath(string path) {

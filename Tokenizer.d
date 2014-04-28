@@ -280,7 +280,7 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
         break;
       } else {
         writeln("Illegal character: ", cast(uint) c, " [", c, "]");
-        assert(0);
+        throw new Exception("Illegal character!");
       }
     }
 

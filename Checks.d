@@ -2184,7 +2184,7 @@ uint checkMutexHolderHasName(string fpath, Token[] v) {
     return 0;
   }
 
-  bool[string] mutexHolderNames = ["lock_guard":1];
+  bool[string] mutexHolderNames = ["lock_guard":1,"unique_lock":1,"shared_lock":1];
   uint result = 0;
 
   for (; !v.empty; v.popFront) {

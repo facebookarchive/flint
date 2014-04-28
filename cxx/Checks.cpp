@@ -2234,7 +2234,7 @@ uint checkMutexHolderHasName(const std::string& fpath,
     return 0;
   }
 
-  std::set<std::string> mutexHolderNames = {"lock_guard",
+  std::set<std::string> mutexHolderNames = {"lock_guard", "shared_lock",
                                             "unique_lock"};
   uint result = 0;
 
