@@ -23,13 +23,13 @@ Usage
 
         -h, --help              : Print usage.
 
-Does pass Linting itself? 
+Does it pass Linting itself? 
 -------------------------
 
 ### Yes!
 	
 	$ flint++ ./
-	
+
 	=======================
 	Lint Summary: 13 files
 
