@@ -1,18 +1,18 @@
-`fluff`: A Cross Platform Port of Facebook's C++ Linter
--------------------------------------------------------
+`Spark`: A Cross Platform Port of Facebook's C++ Linter
+=======================================================
 
-`fluff` is Cross Platform port of an open-source lint program for C++ developed and used at Facebook called `flint`.
+`Spark` is cross-platform, zero-dependency port of `flint`, a lint program for C++ developed and used at Facebook.
 
-`flint` is published on Github at https://github.com/facebook/flint; for
-discussions, there is a Google group at https://groups.google.com/d/forum/facebook-flint.
+`flint` is published on Github at https://github.com/facebook/flint; for discussions, there is a Google group at https://groups.google.com/d/forum/facebook-flint.
+
+Why Lint?
+---------
+
+Linting is a form of *static-code analysis* by which common errors and bad practices are flagged for review. This can help to both optimize poorly written code and to set a unified code style for all the code in a project. For large organizations this can be tremendously powerful as it helps to keep the whole codebase consistent.
 
 Dependencies
 ------------
 
-### Unix, Linux, OSX
+### Windows, Unix, Linux, OSX
 
-None! You're good to go! Happy linting :)
-
-### Windows
-
-Only the one! `fluff` makes use of the `Dirent.h` header file for doing directory listings. This file is included as a standard header on Posix systems, for windows however you just need to grab the header file from [here](http://www.softagalleria.net/dirent.php) and include it in your build setup. 
+**None!** You're good to go! Happy linting :)
