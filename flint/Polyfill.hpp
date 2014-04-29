@@ -39,5 +39,7 @@ namespace flint {
 
 	bool getFileContents(const string &path, string &file);
 
+	bool startsWith(const string &str, const string &prefix);
+
 	string escapeString(const string &input);
 };

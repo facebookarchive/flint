@@ -3,6 +3,8 @@
 #include <map>
 #include <cassert>
 
+#include "Polyfill.hpp"
+
 namespace flint {
 	
 	namespace { // Anonymous Namespace for Tokenizing and munching functions
@@ -229,21 +231,6 @@ namespace flint {
 		};
 
 	}; // Anonymous Namespace
-
-	/**
-	* Tests if a given string starts with a prefix
-	*
-	* @param str
-	*		The string to search
-	* @param suffix
-	*		The prefix to search for
-	* @return
-	*		Returns true if str ends with an instance of prefix
-	*/
-	bool startsWith(const string &str, const string &prefix) {
-		return (str.size() >= prefix.size()) &&
-			   (str.compare(0, prefix.size(), prefix) == 0);
-	};
 
 	/**
 	* Given the contents of a C++ file and a filename, tokenizes the
