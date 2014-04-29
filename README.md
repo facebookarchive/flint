@@ -1,9 +1,25 @@
-# `Spark`
+# `Flint++`
 ### A Cross Platform Port of Facebook's C++ Linter
 
-`Spark` is cross-platform, zero-dependency port of `flint`, a lint program for C++ developed and used at Facebook.
+`Flint++` is cross-platform, zero-dependency port of `flint`, a lint program for C++ developed and used at Facebook.
 
-`flint` is published on Github at https://github.com/facebook/flint; for discussions, there is a Google group at https://groups.google.com/d/forum/facebook-flint.
+The original `flint` is published on [Github](https://github.com/facebook/flint); and for discussions, there is a [Google group](https://groups.google.com/d/forum/facebook-flint).
+
+Usage
+-----
+
+	$ flint++ --help
+	Usage: flint++ [options:] [files:]
+
+        -r, --recursive         : Search subfolders for files.
+        -c, --cmode             : Only perform C based lint checks.
+        -j, --json              : Output report in JSON format.
+        -l, --level [value:]    : Set the lint level.
+                              0 : Errors only
+                              1 : Errors & Warnings
+                              2 : All feedback
+
+        -h, --help              : Print usage.
 
 Why Lint?
 ---------
