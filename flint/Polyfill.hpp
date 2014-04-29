@@ -6,6 +6,7 @@
  */
 
 #include <string>
+#include <vector>
 
 using namespace std;
 
@@ -34,5 +35,9 @@ namespace flint {
 
 	bool fsContainsNoLint(const string &path);
 
+	bool fsGetDirContents(const string &path, vector<string> &dir);
+
 	bool getFileContents(const string &path, string &file);
+
+	string escapeString(const string &input);
 };

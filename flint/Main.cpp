@@ -3,7 +3,6 @@
 #include <string>
 #include <iostream>
 #include <vector>
-#include <dirent.h>
 
 #include "Options.hpp"
 #include "ErrorReport.hpp"
@@ -41,20 +40,14 @@ void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
 		}
 
 		// For each object in the directory
-		DIR *pDIR;
-		struct dirent *entry;
-		if (pDIR = opendir(path.c_str())) {
-			while (entry = readdir(pDIR)) {
-				string fsObj = entry->d_name;
-				if (FS_ISNOT_LINK(fsObj) && FS_ISNOT_GIT(fsObj)) {
-
-					string fileName = path + FS_SEP + fsObj;
-					checkEntry(errors, fileName.c_str(), depth + 1);
-				}
-			}
-			closedir(pDIR);
+		vector<string> dirs;
+		if (!fsGetDirContents(path, dirs)) {
+			return;
 		}
-
+		
+		for (int i = 0; i < dirs.size(); ++i) {
+			checkEntry(errors, dirs[i], depth + 1);
+		}
 		return;
 	}
 
