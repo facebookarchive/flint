@@ -938,8 +938,9 @@ namespace flint {
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 
 			if (atSequence(tokens, pos, iteratorPlus) || atSequence(tokens, pos, iteratorMinus)) {
-				lintAdvice(errors, tokens[pos], "Postfix iterators inject a copy operation, almost doubling the workload.",
-					"Instead, consider using prefix notation '" + tokens[pos+1].value_ + tokens[pos].value_ + "'.");
+				lintAdvice(errors, tokens[pos], 
+					"Use prefix notation '" + tokens[pos + 1].value_ + tokens[pos].value_ + "'.", 
+					"Postfix iterators inject a copy operation, almost doubling the workload.");
 			}
 		}
 	};
