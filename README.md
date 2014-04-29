@@ -11,6 +11,7 @@ Upcoming Features
 -----------------
 
 * More lint tests!
+* Visual Studio Integration!
 * JSON Config files to allow project dependent Lint settings
 	* Set custom blacklisted identifiers/token sequences/includes
 	* Enable/Disable certain tests
