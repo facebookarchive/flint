@@ -1,5 +1,6 @@
-`Spark`: A Cross Platform Port of Facebook's C++ Linter
-=======================================================
+`Spark`
+=======
+### A Cross Platform Port of Facebook's C++ Linter
 
 `Spark` is cross-platform, zero-dependency port of `flint`, a lint program for C++ developed and used at Facebook.
 
