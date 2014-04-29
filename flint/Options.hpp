@@ -24,7 +24,7 @@ namespace flint {
 	* Prints the usage information for the program, then exits.
 	*/
 	static void printHelp() {
-		printf("Usage: flint [options:] [files:]\n\n"
+		printf("Usage: flint++ [options:] [files:]\n\n"
 			   "\t-r, --recursive		: Search subfolders for files.\n\n"
 			   "\t-c, --cmode		: Only perform C based lint checks.\n\n"
 			   "\t-j, --json		: Output report in JSON format.\n\n"
