@@ -3,6 +3,8 @@
 
 `Flint++` is cross-platform, zero-dependency port of `flint`, a lint program for C++ developed and used at Facebook.
 
+This project was motivated by a desire for a modern and extendable C++ Linter that just worked. Facebook had already done a fantastic job with their `flint` project; but through an unnecessarily high number of dependencies, poor documentation, and OS dependent coding the project is almost unusable. `Flint++` aims to solve these problems by only using the C++11 std::library along with a minimal number of polyfill functions developed to bridge the gaps in the needed functionality.
+
 The original `flint` is published on [Github](https://github.com/facebook/flint); and for discussions, there is a [Google group](https://groups.google.com/d/forum/facebook-flint).
 
 Usage
