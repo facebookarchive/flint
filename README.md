@@ -7,6 +7,15 @@ This project was motivated by a desire for a modern and extendable C++ Linter th
 
 The original `flint` is published on [Github](https://github.com/facebook/flint); and for discussions, there is a [Google group](https://groups.google.com/d/forum/facebook-flint).
 
+Upcoming Features
+-----------------
+
+* More lint tests!
+* JSON Config files to allow project dependent Lint settings
+	* Set custom blacklisted identifiers/token sequences/includes
+	* Enable/Disable certain tests
+	* Track the config file with Git to give everyone on your team the same Lint checks
+
 Usage
 -----
 
