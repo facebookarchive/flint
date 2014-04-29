@@ -29,8 +29,7 @@ Does pass Linting itself?
 ### Yes!
 	
 	$ flint++ ./
-
-	... 
+	
 	=======================
 	Lint Summary: 13 files
 
