@@ -35,10 +35,10 @@ namespace flint {
 			if (Options.JSON) {
 				string result =
 					"        {\n"
-					"	        level    : " + m_typeStr[m_type] + ",\n"
-					"	        line     : " + to_string(m_line) + ",\n"
-					"	        title    : \"" + m_title + "\",\n"
-					"	        desc     : \"" + m_desc + "\"\n"
+					"	        \"level\"    : \"" + m_typeStr[m_type] + "\",\n"
+					"	        \"line\"     : " + to_string(m_line) + ",\n"
+					"	        \"title\"    : \"" + escapeString(m_title) + "\",\n"
+					"	        \"desc\"     : \"" + escapeString(m_desc) + "\"\n"
 					"        }";
 
 				return result;
@@ -101,11 +101,11 @@ namespace flint {
 			if (Options.JSON) {
 				string result =
 					"    {\n"
-					"	    path     : \"" + m_path + "\",\n"
-					"	    errors   : " + to_string(getErrors()) + ",\n"
-					"	    warnings : " + to_string(getWarnings()) + ",\n"
-					"	    advice   : " + to_string(getAdvice()) + ",\n"
-					"	    reports  : [\n";
+					"	    \"path\"     : \"" + escapeString(m_path) + "\",\n"
+					"	    \"errors\"   : " + to_string(getErrors()) + ",\n"
+					"	    \"warnings\" : " + to_string(getWarnings()) + ",\n"
+					"	    \"advice\"   : " + to_string(getAdvice()) + ",\n"
+					"	    \"reports\"  : [\n";
 
 				for (int i = 0; i < m_objs.size(); ++i) {
 					if (i > 0) {
@@ -160,10 +160,10 @@ namespace flint {
 			if (Options.JSON) {
 				string result =
 					"{\n"
-					"	errors   : " + to_string(getErrors()) + ",\n"
-					"	warnings : " + to_string(getWarnings()) + ",\n"
-					"	advice   : " + to_string(getAdvice()) + ",\n"
-					"	files    : [\n";
+					"	\"errors\"   : " + to_string(getErrors()) + ",\n"
+					"	\"warnings\" : " + to_string(getWarnings()) + ",\n"
+					"	\"advice\"   : " + to_string(getAdvice()) + ",\n"
+					"	\"files\"    : [\n";
 
 				for (int i = 0; i < m_files.size(); ++i) {
 					if (i > 0) {
