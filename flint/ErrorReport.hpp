@@ -71,6 +71,9 @@ namespace flint {
 		uint getAdvice() const {
 			return m_advice;
 		};
+		uint getTotal() const {
+			return m_advice + m_warnings + m_errors;
+		};
 	};
 
 	class ErrorFile : public ErrorBase {
@@ -184,7 +187,9 @@ namespace flint {
 			string result = "";
 
 			for (int i = 0; i < m_files.size(); ++i) {
-				result += m_files[i].toString();
+				if (m_files[i].getTotal() > 0) {
+					result += m_files[i].toString();
+				}
 			}
 
 			result += divider + "\nLint Summary: " 
