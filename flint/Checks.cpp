@@ -522,8 +522,8 @@ namespace flint {
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 			if (atSequence(tokens, pos, firstInitializer) || atSequence(tokens, pos, nthInitializer)) {
 
-				int outerPos = ++pos;     // +1 for identifier
-				int innerPos = ++(++pos); // +2 again for the inner identifier
+				size_t outerPos = ++pos;     // +1 for identifier
+				size_t innerPos = ++(++pos); // +2 again for the inner identifier
 
 				bool isMember = tokens[outerPos].value_.back() == '_' ||
 								startsWith(tokens[outerPos].value_, "m_");

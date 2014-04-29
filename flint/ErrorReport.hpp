@@ -18,13 +18,13 @@ namespace flint {
 	private:
 		// Members
 		const Lint m_type;
-		const uint m_line;
+		const size_t m_line;
 		const string m_title, m_desc;
 
 	public:
 
 		// Constructor
-		ErrorObject(Lint type, uint line, const string title, const string desc) :
+		ErrorObject(Lint type, size_t line, const string title, const string desc) :
 			m_type(type), m_line(line), m_title(title), m_desc(desc) {};
 
 		// Getter

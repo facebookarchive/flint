@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 
+// Conditional includes for folder traversal
 #ifdef _WIN32
 #include <windows.h>
 #else

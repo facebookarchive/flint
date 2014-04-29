@@ -2,8 +2,11 @@
 
 #include <algorithm>
 
+#include "Polyfill.hpp"
+
 namespace flint {
 	
+	// Constants
 	const string kIgnorePause  = "// %flint: pause";
 	const string kIgnoreResume = "// %flint: resume";
 
@@ -46,7 +49,7 @@ namespace flint {
 				// user, with the line number for ignorePause.
 				if (posResume == string::npos) {
 
-					int lineNo = count(file.begin(), file.begin() + posPause, '\n');
+					uint lineNo = (uint)count(file.begin(), file.begin() + posPause, '\n');
 					++lineNo;
 
 					fprintf(stderr, "%s(%d): No matching \"%s\" found for \"%s\"\n",
@@ -63,7 +66,7 @@ namespace flint {
 					// position after ignoreResume.
 					result += file.substr(pos, posPause - pos);
 
-					int emptyLinesToAdd = count(file.begin() + posPause,
+					uint emptyLinesToAdd = (uint)count(file.begin() + posPause,
 												file.begin() + posResume + kIgnoreResume.size(), '\n');
 
 					result += string(emptyLinesToAdd, '\n');
