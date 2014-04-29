@@ -530,8 +530,8 @@ namespace flint {
 
 				if (isMember && cmpToks(tokens[outerPos], tokens[innerPos])) {
 					lintError(errors, tokens[outerPos], 
-						"Looks like you're initializing class member [" 
-						+ tokens[outerPos].value_ + "] with itself.");
+						"Looks like you're initializing class member [ " 
+						+ tokens[outerPos].value_ + " ] with itself.");
 				}
 			}
 		}
@@ -560,8 +560,7 @@ namespace flint {
 		static const vector<BlacklistEntry> blacklist = {
 			{ { TK_VOLATILE },
 			"'volatile' does not make your code thread-safe.", 
-			"If multiple threads are "
-			"sharing data, use std::atomic or locks. In addition, 'volatile' may "
+			"If multiple threads are sharing data, use std::atomic or locks. In addition, 'volatile' may "
 			"force the compiler to generate worse code than it could otherwise. "
 			"For more about why 'volatile' doesn't do what you think it does, see "
 			"http://fburl.com/volatile or http://www.kernel.org/doc/Documentation/"
