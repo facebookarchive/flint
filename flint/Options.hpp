@@ -25,9 +25,9 @@ namespace flint {
 	*/
 	static void printHelp() {
 		printf("Usage: flint++ [options:] [files:]\n\n"
-			   "\t-r, --recursive		: Search subfolders for files.\n\n"
-			   "\t-c, --cmode		: Only perform C based lint checks.\n\n"
-			   "\t-j, --json		: Output report in JSON format.\n\n"
+			   "\t-r, --recursive		: Search subfolders for files.\n"
+			   "\t-c, --cmode		: Only perform C based lint checks.\n"
+			   "\t-j, --json		: Output report in JSON format.\n"
 			   "\t-l, --level [value:]	: Set the lint level.\n"
 			   "			      0 : Errors only\n"
 			   "			      1 : Errors & Warnings\n"
