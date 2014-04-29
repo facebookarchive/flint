@@ -7,9 +7,13 @@
 #include "Options.hpp"
 
 namespace flint {
-	
+
+// Standard terminal width for divider
 #define TWIDTH 79
 
+	/*
+	* Class to represent a single "Error" that was found during linting
+	*/
 	class ErrorObject {
 	private:
 		// Members
@@ -19,23 +23,32 @@ namespace flint {
 
 	public:
 
+		// Constructor
 		ErrorObject(Lint type, uint line, const string title, const string desc) :
 			m_type(type), m_line(line), m_title(title), m_desc(desc) {};
 
+		// Getter
 		uint getType() const {
 			return m_type;
 		};
 
+		/*
+		* Prints an single error of the report in either
+		* JSON or Pretty Printed format
+		*
+		* @return
+		*		Returns a string containing the report output
+		*/
 		string toString() const {
 
-			const vector<string> m_typeStr = {
+			const vector<string> typeStr = {
 				"Error", "Warning", "Advice"
 			};
 
 			if (Options.JSON) {
 				string result =
 					"        {\n"
-					"	        \"level\"    : \"" + m_typeStr[m_type] + "\",\n"
+					"	        \"level\"    : \"" + typeStr[m_type] + "\",\n"
 					"	        \"line\"     : " + to_string(m_line) + ",\n"
 					"	        \"title\"    : \"" + escapeString(m_title) + "\",\n"
 					"	        \"desc\"     : \"" + escapeString(m_desc) + "\"\n"
@@ -45,7 +58,7 @@ namespace flint {
 			}
 
 			string result = "Line " + to_string(m_line) + ": "
-				+ m_typeStr[m_type] + "\n\n"
+				+ typeStr[m_type] + "\n\n"
 				+ m_title + "\n\n";
 				
 			if (!m_desc.empty()) {
@@ -56,6 +69,9 @@ namespace flint {
 		};
 	};
 
+	/*
+	* Base Class for ErrorFile and ErrorReport which both have error counts
+	*/
 	class ErrorBase {
 	protected:
 		// Members
@@ -76,6 +92,9 @@ namespace flint {
 		};
 	};
 
+	/*
+	* Class to represent a single file's "Errors" that were found during linting
+	*/
 	class ErrorFile : public ErrorBase {
 	private:
 		// Members
@@ -99,6 +118,13 @@ namespace flint {
 			m_objs.push_back(error);
 		};
 
+		/*
+		* Prints an single file of the report in either
+		* JSON or Pretty Printed format
+		*
+		* @return
+		*		Returns a string containing the report output
+		*/
 		string toString() const {
 
 			if (Options.JSON) {
@@ -144,6 +170,9 @@ namespace flint {
 		};
 	};
 
+	/*
+	* Class to represent the whole report and all "Errors" that were found during linting
+	*/
 	class ErrorReport : public ErrorBase {
 	private:
 		// Members
@@ -158,6 +187,13 @@ namespace flint {
 			m_files.push_back(file);
 		};
 
+		/*
+		* Prints an entire report in either 
+		* JSON or Pretty Printed format
+		*
+		* @return
+		*		Returns a string containing the report output
+		*/
 		string toString() const {
 			
 			if (Options.JSON) {
@@ -207,6 +243,7 @@ namespace flint {
 		};
 	};
 
+// Cleanup
 #undef TWIDTH
 
 };

@@ -1,5 +1,3 @@
-// TODO: Add license info
-
 #include <string>
 #include <iostream>
 #include <vector>
