@@ -5,9 +5,9 @@
 namespace flint {
 
 	// File Extensions to lint
-	const vector<string> extsHeader    = { ".h", ".hpp", ".hh", };
-	const vector<string> extsSourceC   = { ".c", };
-	const vector<string> extsSourceCpp = { ".C", ".cc", ".cpp", ".CPP", ".c++", ".cp", ".cxx", };
+	const vector<string> extsHeader    = { ".h", ".hpp", ".hh" };
+	const vector<string> extsSourceC   = { ".c" };
+	const vector<string> extsSourceCpp = { ".C", ".cc", ".cpp", ".CPP", ".c++", ".cp", ".cxx" };
 
 	/**
 	 * Tests if a given string ends with a suffix
