@@ -136,7 +136,7 @@ namespace flint {
 					"	    \"advice\"   : " + to_string(getAdvice()) + ",\n"
 					"	    \"reports\"  : [\n";
 
-				for (uint i = 0; i < m_objs.size(); ++i) {
+				for (size_t i = 0; i < m_objs.size(); ++i) {
 					if (i > 0) {
 						result += ",\n";
 					}
@@ -162,7 +162,7 @@ namespace flint {
 			}
 			result += divider + "\n\n";
 
-			for (uint i = 0; i < m_objs.size(); ++i) {
+			for (size_t i = 0; i < m_objs.size(); ++i) {
 				result += m_objs[i].toString();
 			}
 
@@ -204,7 +204,7 @@ namespace flint {
 					"	\"advice\"   : " + to_string(getAdvice()) + ",\n"
 					"	\"files\"    : [\n";
 
-				for (uint i = 0; i < m_files.size(); ++i) {
+				for (size_t i = 0; i < m_files.size(); ++i) {
 					if (i > 0) {
 						result += ",\n";
 					}
@@ -222,7 +222,7 @@ namespace flint {
 			string divider = string(TWIDTH, '=');
 			string result = "";
 
-			for (uint i = 0; i < m_files.size(); ++i) {
+			for (size_t i = 0; i < m_files.size(); ++i) {
 				if (m_files[i].getTotal() > 0) {
 					result += m_files[i].toString();
 				}

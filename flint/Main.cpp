@@ -43,7 +43,7 @@ void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
 			return;
 		}
 		
-		for (uint i = 0; i < dirs.size(); ++i) {
+		for (size_t i = 0; i < dirs.size(); ++i) {
 			checkEntry(errors, dirs[i], depth + 1);
 		}
 		return;
@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
 
 	// Check each file
 	ErrorReport errors;
-	for (uint i = 0; i < paths.size(); ++i) {
+	for (size_t i = 0; i < paths.size(); ++i) {
 		checkEntry(errors, paths[i]);
 	}
 

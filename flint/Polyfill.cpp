@@ -158,7 +158,7 @@ namespace flint {
 	string escapeString(const string &input) {
 		
 		string output = "";
-		for (uint i = 0; i < input.size(); ++i) {
+		for (size_t i = 0; i < input.size(); ++i) {
 			char c = input[i];
 
 			switch (c) {
