@@ -1,5 +1,8 @@
 # Cheeky commit to change the message... Psss Don't tell anyone ;)
 
+flint/x64
+flint/Win32
+
 #################
 ## Eclipse
 #################
@@ -7,7 +10,7 @@
 *.pydevproject
 .project
 .metadata
-bin/
+# bin/
 tmp/
 *.tmp
 *.bak
