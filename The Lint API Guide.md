@@ -29,7 +29,7 @@ Where `errors` is the report struct given to your function to be passed along, `
 
 ## 3. How to traverse the Token Stream
 
-### [atSequence](https://github.com/L2Program/FlintPlusPlus/blob/master/flint/Checks.cpp#L48-L72)
+### atSequence
 	
 ```cpp
 /**
@@ -47,7 +47,23 @@ Where `errors` is the report struct given to your function to be passed along, `
 bool atSequence(const vector<Token> &tokens, size_t pos, const vector<TokenType> &list)
 ```
 
-### [skipToToken](https://github.com/L2Program/FlintPlusPlus/blob/master/flint/Checks.cpp#L74-L89)
+### atBuiltinType
+
+```cpp
+/**
+* Returns whether the current token is a built in type
+*
+* @param tokens
+*		The token list for the file
+* @param pos
+*		The current index position inside the token list
+* @return
+*		Returns true is the token as pos is a built in type
+*/
+bool atBuiltinType(const vector<Token> &tokens, size_t pos)
+```
+
+### skipToToken
 
 ```cpp
 /**
@@ -65,7 +81,7 @@ bool atSequence(const vector<Token> &tokens, size_t pos, const vector<TokenType>
 bool skipToToken(const vector<Token> &tokens, size_t &pos, TokenType target)
 ```
 
-### [skipTemplateSpec](https://github.com/L2Program/FlintPlusPlus/blob/master/flint/Checks.cpp#L103-L168)
+### skipTemplateSpec
 
 ```cpp
 /**
@@ -84,7 +100,7 @@ bool skipToToken(const vector<Token> &tokens, size_t &pos, TokenType target)
 size_t skipTemplateSpec(const vector<Token> &tokens, size_t pos, bool *containsArray = nullptr)
 ```
 
-### [getIncludedPath](https://github.com/L2Program/FlintPlusPlus/blob/master/flint/Checks.cpp#L91-L101)
+### getIncludedPath
 
 ```cpp
 /**
@@ -97,3 +113,5 @@ size_t skipTemplateSpec(const vector<Token> &tokens, size_t pos, bool *containsA
 */
 string getIncludedPath(const string &path)
 ```
+
+#### There is more to come but I'm busy. Sorry
