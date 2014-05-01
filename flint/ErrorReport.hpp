@@ -78,6 +78,8 @@ namespace flint {
 		uint m_errors, m_warnings, m_advice;
 	public:
 		
+		ErrorBase() : m_errors(0), m_warnings(0), m_advice(0) {};
+
 		uint getErrors() const {
 			return m_errors;
 		};
@@ -103,7 +105,7 @@ namespace flint {
 
 	public:
 
-		explicit ErrorFile(const string &path) : m_path(path) {};
+		explicit ErrorFile(const string &path) : ErrorBase(), m_path(path) {};
 
 		void addError(ErrorObject error) {
 			if (error.getType() == Lint::ERROR) {
@@ -178,6 +180,8 @@ namespace flint {
 		// Members
 		vector<ErrorFile> m_files;
 	public:
+
+		ErrorReport() : ErrorBase() {};
 
 		void addFile(ErrorFile file) {
 			m_errors	+= file.getErrors();
