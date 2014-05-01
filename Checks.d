@@ -50,6 +50,11 @@ bool atSequence(Range)(Range r, const CppLexer.TokenType2[] list...) {
   return true;
 }
 
+string getSucceedingWhitespace(Token[] v) {
+  if (v.length < 2) return "";
+  return v[1].precedingWhitespace_;
+}
+
 // Remove the double quotes or <'s from an included path.
 string getIncludedPath(string p) {
   return p[1 .. p.length - 1];
@@ -1662,7 +1667,18 @@ uint checkIncludeAssociatedHeader(string fpath, Token[] v) {
     if (!v.atSequence(tk!"#", tk!"identifier") || v[1].value != "include") {
       continue;
     }
+
+    // Skip PRECOMPILED #includes, or #includes followed by a 'nolint' comment
     if (v[2].value == "PRECOMPILED") continue;
+    if (v[2].type_ == tk!"string_literal"
+        && getSucceedingWhitespace(v[2 .. $]).canFind("nolint")) continue;
+    if (v[2].type_ == tk!"<") {
+      uint i = 3;
+      for (; i < v.length; ++i) if (v[i].type_ == tk!">") break;
+      if (i < v.length
+          && getSucceedingWhitespace(v[i .. $]).canFind("nolint")) continue;
+    }
+
     ++totalIncludesFound;
     if (v[2].type_ != tk!"string_literal") continue;
 

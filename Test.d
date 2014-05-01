@@ -1722,6 +1722,16 @@ unittest {
   tokens = tokenize(s13);
 
   EXPECT_EQ(checkIncludeAssociatedHeader(filename, tokens), 0);
+
+  // good with 'nolint' comments and PRECOMPILED
+  filename = "A.cpp";
+  string s14 = "#include <q/r/s> // nolint
+                #include \"abracadabra\" // more than nolint comment
+                #include PRECOMPILED
+                #include \"A.h\"";
+  tokens = tokenize(s14);
+
+  EXPECT_EQ(checkIncludeAssociatedHeader(filename, tokens), 0);
 }
 
 // testMemset
