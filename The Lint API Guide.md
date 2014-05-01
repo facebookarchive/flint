@@ -31,69 +31,69 @@ Where `errors` is the report struct given to your function to be passed along, `
 
 ### [atSequence](https://github.com/L2Program/FlintPlusPlus/blob/master/flint/Checks.cpp#L48-L72)
 	
-	```cpp
-	/**
-	* Returns whether the current token is at the start of a given sequence
-	*
-	* @param tokens
-	*		The token list for the file
-	* @param pos
-	*		The current index position inside the token list
-	* @param list
-	*		The token list for the desired sequence
-	* @return
-	*		Returns true if we were at the start of a given sequence
-	*/
-	bool atSequence(const vector<Token> &tokens, size_t pos, const vector<TokenType> &list)
-	```
+```cpp
+/**
+* Returns whether the current token is at the start of a given sequence
+*
+* @param tokens
+*		The token list for the file
+* @param pos
+*		The current index position inside the token list
+* @param list
+*		The token list for the desired sequence
+* @return
+*		Returns true if we were at the start of a given sequence
+*/
+bool atSequence(const vector<Token> &tokens, size_t pos, const vector<TokenType> &list)
+```
 
 ### [skipToToken](https://github.com/L2Program/FlintPlusPlus/blob/master/flint/Checks.cpp#L74-L89)
 
-	```cpp
-	/**
-	* Moves pos to the next position of the target token
-	*
-	* @param tokens
-	*		The token list for the file
-	* @param pos
-	*		The current index position inside the token list
-	* @param target
-	*		The token to match
-	* @return
-	*		Returns true if we are at the given token
-	*/
-	bool skipToToken(const vector<Token> &tokens, size_t &pos, TokenType target)
-	```
+```cpp
+/**
+* Moves pos to the next position of the target token
+*
+* @param tokens
+*		The token list for the file
+* @param pos
+*		The current index position inside the token list
+* @param target
+*		The token to match
+* @return
+*		Returns true if we are at the given token
+*/
+bool skipToToken(const vector<Token> &tokens, size_t &pos, TokenType target)
+```
 
 ### [skipTemplateSpec](https://github.com/L2Program/FlintPlusPlus/blob/master/flint/Checks.cpp#L103-L168)
-	
-	```cpp
-	/**
-	* Traverses the token list until the whole template sequence has been passed
-	*
-	* @param tokens
-	*		The token list for the file
-	* @param pos
-	*		The current index position inside the token list
-	* @param containsArray
-	*		Optional parameter to return a bool of whether an array was found inside
-	*		the template list
-	* @return
-	*		Returns the position of the closing angle bracket
-	*/
-	size_t skipTemplateSpec(const vector<Token> &tokens, size_t pos, bool *containsArray = nullptr)
-	```
+
+```cpp
+/**
+* Traverses the token list until the whole template sequence has been passed
+*
+* @param tokens
+*		The token list for the file
+* @param pos
+*		The current index position inside the token list
+* @param containsArray
+*		Optional parameter to return a bool of whether an array was found inside
+*		the template list
+* @return
+*		Returns the position of the closing angle bracket
+*/
+size_t skipTemplateSpec(const vector<Token> &tokens, size_t pos, bool *containsArray = nullptr)
+```
 
 ### [getIncludedPath](https://github.com/L2Program/FlintPlusPlus/blob/master/flint/Checks.cpp#L91-L101)
 
-	```cpp
-	/**
-	* Strips the ""'s or <>'s from an #include path
-	*
-	* @param path
-	*		The string to trim
-	* @return
-	*		Returns the include path without it's wrapping quotes/brackets
-	*/
-	string getIncludedPath(const string &path)
-	```
+```cpp
+/**
+* Strips the ""'s or <>'s from an #include path
+*
+* @param path
+*		The string to trim
+* @return
+*		Returns the include path without it's wrapping quotes/brackets
+*/
+string getIncludedPath(const string &path)
+```
