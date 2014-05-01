@@ -31,7 +31,7 @@ Where `errors` is the report struct given to your function to be passed along, `
 
 ### [atSequence](https://github.com/L2Program/FlintPlusPlus/blob/master/flint/Checks.cpp#L48-L72)
 	
-	```CPP
+	```cpp
 	/**
 	* Returns whether the current token is at the start of a given sequence
 	*
@@ -49,7 +49,7 @@ Where `errors` is the report struct given to your function to be passed along, `
 
 ### [skipToToken](https://github.com/L2Program/FlintPlusPlus/blob/master/flint/Checks.cpp#L74-L89)
 
-	```CPP
+	```cpp
 	/**
 	* Moves pos to the next position of the target token
 	*
@@ -67,7 +67,7 @@ Where `errors` is the report struct given to your function to be passed along, `
 
 ### [skipTemplateSpec](https://github.com/L2Program/FlintPlusPlus/blob/master/flint/Checks.cpp#L103-L168)
 	
-	```CPP
+	```cpp
 	/**
 	* Traverses the token list until the whole template sequence has been passed
 	*
@@ -86,7 +86,7 @@ Where `errors` is the report struct given to your function to be passed along, `
 
 ### [getIncludedPath](https://github.com/L2Program/FlintPlusPlus/blob/master/flint/Checks.cpp#L91-L101)
 
-	```CPP
+	```cpp
 	/**
 	* Strips the ""'s or <>'s from an #include path
 	*
