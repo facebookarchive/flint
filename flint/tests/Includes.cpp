@@ -6,6 +6,8 @@
 #include "common/base/Base.h"
 #include "StringUtil.h"
 
+#include <foo/c++14/bar.hpp>
+
 #include <string>
 #include <cstdlib>
 

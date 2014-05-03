@@ -936,7 +936,19 @@ namespace flint {
 			TK_IDENTIFIER, TK_DECREMENT
 		};
 
+		const vector<TokenType> includeStatement = {
+			TK_INCLUDE, TK_LESS
+		};
+
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+
+			if (atSequence(tokens, pos, includeStatement)) {
+				// Skip to closing angle
+				if (!skipToToken(tokens, pos, TK_GREATER)) {
+					return;
+				}
+				continue;
+			}
 
 			if (atSequence(tokens, pos, iteratorPlus) || atSequence(tokens, pos, iteratorMinus)) {
 				lintAdvice(errors, tokens[pos], 
