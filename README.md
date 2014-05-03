@@ -17,6 +17,31 @@ Upcoming Features
 	* Enable/Disable certain tests
 	* Track the config file with Git to give everyone on your team the same Lint checks
 
+Current Lint Checks
+-------------------
+
+* Errors
+	* Blacklisted Identifiers
+	* Initialization from Self
+	* #if #endif Balance
+	* Memset Usage
+	* Include Associated Header First
+	* Include Guards
+	* Inl-Header Inclusions
+	* `explicit` single argument constructors
+	* try-catch by reference
+	* check for `throw new ...`
+* Warnings
+	* Blacklisted Sequences
+	* #define name rules
+	* deprecated #includes
+	* `implicit` casts
+	* `protected` inheritance
+	* function level `throws`
+* Advice
+	* Postfix iterators i++
+	* `nullptr` over `NULL`
+
 Usage
 -----
 
