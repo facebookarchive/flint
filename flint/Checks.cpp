@@ -3,6 +3,7 @@
 #include <map>
 #include <set>
 #include <cassert>
+#include <stdexcept>
 
 #include "Options.hpp"
 #include "Polyfill.hpp"
