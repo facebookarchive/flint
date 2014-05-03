@@ -10,7 +10,7 @@
 
 using namespace std;
 
-#define uint unsigned int
+typedef unsigned int uint;
 
 #ifdef _WIN32  
 #define FS_SEP "\\"
