@@ -59,3 +59,8 @@ Dependencies
 ### Windows, Unix, Linux, OSX
 
 **None!** You're good to go! Happy linting :)
+
+Tested On
+---------
+
+So far I've managed to compile and test `Flint++` on Windows 7/8/8.1, Ubuntu 14.04, and Raspbian Wheezy; compiling under MSVC++ '13 and G++ 4.7 respectively. 
