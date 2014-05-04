@@ -195,8 +195,7 @@ namespace flint {
 				TK_CHAR
 			};
 
-			TokenType tok = tokens[pos].type_;
-      return find(begin(builtIns), end(builtIns), tok) != end(builtIns);
+			return find(begin(builtIns), end(builtIns), tokens[pos].type_) != end(builtIns);
 		};
 
 		/**
