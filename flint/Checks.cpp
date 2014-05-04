@@ -65,7 +65,9 @@ namespace flint {
 				return false;
 			}
 
-      			return find_if(begin(list), end(list), [pos, &tokens](const TokenType &token) mutable { return !isTok(tokens[pos++], token); }) == end(list);
+      		return find_if(begin(list), end(list), [pos, &tokens](const TokenType &token) mutable { 
+					return !isTok(tokens[pos++], token); 
+				}) == end(list);
 		};
 
 		/**
@@ -902,7 +904,7 @@ namespace flint {
 	};
 
 	/**
-	* Check for postfix iterators
+	* Check for postfix incrementers
 	*
 	* @param errors
 	*		Struct to track how many errors/warnings/advice occured
@@ -911,7 +913,7 @@ namespace flint {
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkIterators(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
+	void checkIncrementers(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		const vector<TokenType> iteratorPlus = {
 			TK_IDENTIFIER, TK_INCREMENT
@@ -937,7 +939,7 @@ namespace flint {
 			if (atSequence(tokens, pos, iteratorPlus) || atSequence(tokens, pos, iteratorMinus)) {
 				lintAdvice(errors, tokens[pos],
 					"Use prefix notation '" + tokens[pos + 1].value_ + tokens[pos].value_ + "'.",
-					"Postfix iterators inject a copy operation, almost doubling the workload.");
+					"Postfix incrementers inject a copy operation, almost doubling the workload.");
 			}
 		}
 	};

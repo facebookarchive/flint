@@ -101,7 +101,7 @@ void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
 		// Checks which note Advice
 		if (Options.LEVEL >= Lint::ADVICE) {
 
-			checkIterators(errorFile, path, tokens);
+			checkIncrementers(errorFile, path, tokens);
 
 			if (!Options.CMODE) {
 				checkUpcaseNull(errorFile, path, tokens);

@@ -13,7 +13,7 @@ namespace flint {
 #define X(func)																\
 	void check##func(ErrorFile &errors, const string &path, const vector<Token> &tokens)
 
-	X(Iterators);
+	X(Incrementers);
 	X(DefinedNames);
 	X(CatchByReference);
 	X(BlacklistedSequences);
