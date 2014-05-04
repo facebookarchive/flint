@@ -554,8 +554,7 @@ namespace flint {
 			"If multiple threads are sharing data, use std::atomic or locks. In addition, 'volatile' may "
 			"force the compiler to generate worse code than it could otherwise. "
 			"For more about why 'volatile' doesn't do what you think it does, see "
-			"http://fburl.com/volatile or http://www.kernel.org/doc/Documentation/"
-			"volatile-considered-harmful.txt.",
+			"http://www.kernel.org/doc/Documentation/volatile-considered-harmful.txt.",
 			true, // C++ only.
 			}
 		};
@@ -1314,7 +1313,7 @@ namespace flint {
 				+	tokens[1].value_ + ", saw " + tokens[3].value_);
 		}
 
-		uint openIf = 1;
+		int openIf = 1;
 
 		size_t pos;
 		for (pos = 1; pos < tokens.size(); ++pos) {
