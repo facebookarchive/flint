@@ -65,12 +65,7 @@ namespace flint {
 				return false;
 			}
 
-			for (size_t i = 0; i < list.size(); ++i, ++pos) {
-				if (!isTok(tokens[pos], list[i])) {
-					return false;
-				}
-			}
-			return true;
+      			return find_if(begin(list), end(list), [pos, &tokens](const TokenType &token) mutable { return !isTok(tokens[pos++], token); }) == end(list);
 		};
 
 		/**
@@ -574,12 +569,7 @@ namespace flint {
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 
 			// Make sure we aren't at an exception to the blacklist
-			for (const auto &e : exceptions) {
-				if (atSequence(tokens, pos, e)) {
-					isException = true;
-					break;
-				}
-			}
+			isException = find_if(begin(exceptions), end(exceptions), [&](const vector<TokenType> &e) { return atSequence(tokens, pos, e); }) != end(exceptions);
 
 			for (const BlacklistEntry &entry : blacklist) {
 				if (!atSequence(tokens, pos, entry.tokens)) {
@@ -965,7 +955,7 @@ namespace flint {
 	*/
 	void checkIfEndifBalance(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
-		uint openIf = 0;
+		int openIf = 0;
 
 		// Return after the first found error, because otherwise
 		// even one missed #if can be cause of a lot of errors.
