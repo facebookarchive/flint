@@ -13,7 +13,7 @@
 #endif
 
 namespace flint {
-	
+
 	/**
 	* Checks if a given path is a file or directory
 	*
@@ -143,8 +143,7 @@ namespace flint {
 	*		Returns true if str ends with an instance of prefix
 	*/
 	bool startsWith(const string &str, const string &prefix) {
-		return (str.size() >= prefix.size()) &&
-			(str.compare(0, prefix.size(), prefix) == 0);
+		return std::mismatch(begin(prefix), end(prefix), begin(str)).first == end(prefix);
 	};
 
 	/**
@@ -156,11 +155,11 @@ namespace flint {
 	*		Returns a string with no escape characters
 	*/
 	string escapeString(const string &input) {
-		
-		string output = "";
-		for (size_t i = 0; i < input.size(); ++i) {
-			char c = input[i];
 
+		string output;
+		output.reserve(input.length());
+
+		for (char c : input) {
 			switch (c) {
 			case '\n':
 				output += "\\n";

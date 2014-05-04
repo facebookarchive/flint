@@ -1,5 +1,7 @@
 #include "FileCategories.hpp"
 
+#include <algorithm>
+#include <functional>
 #include <vector>
 
 namespace flint {
@@ -25,6 +27,21 @@ namespace flint {
 	}
 
 	/**
+	 * Tests if a given string ends with a suffix within the container
+	 *
+	 * @param str
+	 *		The string to search
+	 * @param suffixes
+	 *		The suffixes to search for
+	 * @return
+	 *		Returns true if str ends with an instance of a suffix found within the container
+	 */
+	 template <class Container>
+	 bool containsSuffix(const string &str, Container suffixes) {
+		return find_if(begin(suffixes), end(suffixes), bind(hasSuffix, str, placeholders::_1)) != end(suffixes);
+	 }
+
+	/**
 	 * Attempts to discern whether what type the given file is
 	 * based on it's extension
 	 *
@@ -34,7 +51,7 @@ namespace flint {
 	 *		Returns an identifier flag of enum type FileCategory
 	 */
 	FileCategory getFileCategory(const string &path) {
-		
+
 		// Test header extensions
 		for (const string &ext : extsHeader) {
 			if (hasSuffix(path, ("-inl" + ext))) {
@@ -46,24 +63,20 @@ namespace flint {
 		}
 
 		// Test C extensions
-		for (const string &ext : extsSourceC) {
-			if (hasSuffix(path, ext)) {
-				return FileCategory::SOURCE_C;
-			}
+		if (containsSuffix(path, extsSourceC)) {
+			return FileCategory::SOURCE_C;
 		}
 
 		// Test CPP extensions
-		for (const string &ext : extsSourceCpp) {
-			if (hasSuffix(path, ext)) {
-				return FileCategory::SOURCE_CPP;
-			}
+		if (containsSuffix(path, extsSourceCpp)) {
+			return FileCategory::SOURCE_CPP;
 		}
 
 		return FileCategory::UNKNOWN;
 	};
 
 	/**
-	* Attempts to discern whether the given path is a header 
+	* Attempts to discern whether the given path is a header
 	* file based on it's extension
 	*
 	* @param path
