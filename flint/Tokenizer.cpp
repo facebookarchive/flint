@@ -7,9 +7,9 @@
 #include "Polyfill.hpp"
 
 namespace flint {
-	
+
 	namespace { // Anonymous Namespace for Tokenizing and munching functions
-		
+
 		// Black magic code expansion from Token Definitions
 		// See header...
 		static map<string, TokenType> initializeKeywords() {
@@ -20,7 +20,7 @@ namespace flint {
 				return result;
 		};
 
-		// Oh good lord... Keep this for now, 
+		// Oh good lord... Keep this for now,
 		// then code review and find a cleaner method
 		#define FBEXCEPTION(e) \
 		do { throw runtime_error(string((e))); } while (0)
@@ -246,7 +246,7 @@ namespace flint {
 		TokenType t;
 		size_t tokenLen;
 		string whitespace = "";
-		
+
 		while (1) {
 			const char c = pc[0];
 

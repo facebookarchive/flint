@@ -7,7 +7,7 @@
 using namespace std;
 
 namespace flint {
-	
+
 	/**
 	* Higher-order macro that applies "apply" (which itself is usually a
 	* macro) to each C++ token that consists of one character and is not
@@ -63,7 +63,7 @@ namespace flint {
 	apply('<', TK_LESS, '=', TK_LESS_EQUAL, '<', TK_LSHIFT,			\
 	'=', TK_LSHIFT_ASSIGN)											\
 	apply('>', TK_GREATER, '=', TK_GREATER_EQUAL, '>', TK_RSHIFT,	\
-	'=', TK_RSHIFT_ASSIGN)											
+	'=', TK_RSHIFT_ASSIGN)
 
 	/**
 	* Higher-order macro that applies "apply" (which itself is usually a
@@ -200,7 +200,7 @@ namespace flint {
 	a1("", TK_EOF)
 
 	/**
-	* Defines all token types TK_XYZ. 
+	* Defines all token types TK_XYZ.
 	* Basically black magic... Stand in awe of it's prowess.
 	*/
 	enum TokenType {
@@ -233,9 +233,9 @@ namespace flint {
 		size_t line_;
 
 		Token() : line_(0) {}
-		Token(TokenType type, string value, const string &file, size_t line, string whitespace)
-			: type_(type), value_(value), precedingWhitespace_(whitespace),
-			  file_(file), line_(line) {};
+		Token(TokenType type, string value, string file, size_t line, string whitespace)
+			: type_(type), value_(move(value)), precedingWhitespace_(move(whitespace)),
+			  file_(move(file)), line_(line) {};
 
 		string toString() const {
 			return string("Line: " + to_string(line_) + " " + value_);
@@ -245,9 +245,15 @@ namespace flint {
 	/**
 	* This is the quintessential function. Given a string containing C++
 	* code and a filename, fills output with the tokens in the
-	* file. Warning - don't use temporaries for input and filename
+	* file.
+	*/
+	void tokenize(const string &input, const string &initialFilename, vector<Token> &output);
+
+	/**
+	* Prevent the use of temporaries for input and filename
 	* because the resulting tokens contain StringPiece objects pointing
 	* into them.
 	*/
-	void tokenize(const string &input, const string &initialFilename, vector<Token> &output);
+	void tokenize(string&&, const string &, vector<Token> &) = delete;
+	void tokenize(const string&, string &&, vector<Token> &) = delete;
 };

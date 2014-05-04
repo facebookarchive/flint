@@ -5,7 +5,7 @@
 #include "Polyfill.hpp"
 
 namespace flint {
-	
+
 	// Constants
 	const string kIgnorePause  = "// %flint: pause";
 	const string kIgnoreResume = "// %flint: resume";
@@ -21,7 +21,7 @@ namespace flint {
 	 *		Returns the modified string
 	 */
 	string removeIgnoredCode(const string &file, const string &path) {
-		
+
 		string result;
 		size_t pos = 0;
 
@@ -37,7 +37,7 @@ namespace flint {
 				result += file.substr(pos);
 				break;
 			}
-			else 
+			else
 			{
 				size_t posResume = 0;
 
@@ -58,7 +58,7 @@ namespace flint {
 					result += file.substr(pos);
 					break;
 				}
-				else 
+				else
 				{
 					// Otherwise add everything from pos to posPause - 1, empty line for
 					// each line from posPause to posResume + size(posResume) - 1 so that

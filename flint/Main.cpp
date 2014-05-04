@@ -26,7 +26,7 @@ using namespace flint;
 *		Returns the number of errors found
 */
 void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
-	
+
 	FSType fsType = fsObjectExists(path);
 	if (fsType == FSType::NO_ACCESS) {
 		return;
@@ -42,7 +42,7 @@ void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
 		if (!fsGetDirContents(path, dirs)) {
 			return;
 		}
-		
+
 		for (size_t i = 0; i < dirs.size(); ++i) {
 			checkEntry(errors, dirs[i], depth + 1);
 		}
@@ -53,7 +53,7 @@ void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
 	if (srcType == FileCategory::UNKNOWN) {
 		return;
 	}
-	
+
 	string file;
 	if (!getFileContents(path, file)) {
 		return;
@@ -62,13 +62,13 @@ void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
 	// Remove code that occurs in pairs of
 	// "// %flint: pause" & "// %flint: resume"
 	file = removeIgnoredCode(file, path);
-	
+
 	try {
 		ErrorFile errorFile(path);
 
 		vector<Token> tokens;
 		tokenize(file, path, tokens);
-		
+
 		// Checks which note Errors
 		checkBlacklistedIdentifiers(errorFile, path, tokens);
 		checkInitializeFromItself(errorFile, path, tokens);
@@ -77,7 +77,7 @@ void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
 		checkIncludeAssociatedHeader(errorFile, path, tokens);
 		checkIncludeGuard(errorFile, path, tokens);
 		checkInlHeaderInclusions(errorFile, path, tokens);
-		
+
 		if (!Options.CMODE) {
 			checkConstructors(errorFile, path, tokens);
 			checkCatchByReference(errorFile, path, tokens);
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
 	// Print summary
 	cout << errors.toString() << endl;
 
-#ifdef _DEBUG 
+#ifdef _DEBUG
 	// Stop visual studio from closing the window...
 	system("PAUSE");
 #endif
