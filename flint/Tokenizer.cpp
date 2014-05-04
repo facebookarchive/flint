@@ -253,6 +253,8 @@ namespace flint {
 		while (1) {
 			const char c = pc[0];
 
+			// Special case for parseing #include <...>
+			// Previously the include path would not be captured as a string literal
 			if (c == '<') {
 				if (output.size() > 0 && output.back().type_ == TK_INCLUDE) {
 					auto str = munchString(pc, line, true);
