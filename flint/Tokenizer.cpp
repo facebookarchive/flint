@@ -198,11 +198,14 @@ namespace flint {
 		* it from pc and returns it. A reference to line is passed in order
 		* to track multiline strings correctly.
 		*/
-		static string munchString(string &pc, size_t &line) {
-			assert(pc[0] == '"');
+		static string munchString(string &pc, size_t &line, bool isIncludeLiteral = false) {
+			char stringStart = (isIncludeLiteral ? '<' : '"');
+			char stringEnd = (isIncludeLiteral ? '>' : '"');
+
+			assert(pc[0] == stringStart);
 			for (size_t i = 1;; ++i) {
 				auto const c = pc[i];
-				if (c == '"') {
+				if (c == stringEnd) {
 					// That's about it
 					return munchChars(pc, i + 1);
 				}
@@ -249,6 +252,18 @@ namespace flint {
 
 		while (1) {
 			const char c = pc[0];
+
+			// Special case for parseing #include <...>
+			// Previously the include path would not be captured as a string literal
+			if (c == '<') {
+				if (output.size() > 0 && output.back().type_ == TK_INCLUDE) {
+					auto str = munchString(pc, line, true);
+					output.push_back(Token(TK_STRING_LITERAL, str, file, line,
+						whitespace));
+					whitespace = "";
+					continue;
+				}
+			}
 
 			switch (c) {
 				// *** One-character tokens that don't require lookahead (comma,
