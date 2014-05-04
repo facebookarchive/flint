@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <fstream>
 #include <sstream>
+#include <algorithm>
 
 // Conditional includes for folder traversal
 #ifdef _WIN32
@@ -143,7 +144,7 @@ namespace flint {
 	*		Returns true if str ends with an instance of prefix
 	*/
 	bool startsWith(const string &str, const string &prefix) {
-		return std::mismatch(begin(prefix), end(prefix), begin(str)).first == end(prefix);
+		return mismatch(begin(prefix), end(prefix), begin(str)).first == end(prefix);
 	};
 
 	/**
