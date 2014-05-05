@@ -391,8 +391,7 @@ uint checkBlacklistedSequences(string fpath, CppLexer.Token[] v) {
       "sharing data, use std::atomic or locks. In addition, 'volatile' may "
       "force the compiler to generate worse code than it could otherwise. "
       "For more about why 'volatile' doesn't do what you think it does, see "
-      "http://fburl.com/volatile or http://www.kernel.org/doc/Documentation/"
-      "volatile-considered-harmful.txt.\n",
+      "http://www.kernel.org/doc/Documentation/volatile-considered-harmful.txt.\n",
                    true), // C++ only.
   ];
 
