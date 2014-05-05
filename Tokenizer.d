@@ -79,7 +79,8 @@ struct TokenizerGenerator(alias tokens, alias reservedTokens) {
     }
   };
 
-  static string generateCases(string[] tokens, size_t index = 0) {
+  static string generateCases(string[] tokens, size_t index = 0,
+                             bool* mayFallThrough = null) {
     assert(tokens.length > 1);
 
     static bool mustEscape(char c) {
@@ -98,8 +99,8 @@ struct TokenizerGenerator(alias tokens, alias reservedTokens) {
     string result;
     for (size_t i = 0; i < tokens.length; ++i) {
       if (index >= tokens[i].length) {
-        result ~= "default: { t = tk!\""
-          ~ tokens[i] ~ "\"; break token_search; }\n";
+        result ~= "default: t = tk!\""
+          ~ tokens[i] ~ "\"; break token_search;\n";
       } else {
         result ~= "case '" ~ escape(tokens[i][index .. index + 1]) ~ "': ";
         auto j = i + 1;
@@ -115,10 +116,14 @@ struct TokenizerGenerator(alias tokens, alias reservedTokens) {
                  ~ escape(tokens[i][index + 1 .. index + 2]) ~ "') ")
               : ("pc["~to!string(index + 1)~" .. $].startsWith(\""
                  ~ escape(tokens[i][index + 1 .. $]) ~ "\")) ");
+            result ~= "{ t = tk!\""
+              ~ escape(tokens[i]) ~
+              "\"; break token_search; } else break;\n";
+            if (mayFallThrough) *mayFallThrough = true;
+          } else {
+            result ~= "t = tk!\"" ~ escape(tokens[i])
+              ~ "\"; break token_search;\n";
           }
-          result ~= "{ t = tk!\""
-            ~ escape(tokens[i]) ~
-            "\"; break token_search; } break;\n";
           continue;
         }
         auto endOfToken = false;
@@ -130,8 +135,16 @@ struct TokenizerGenerator(alias tokens, alias reservedTokens) {
         }
         result ~= "switch (pc["~to!string(index + 1)~"]) {\n";
         if (!endOfToken) result ~= "default: break;\n";
-        result ~= generateCases(tokens[i .. j], index + 1);
-        result ~= "} break;\n";
+        bool mft;
+        result ~= generateCases(tokens[i .. j], index + 1, &mft)
+          ~ "}";
+        if (!endOfToken || mft) {
+          result ~= " break;\n";
+          if (mayFallThrough) *mayFallThrough = true;
+        }
+        else {
+          result ~= "\n";
+        }
         i = j - 1;
       }
     }
@@ -479,7 +492,6 @@ static string munchPreprocessorDirective(ref string pc, ref size_t line) {
       return munchChars(pc, i);
     }
   }
-  throw new Exception("Incorrect preprocessor directive");
 }
 
 /**

@@ -340,7 +340,6 @@ bool getFunctionNameAndArguments(ref Token[] r, ref Argument functionName,
   auto r1 = r;
   r.popFront;
   if (r.front.type_ == tk!"<") {
-    assert(0);
     r = skipTemplateSpec(r);
     if (r.front.type_ == tk!"\0") {
       return false;
@@ -388,7 +387,7 @@ uint checkBlacklistedSequences(string fpath, CppLexer.Token[] v) {
     CppLexer.TokenType2[] tokens;
     string descr;
     bool cpponly;
-  };
+  }
 
   const static BlacklistEntry[] blacklist = [
     BlacklistEntry([tk!"volatile"],
@@ -396,7 +395,8 @@ uint checkBlacklistedSequences(string fpath, CppLexer.Token[] v) {
       "sharing data, use std::atomic or locks. In addition, 'volatile' may "
       "force the compiler to generate worse code than it could otherwise. "
       "For more about why 'volatile' doesn't do what you think it does, see "
-      "http://www.kernel.org/doc/Documentation/volatile-considered-harmful.txt.\n",
+      "http://www.kernel.org/doc/Documentation/"
+      "volatile-considered-harmful.txt.\n",
                    true), // C++ only.
   ];
 
@@ -2335,7 +2335,7 @@ uint checkBreakInSynchronized(string fpath, Token[] v) {
   struct StatementBlockInfo {
     string name;
     uint openBraces;
-  };
+  }
 
   uint result = 0;
   StatementBlockInfo[] nestedStatements;
