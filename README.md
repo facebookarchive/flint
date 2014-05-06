@@ -39,7 +39,6 @@ Current Lint Checks
 	* `protected` inheritance
 	* function level `throws`
 * Advice
-	* Postfix iterators i++
 	* `nullptr` over `NULL`
 
 Usage
