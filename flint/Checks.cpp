@@ -903,6 +903,9 @@ namespace flint {
 		}
 	};
 
+	// ******************************************
+	// Deprecated due to too many false positives
+	// ******************************************
 	/**
 	* Check for postfix incrementers
 	*
@@ -912,7 +915,7 @@ namespace flint {
 	*		The path to the file currently being linted
 	* @param tokens
 	*		The token list for the file
-	*/
+	
 	void checkIncrementers(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		const vector<TokenType> iteratorPlus = {
@@ -931,6 +934,7 @@ namespace flint {
 			}
 		}
 	};
+	*/
 
 	/**
 	* Balance of #if(#ifdef, #ifndef)/#endif.

@@ -13,7 +13,9 @@ namespace flint {
 #define X(func)																\
 	void check##func(ErrorFile &errors, const string &path, const vector<Token> &tokens)
 
-	X(Incrementers);
+	// Deprecated due to too many false positives
+	//X(Incrementers);
+
 	X(DefinedNames);
 	X(CatchByReference);
 	X(BlacklistedSequences);
