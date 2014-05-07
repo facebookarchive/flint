@@ -84,6 +84,8 @@ Dependencies
 
 **None!** You're good to go! Happy linting :)
 
+*Edit:* It's not really a dependency, but it's worth noting that this project makes extensive use of the C++11 Feature Set. You probably won't be able to compile it on a Pre-C++11 version of your compiler. 
+
 Tested On
 ---------
 
