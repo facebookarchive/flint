@@ -523,8 +523,7 @@ namespace flint {
 
 				if (isMember && cmpToks(tokens[outerPos], tokens[innerPos])) {
 					lintError(errors, tokens[outerPos],
-						"Looks like you're initializing class member [ "
-						+ tokens[outerPos].value_ + " ] with itself.");
+						"Initializing class member '" + tokens[outerPos].value_ + "' with itself.");
 				}
 			}
 		}
@@ -552,7 +551,7 @@ namespace flint {
 
 		static const vector<BlacklistEntry> blacklist = {
 			{ { TK_VOLATILE },
-			"'volatile' does not make your code thread-safe.",
+			"'volatile' is not thread-safe.",
 			"If multiple threads are sharing data, use std::atomic or locks. In addition, 'volatile' may "
 			"force the compiler to generate worse code than it could otherwise. "
 			"For more about why 'volatile' doesn't do what you think it does, see "
@@ -570,7 +569,12 @@ namespace flint {
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
 
 			// Make sure we aren't at an exception to the blacklist
-			isException = find_if(begin(exceptions), end(exceptions), [&](const vector<TokenType> &e) { return atSequence(tokens, pos, e); }) != end(exceptions);
+			for (const auto &e : exceptions) {
+				if (atSequence(tokens, pos, e)) {
+					isException = true;
+					break;
+				}
+			}
 
 			for (const BlacklistEntry &entry : blacklist) {
 				if (!atSequence(tokens, pos, entry.tokens)) {
@@ -604,7 +608,7 @@ namespace flint {
 
 		static const map<string, string> blacklist = {
 			{ "strtok",
-			"strtok() is not thread safe, and has safer alternatives. Consider strtok_r."
+			"'strtok' is not thread safe. Consider 'strtok_r'."
 			}
 		};
 
@@ -674,7 +678,7 @@ namespace flint {
 				lintWarning(errors, tok, "Symbol " + sym + " invalid.",
 					"A symbol may not begin with two adjacent underscores.");
 			}
-			else if (sym.find("__") != string::npos) { // !FLAGS_c_mode /* C is less restrictive about this */ &&
+			else if (!Options.CMODE && sym.find("__") != string::npos) { // !FLAGS_c_mode /* C is less restrictive about this */ &&
 				if (okNames.find(sym) != okNames.end()) {
 					continue;
 				}
