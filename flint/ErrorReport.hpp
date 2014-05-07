@@ -8,9 +8,6 @@
 
 namespace flint {
 
-// Standard terminal width for divider
-#define TWIDTH 79
-
 	/*
 	* Class to represent a single "Error" that was found during linting
 	*/
@@ -39,10 +36,10 @@ namespace flint {
 		* @return
 		*		Returns a string containing the report output
 		*/
-		string toString() const {
+		string toString(const string &path) const {
 
 			const vector<string> typeStr = {
-				"Error", "Warning", "Advice"
+				"Error  ", "Warning", "Advice "
 			};
 
 			if (Options.JSON) {
@@ -57,12 +54,11 @@ namespace flint {
 				return result;
 			}
 
-			string result = "Line " + to_string(m_line) + ": "
-				+ typeStr[m_type] + "\n\n"
-				+ m_title + "\n\n";
+			string result = "[" + typeStr[m_type] + "] " + path + ":" 
+				+ to_string(m_line) + ": " + m_title + "\n";
 				
 			if (!m_desc.empty()) {
-				result += m_desc + "\n\n";
+				//result += "\n\n" + m_desc + "\n\n";
 			}
 
 			return result;
@@ -143,7 +139,7 @@ namespace flint {
 						result += ",\n";
 					}
 
-					result += m_objs[i].toString();
+					result += m_objs[i].toString(m_path);
 				}
 
 				result +=
@@ -153,19 +149,9 @@ namespace flint {
 				return result;
 			}
 			
-			string divider = string(TWIDTH, '=');
-			string result = divider + "\nFile " + m_path + ": \n"
-				"Errors:   " + to_string(getErrors()) + "\n";
-			if (Options.LEVEL >= Lint::WARNING) {
-				result += "Warnings: " + to_string(getWarnings()) + "\n";
-			}
-			if (Options.LEVEL >= Lint::ADVICE) {
-				result += "Advice:   " + to_string(getAdvice()) + "\n";
-			}
-			result += divider + "\n\n";
-
+			string result = "";
 			for (size_t i = 0; i < m_objs.size(); ++i) {
-				result += m_objs[i].toString();
+				result += m_objs[i].toString(m_path);
 			}
 
 			return result;
@@ -223,31 +209,26 @@ namespace flint {
 				return result;
 			}
 
-			string divider = string(TWIDTH, '=');
 			string result = "";
-
 			for (size_t i = 0; i < m_files.size(); ++i) {
 				if (m_files[i].getTotal() > 0) {
 					result += m_files[i].toString();
 				}
 			}
 
-			result += divider + "\nLint Summary: " 
-				+ to_string(m_files.size()) + " files\n\n"
-				"Errors:   " + to_string(getErrors()) + "\n";
+			result += "\nLint Summary: " 
+				+ to_string(m_files.size()) + " files\n"
+				"Errors: " + to_string(getErrors()) + " ";
 			if (Options.LEVEL >= Lint::WARNING) {
-				result += "Warnings: " + to_string(getWarnings()) + "\n";
+				result += "Warnings: " + to_string(getWarnings()) + " ";
 			}
 			if (Options.LEVEL >= Lint::ADVICE) {
-				result += "Advice:   " + to_string(getAdvice()) + "\n";
+				result += "Advice: " + to_string(getAdvice()) + " ";
 			}
-			result += divider + "\n";
+			result += "\n";
 
 			return result;
 		};
 	};
-
-// Cleanup
-#undef TWIDTH
 
 };
