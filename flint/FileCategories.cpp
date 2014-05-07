@@ -4,6 +4,8 @@
 #include <functional>
 #include <vector>
 
+#include "Polyfill.hpp"
+
 namespace flint {
 
 	// File Extensions to lint
@@ -140,5 +142,22 @@ namespace flint {
 
 		// No extension to strip
 		return path;
+	};
+
+	/**
+	* Strips the path off of a file name
+	*
+	* @param path
+	*		The path of the file trim
+	* @return
+	*		Returns the file name without any linter extensions
+	*/
+	string getFileName(const string &path) {
+		size_t pos = path.find_last_of(FS_SEP);
+
+		if (pos == string::npos || pos == path.size() - 2) {
+			return path;
+		}
+		return path.substr(pos + 1);
 	};
 };

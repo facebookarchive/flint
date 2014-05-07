@@ -18,4 +18,5 @@ namespace flint {
 	bool isSource(const string &path);
 
 	string getFileNameBase(const string &path);
+	string getFileName(const string &path);
 };
