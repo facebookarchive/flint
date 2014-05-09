@@ -290,7 +290,7 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
     // Unrecognized token?
     if (tt is tk!"") {
       auto c = pc[0];
-      if (isAlpha(c) || c == '_' || c == '$' || c == '@') {
+      if (std.ascii.isAlpha(c) || c == '_' || c == '$' || c == '@') {
         value = munchIdentifier(pc);
         //writeln("sym: ", value);
         tt = tk!"identifier";
@@ -352,7 +352,7 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
 
     // Keyword or identifier?
     char c = tt.sym[0];
-    if (isAlpha(c) || c == '_' || c == '$' || c == '@') {
+    if (std.ascii.isAlpha(c) || c == '_' || c == '$' || c == '@') {
       // This is a keyword, but it may be a prefix of a longer symbol
       assert(pc.length >= tt.sym.length, text(tt.sym, ": ", pc));
       c = pc[tt.sym.length];
