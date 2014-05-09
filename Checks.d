@@ -50,6 +50,11 @@ bool atSequence(Range)(Range r, const CppLexer.TokenType2[] list...) {
   return true;
 }
 
+string getSucceedingWhitespace(Token[] v) {
+  if (v.length < 2) return "";
+  return v[1].precedingWhitespace_;
+}
+
 // Remove the double quotes or <'s from an included path.
 string getIncludedPath(string p) {
   return p[1 .. p.length - 1];
@@ -335,7 +340,6 @@ bool getFunctionNameAndArguments(ref Token[] r, ref Argument functionName,
   auto r1 = r;
   r.popFront;
   if (r.front.type_ == tk!"<") {
-    assert(0);
     r = skipTemplateSpec(r);
     if (r.front.type_ == tk!"\0") {
       return false;
@@ -383,7 +387,7 @@ uint checkBlacklistedSequences(string fpath, CppLexer.Token[] v) {
     CppLexer.TokenType2[] tokens;
     string descr;
     bool cpponly;
-  };
+  }
 
   const static BlacklistEntry[] blacklist = [
     BlacklistEntry([tk!"volatile"],
@@ -391,7 +395,7 @@ uint checkBlacklistedSequences(string fpath, CppLexer.Token[] v) {
       "sharing data, use std::atomic or locks. In addition, 'volatile' may "
       "force the compiler to generate worse code than it could otherwise. "
       "For more about why 'volatile' doesn't do what you think it does, see "
-      "http://fburl.com/volatile or http://www.kernel.org/doc/Documentation/"
+      "http://www.kernel.org/doc/Documentation/"
       "volatile-considered-harmful.txt.\n",
                    true), // C++ only.
   ];
@@ -1663,7 +1667,18 @@ uint checkIncludeAssociatedHeader(string fpath, Token[] v) {
     if (!v.atSequence(tk!"#", tk!"identifier") || v[1].value != "include") {
       continue;
     }
+
+    // Skip PRECOMPILED #includes, or #includes followed by a 'nolint' comment
     if (v[2].value == "PRECOMPILED") continue;
+    if (v[2].type_ == tk!"string_literal"
+        && getSucceedingWhitespace(v[2 .. $]).canFind("nolint")) continue;
+    if (v[2].type_ == tk!"<") {
+      uint i = 3;
+      for (; i < v.length; ++i) if (v[i].type_ == tk!">") break;
+      if (i < v.length
+          && getSucceedingWhitespace(v[i .. $]).canFind("nolint")) continue;
+    }
+
     ++totalIncludesFound;
     if (v[2].type_ != tk!"string_literal") continue;
 
@@ -1814,7 +1829,7 @@ uint checkProtectedInheritance(string fpath, Token[] v) {
       }
 
       for (; it.front.type_ != tk!"\0"; it.popFront) {
-        if (it.front.type_ == tk!"{") {
+        if (it.front.type_.among(tk!"{", tk!";")) {
           break;
         }
 
@@ -2320,7 +2335,7 @@ uint checkBreakInSynchronized(string fpath, Token[] v) {
   struct StatementBlockInfo {
     string name;
     uint openBraces;
-  };
+  }
 
   uint result = 0;
   StatementBlockInfo[] nestedStatements;
@@ -2387,4 +2402,647 @@ uint checkBreakInSynchronized(string fpath, Token[] v) {
     }
   }
   return result;
+}
+
+/*
+ * Lint check: using C rand(), random_device or
+ * RandomInt32/RandomInt64 (under common/base/Random.h)
+ * to generate random number is not a good way, use rand32() or rand64() in
+ * folly/Random.h instead
+ */
+uint checkRandomUsage(string fpath, Token[] v) {
+  uint result = 0;
+
+  string[string] random_banned = [
+    "random_device":
+      "random_device uses /dev/urandom, which is expensive. "
+      "Use follly::Random::rand32 or other methods in folly/Random.h.\n",
+    "RandomInt32" :
+      "using RandomInt32 (in common/base/Random.h) to generate random number "
+      "is discouraged, please consider folly::Random::rand32().\n",
+    "RandomInt64" :
+      "using RandomInt64 (in common/base/Random.h) to generate random number "
+      "is discouraged, please consider folly::Random::rand64().\n"
+  ];
+
+  for (; !v.empty; v.popFront) {
+    auto t = v.front;
+    if (t.type_ != tk!"identifier") continue;
+    auto mapIt = t.value_ in random_banned;
+    if (!mapIt) {
+      if (v.atSequence(tk!"identifier", tk!"(", tk!")")
+            && t.value_ == "rand") {
+          lintError(
+            t,
+            "using C rand() to generate random number causes lock contention, "
+            "please consider folly::Random::rand32().\n");
+          ++result;
+      }
+      continue;
+    }
+    lintError(t, *mapIt);
+    ++result;
+  }
+
+  return result;
+}
+
+
+/**
+ * Checks that the proper C++11 headers are directly (i.e. non-transitively)
+ * included for instances of std::identifier.
+ *
+ * This is a first naive grep and needs to be extended but is supposed to be a
+ * reasonable first approximation of the types available in the std namespace.
+ *
+ * There are inaccuracies/mistakes in the stdHeader2ClassesAndStructs
+ * resulting from the crudeness of the grep (e.g.
+ *   "stdexcept" : ["for"],
+ *   "algorithm" : ["uniform_int_distribution"],
+ *   "random"    : ["uniform_int_distribution"],
+ *   ...
+ * ).
+ * If this is inacceptable we should use the linter itself and not rely on
+ * a grep.
+ *
+ * For future reference, the associative array initializer to include file
+ * map was generated using the following commands:
+ *
+ * cd $SOME_DIR
+ *
+ * git -c http.proxy=fwdproxy.any:8080 clone \
+ * https://github.com/llvm-mirror/libcxx.git libcxx
+ *
+ * find $SOME_DIR/libcxx/include/ -name "*" -type f  | grep -v "\.h" \
+ * | grep -v "\.tcc" | xargs egrep "class |struct " | grep -v "\*" \
+ * | grep -v " _" | grep -v "#include" | grep -v ";" | grep -v // \
+ * | grep -v "<" | grep -v "\.\.\." | sed "s:/usr/include/c++/4.4.6/::g" \
+ * | sed "s/: / /g" | grep -v "std::" | grep -v "()" | grep -v "#" \
+ * | grep -v enum
+ * | grep -v __ | egrep -v "<|>|=" | sed "s:/data/users/ntv/libcxx/include/::g"\
+ * | sed "s/:/ /g" | sed "s/class//g" | sed s/struct//g
+ * | awk {'printf("\"%s\"  : \"%s\",\n", $1, $2)'} | sort | uniq > /tmp/foo
+ *
+ * cat /tmp/foo
+ *
+ * Manual tweaks and regexp replaces in emacs
+ */
+uint checkDirectStdInclude(string fpath, Token[] toks) {
+  immutable auto stdHeader2ClassesAndStructs = [
+    "algorithm" : [
+      "param_type", "uniform_int_distribution"
+    ],
+    "array" : [
+      "array"
+    ],
+    "atomic" : [
+      "atomic", "typedef"
+    ],
+    "bitset" : [
+      "bitset", "reference"
+    ],
+    "chrono" : [
+      "duration", "duration_values", "steady_clock", "system_clock",
+      "time_point"
+    ],
+    "codecvt" : [
+      "codecvt_utf16", "codecvt_utf8", "codecvt_utf8_utf16"
+    ],
+    "complex" : [
+      "complex"
+    ],
+    "condition_variable" : [
+      "condition_variable", "condition_variable_any"
+    ],
+    "deque" : [
+      "deque"
+    ],
+    "exception" : [
+      "bad_exception", "exception", "nested_exception"
+    ],
+    "experimental/dynarray" : [
+      "dynarray", "bad_optional_access", "nullopt_t", "optional"
+    ],
+    "ext/hash_map" : [
+      "hash_map", "hash_multimap"
+    ],
+    "ext/hash_set" : [
+      "hash_multiset", "hash_set"
+    ],
+    "forward_list" : [
+      "forward_list"
+    ],
+    "fstream" : [
+      "basic_filebuf", "basic_fstream", "basic_ifstream", "basic_ofstream"
+    ],
+    "functional" : [
+      "bad_function_call", "binary_function", "binary_negate", "binder1st",
+      "binder2nd", "reference_wrapper", "unary_function", "unary_negate"
+    ],
+    "future" : [
+      "future", "future_error", "promise", "shared_future"
+    ],
+    // Do not include initializer_list
+    // "initializer_list" : [
+    //   "initializer_list"
+    // ],
+    "ios" : [
+      "basic_ios", "ios_base"
+    ],
+    "istream" : [
+      "basic_iostream", "basic_istream"
+    ],
+    "iterator" : [
+      "back_insert_iterator", "front_insert_iterator", "insert_iterator",
+      "istreambuf_iterator", "istream_iterator", "iterator",
+      "iterator_traits", "ostreambuf_iterator", "ostream_iterator",
+      "reverse_iterator"
+    ],
+    "limits" : [
+      "numeric_limits"
+    ],
+    "list" : [
+      "list"
+    ],
+    "locale" : [
+      "locale", "wbuffer_convert", "wstring_convert"
+    ],
+    "map" : [
+      "map", "multimap", "value_compare"
+    ],
+    "memory" : [
+      "allocator", "allocator_traits", "auto_ptr", "auto_ptr_ref",
+      "bad_weak_ptr", "default_delete", "enable_shared_from_this",
+      "pointer_traits", "raw_storage_iterator", "shared_ptr", "unique_ptr",
+      "weak_ptr"
+    ],
+    "mutex" : [
+      "lock_guard", "mutex", "once_flag", "recursive_mutex",
+      "recursive_timed_mutex", "timed_mutex", "unique_lock"
+    ],
+    "new" : [
+      "bad_alloc", "bad_array_new_length"
+    ],
+    "ostream" : [
+      "basic_ostream"
+    ],
+    "queue" : [
+      "priority_queue", "queue"
+    ],
+    "random" : [
+      "bernoulli_distribution", "binomial_distribution",
+      "cauchy_distribution", "chi_squared_distribution",
+      "discard_block_engine", "discrete_distribution",
+      "exponential_distribution", "extreme_value_distribution",
+      "fisher_f_distribution", "gamma_distribution", "geometric_distribution",
+      "independent_bits_engine", "linear_congruential_engine",
+      "lognormal_distribution", "mersenne_twister_engine",
+      "negative_binomial_distribution", "normal_distribution", "param_type",
+      "piecewise_constant_distribution", "piecewise_linear_distribution",
+      "poisson_distribution", "random_device", "seed_seq",
+      "shuffle_order_engine", "student_t_distribution",
+      "subtract_with_carry_engine", "UIntType,", "uniform_int_distribution",
+      "uniform_real_distribution", "weibull_distribution"
+    ],
+    "ratio" : [
+      "ratio"
+    ],
+    "regex" : [
+      "basic_regex", "match_results", "regex_error", "regex_iterator",
+      "regex_token_iterator", "regex_traits", "sub_match"
+    ],
+    "scoped_allocator" : [
+      "rebind", "scoped_allocator_adaptor"
+    ],
+    "set" : [
+      "multiset", "set"
+    ],
+    "shared_mutex" : [
+      "shared_lock", "shared_mutex"
+    ],
+    "sstream" : [
+      "basic_istringstream", "basic_ostringstream", "basic_stringbuf",
+      "basic_stringstream"
+    ],
+    "stack" : [
+      "stack"
+    ],
+    // grep bug
+    // "stdexcept" : [
+    //   "for"
+    // ],
+    "streambuf" : [
+      "basic_streambuf"
+    ],
+    "string" : [
+      "basic_string", "char_traits", "fpos"
+    ],
+    "strstream" : [
+      "istrstream", "ostrstream", "strstream", "strstreambuf"
+    ],
+    "system_error" : [
+      "error_category", "error_code", "error_condition", "system_error"
+    ],
+    "thread" : [
+      "thread"
+    ],
+    "tuple" : [
+      "tuple"
+    ],
+    "typeindex" : [
+      "type_index"
+    ],
+    "typeinfo" : [
+      "bad_cast", "bad_typeid", "type_info"
+    ],
+    "type_traits" : [
+      "aligned_union", "is_assignable", "is_deible",
+      "is_trivially_assignable", "underlying_type"
+    ],
+    "unordered_map" : [
+      "unordered_map", "unordered_multimap"
+    ],
+    "unordered_set" : [
+      "unordered_multiset", "unordered_set"
+    ],
+    "utility" : [
+      "integer_sequence", "pair"
+    ],
+    "valarray" : [
+      "gslice", "gslice_array", "indirect_array", "mask_array", "slice",
+      "slice_array", "valarray"
+    ],
+    "vector" : ["vector"]
+  ];
+
+  // Results of a second grep after missing a few things:
+  // find /data/users/ntv/libcxx/include/ -name "*" -type f  | grep -v "\.h" |
+  // grep -v "\.tcc" | xargs egrep "class |struct " | grep -v "\*" | grep -v
+  // "#include" | grep -v ";" | grep -v // | grep -v "<" | grep -v "\.\.\." |
+  // sed "s:/usr/include/c++/4.4.6/::g" | sed "s/: / /g" | grep -v "std::" |
+  // grep -v "()" | grep -v "#" | grep -v enum | grep -v __ | egrep -v "<|>|=" |
+  // sed "s:/data/users/ntv/libcxx/include/::g" | sed "s/_LIBCPP_TYPE_VIS//g" |
+  // sed "s/_ONLY//g" | sed "s/:/ /g" | sed "s/  / /g" | grep -v " _" |sort |
+  // uniq | more | sed "s/  / /g" | sed "s/class//g" | sed s/struct//g | awk
+  // {'printf("\"%s\"  : \"%s\",\n", $1, $2)'} | sort | uniq > /tmp/aaa
+  immutable auto stdHeader2ClassesAndStructsGrep2 = [
+    "cstddef"  : [
+      "nullptr_t"
+    ],
+    "functional"  : [
+      "bad_function_call", "binary_function", "binary_negate",
+      "binder1st", "binder2nd", "const_mem_fun1_ref_t", "hash",
+      "pointer_to_binary_function", "pointer_to_unary_function",
+      "reference_wrapper", "unary_function", "unary_negate"
+    ],
+    "locale"  : [
+      "locale", "messages", "messages_base", "messages_byname",
+      "money_base", "money_get", "moneypunct", "moneypunct_byname",
+      "money_put", "num_get", "num_put", "time_base", "time_get",
+      "time_get_byname", "time_put", "time_put_byname",
+      "wbuffer_convert", "wstring_convert"
+    ],
+    "memory"  : [
+      "pointer_safety"
+    ],
+    "ratio"  : [
+      "ratio", "ratio_add", "ratio_divide", "ratio_equal",
+      "ratio_greater", "ratio_greater_equal", "ratio_less",
+      "ratio_less_equal", "ratio_multiply", "ratio_not_equal",
+      "ratio_scoped"
+    ],
+    "subtract_allocator"  : [
+      "rebind", "scoped_allocator_adaptor"
+    ],
+    "type_traits"  : [
+      "aligned_storage", "aligned_union", "common_type",
+      "decay", "integral_constant", "is_assignable",
+      "is_base_of", "is_conible", "is_copy_conible",
+      "is_default_conible", "is_deible", "is_empty",
+      "is_move_conible", "is_nothrow_assignable",
+      "is_nothrow_conible", "is_nothrow_deible",
+      "is_polymorphic", "is_trivially_assignable",
+      "is_trivially_conible", "make_signed", "make_unsigned",
+      "underlying_type"
+    ]
+  ];
+
+  // Manual entries for things that may still be missing
+  immutable auto stdHeader2ClassesAndStructsManual = [
+    "string" : [
+      "string"
+    ]
+  ];
+
+  // These were created by hand
+  immutable auto methods = [
+    "algorithm" : [
+      "all_of", "any_of", "none_of", "for_each", "find", "find_if",
+      "find_if_not", "find_end", "find_first_of", "adjacent_find", "count",
+      "count_if", "mismatch", "equal", "is_permutation", "search", "search_n",
+      "copy", "copy_n", "copy_if", "copy_backward", "move", "move_backward",
+      "swap", "swap_ranges", "iter_swap", "transform", "replace", "replace_if",
+      "replace_copy", "replace_copy_if", "fill", "fill_n", "generate",
+      "generate_n", "remove", "remove_if", "remove_copy", "remove_copy_if",
+      "unique", "unique_copy", "reverse", "reverse_copy", "rotate",
+      "rotate_copy", "random_shuffle", "shuffle", "is_partitioned", "partition",
+      "stable_partition", "partition_copy", "partition_point", "sort",
+      "stable_sort", "partial_sort", "partial_sort_copy", "is_sorted",
+      "is_sorted_until", "nth_element", "lower_bound", "upper_bound",
+      "equal_range", "binary_search", "merge", "inplace_merge", "includes",
+      "set_union", "set_intersection", "set_difference",
+      "set_symmetric_difference", "push_heap", "pop_heap", "make_heap",
+      "sort_heap", "is_heap", "is_heap_until", "min", "max", "minmax",
+      "min_element", "max_element", "minmax_element", "lexicographical_compare",
+      "next_permutation", "prev_permutation"
+    ]
+  ];
+
+  auto includeMap = ["" : ""];
+  foreach (k, v; stdHeader2ClassesAndStructs) {
+    for (size_t i = 0; i < v.length; i++) {
+      includeMap[v[i]] = k;
+    }
+  }
+  foreach (k, v; stdHeader2ClassesAndStructsGrep2) {
+    for (size_t i = 0; i < v.length; i++) {
+      includeMap[v[i]] = k;
+    }
+  }
+  foreach (k, v; stdHeader2ClassesAndStructsManual) {
+    for (size_t i = 0; i < v.length; i++) {
+      includeMap[v[i]] = k;
+    }
+  }
+  foreach (k, v; methods) {
+    for (size_t i = 0; i < v.length; i++) {
+      includeMap[v[i]] = k;
+    }
+  }
+
+  int result;
+  string[] parsedIncludes;
+
+  // Also Tokenize the corresponding include's contents
+  import std.file;
+  Token[] tokens;
+  string includePath1 = tr(fpath, ".cpp", ".h", "s");
+  string includePath2 = tr(fpath, ".cpp", ".hpp");
+  string includePath3 = tr(fpath, ".cpp", ".hxx");
+  string includePath  = "";
+  if (includePath1.exists &&
+      getFileCategory(includePath1) == FileCategory.header) {
+    includePath = includePath1;
+  } else if (includePath2.exists &&
+             getFileCategory(includePath2) == FileCategory.header) {
+    includePath = includePath2;
+  } else if (includePath3.exists &&
+             getFileCategory(includePath3) == FileCategory.header) {
+    includePath = includePath3;
+  }
+
+  if (includePath.length >= 1) {
+    string file = includePath.readText;
+    tokens = tokenize(file, includePath) ~ toks;
+  } else {
+    tokens = toks;
+  }
+
+  Token[][string] warningMap;
+  for (; !tokens.empty; tokens.popFront) {
+    if (tokens.atSequence(tk!"#", tk!"identifier") &&
+        tokens[1].value == "include") {
+      // Skip relative include paths atm.
+      if (tokens[2].value == "<") {
+        parsedIncludes ~= tokens[3].value;
+      }
+      continue;
+    }
+    if (!tokens.atSequence(tk!"identifier", tk!"::") ||
+        tokens[0].value != "std")
+      continue;
+
+    // Advance token to xxx in std::xxx
+    tokens.popFrontN(2);
+    string typeName = tokens[0].value;
+    auto p = (typeName in includeMap);
+    if (p is null) {
+      // This would print a lot of warnings in this first implementation...
+      // lintWarning(tokens.front,
+      //             text("No entry std::", typeName,
+      //                  "found in Linter's standard library include map. ",
+      //                  "Please report omission."));
+      continue;
+    }
+
+    // This fails for occurrences of type used before the proper include is
+    // defined. For example, forward declarations would fail. On the other
+    // hand, foward declaration of std::xxx results in undefined behavior.
+    auto pp = find(parsedIncludes, includeMap[typeName]);
+    if (pp.empty) {
+      string includeStr = includeMap[typeName];
+      warningMap[includeStr] ~= tokens[0];
+      result++;
+    }
+  }
+
+  if (result > 0) {
+    foreach (key; warningMap.byKey()) {
+      string occurrences = "";
+      foreach (ref elem; warningMap[key]) {
+        occurrences ~= " std::" ~ elem.value;
+      }
+      lintWarning(warningMap[key][0],
+                  text("Direct include ",
+                       "not found in either cpp or include file",
+                       " for", occurrences, ", prefer to use direct",
+                       " #include <", key, "> (found ", warningMap[key].length,
+                       " total occurrence(s) for this missing include)\n"));
+    }
+  }
+
+
+  return result;
+}
+
+
+/*
+ * Get the right-hand-side expression starting from a comparison operator.
+*/
+string getRhsExpr(const Token[] tox, const bool[TokenType] exprTokens) {
+  string rhs = "";
+  int rhsLParenCount = 0;
+  int toxIdx = 1;
+
+  while (toxIdx < tox.length &&
+         (0 < rhsLParenCount ||
+          (tox[toxIdx].type_ in exprTokens && tox[toxIdx].type_ != tk!")"))) {
+    rhs ~= tox[toxIdx].value ~ " ";
+
+    if (tox[toxIdx].type_ == tk!"(") {
+      ++rhsLParenCount;
+    } else if (tox[toxIdx].type_ == tk!")") {
+      --rhsLParenCount;
+    }
+
+    ++toxIdx;
+  }
+
+    return rhs;
+}
+
+/*
+ * Get bogus comparisons for the tokens in comparisonTokens.
+*/
+uint getBogusComparisons(Token[] v,
+                         const bool[TokenType] comparisonTokens,
+                         const bool[TokenType] exprTokens) {
+  uint result = 0;
+  string lhs = "";
+  ulong[] specialTokenHead = [];
+  ulong[] lhsExprHead = [0];
+  ulong lhsLParenCount = 0;
+
+  for (auto tox = v; !tox.empty; tox.popFront) {
+    lhs ~= tox.front.value ~ " ";
+
+    if (tox.front.type_ in exprTokens) {
+      if (tox.front.type_ == tk!"(") {
+        lhsExprHead ~= lhs.length;
+        ++lhsLParenCount;
+      } else if (tox.front.type_ == tk!")") {
+        while (lhsExprHead.back != 0 && lhs[lhsExprHead.back - 1 - 1] != '(') {
+          lhsExprHead.popBack;
+        }
+
+        if (lhsExprHead.back != 0) {
+          lhsExprHead.popBack;
+          --lhsLParenCount;
+        }
+      } else if (tox.front.type_.among(tk!"identifier",
+                                       tk!"number",
+                                       tk!"string_literal",
+                                       tk!"char_literal")) {
+        specialTokenHead ~= lhs.length;
+      }
+
+      continue;
+    }
+
+    if (tox.front.type_ !in comparisonTokens) {
+      if (0 < lhsLParenCount) {
+        lhsExprHead ~= lhs.length;
+      } else {
+        specialTokenHead.clear;
+        lhs.clear;
+        lhsExprHead = [0];
+        lhsLParenCount = 0;
+      }
+
+      continue;
+    }
+
+    string rhs = getRhsExpr(tox, exprTokens);
+
+    if (// Ignore less than and greater than, due to the large number of
+        // false positives
+        !tox.front.type_.among(tk!"<", tk!">") &&
+        // Ignore expressions without special tokens
+        !specialTokenHead.empty && lhsExprHead.back < specialTokenHead.back &&
+        lhs[lhsExprHead.back .. lhs.length - tox.front.value.length - 1] ==
+          rhs) {
+      lintWarning(tox.front,
+                  text("A comparison between identical expressions, ",
+                       rhs.stripRight,
+                       ".\n"));
+      ++result;
+    }
+  }
+
+  return result;
+}
+
+/*
+ * Lint check: detect bogus comparisons, e.g., EXPR == EXPR.
+*/
+uint checkBogusComparisons(string fpath, Token[] v) {
+  bool[TokenType] exprTokens = [
+    tk!"::":1,
+    tk!"++":1,
+    tk!"--":1,
+    tk!"(":1,
+    tk!")":1,
+    tk!"[":1,
+    tk!"]":1,
+    tk!".":1,
+    tk!"->":1,
+    tk!"typeid":1,
+    tk!"const_cast":1,
+    tk!"dynamic_cast":1,
+    tk!"reinterpret_cast":1,
+    tk!"static_cast":1,
+    tk!"+":1,
+    tk!"-":1,
+    tk!"!":1,
+    tk!"not":1,
+    tk!"~":1,
+    tk!"compl":1,
+    tk!"&":1,
+    tk!"sizeof":1,
+    tk!"new":1,
+    tk!"delete":1,
+    tk!".*":1,
+    tk!"->*":1,
+    tk!"*":1,
+    tk!"/":1,
+    tk!"%":1,
+    tk!"<<":1,
+    tk!">>":1,
+    tk!"#":1,
+    tk!"##":1,
+    tk!"identifier":1,
+    tk!"number":1,
+    tk!"string_literal":1,
+    tk!"char_literal":1,
+    tk!"char":1,
+    tk!"bool":1,
+    tk!"short":1,
+    tk!"int":1,
+    tk!"long":1,
+    tk!"float":1,
+    tk!"double":1,
+    tk!"wchar_t":1,
+    tk!"signed":1,
+    tk!"unsigned":1,
+  ];
+
+  const bool[TokenType] inequalityTokens = [
+    tk!"<":1,
+    tk!"<=":1,
+    tk!">":1,
+    tk!">=":1,
+  ];
+
+  // We need to execute the following statements in order.
+  // ... Inequality Tokens have higher precedence than equality tokens,
+  // ... so we need to check inequality bogus comparisons first.
+  uint inequalityBogusComparisons =
+    getBogusComparisons(v, inequalityTokens, exprTokens);
+
+  // ... Then, we merge inequality tokens into expression tokens.
+  foreach (t; inequalityTokens.keys) {
+    exprTokens[t] = true;
+  }
+
+  const bool[TokenType] equalityTokens = [
+    tk!"==":1,
+    tk!"!=":1,
+    tk!"not_eq":1,
+  ];
+
+  // ... Finally, we check equality bogus comparisons.
+  uint equalityBogusComparisons =
+    getBogusComparisons(v, equalityTokens, exprTokens);
+
+  return inequalityBogusComparisons + equalityBogusComparisons;
 }

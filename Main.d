@@ -2,10 +2,11 @@
 // License: Boost License 1.0, http://boost.org/LICENSE_1_0.txt
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
-import std.file, std.getopt, std.stdio;
+import std.conv, std.file, std.getopt, std.stdio;
 import Checks, FileCategories, Ignored, Tokenizer;
 
 bool recursive = true;
+bool include_what_you_use = false;
 
 /**
  * Entry point. Reads in turn and verifies each file passed onto the
@@ -14,7 +15,8 @@ bool recursive = true;
 int main(string[] args) {
   getopt(args,
     "recursive", &recursive,
-    "c_mode", &c_mode);
+    "c_mode", &c_mode,
+    "include_what_you_use", &include_what_you_use);
 
   // Check each file
   uint errors = 0;
@@ -54,7 +56,7 @@ uint checkEntry(string path) {
 
   try {
     // Get file intro memory
-    string file = path.readText;
+    string file = to!string(path.read);
     Token[] tokens;
     // Remove code that occurs in pairs of
     // "// %flint: pause" & "// %flint: resume"
@@ -77,6 +79,7 @@ uint checkEntry(string path) {
     errors += checkBannedIdentifiers(path, tokens);
     errors += checkOSSIncludes(path, tokens);
     errors += checkBreakInSynchronized(path, tokens);
+    errors += checkBogusComparisons(path, tokens);
     if (!c_mode) {
       errors += checkNamespaceScopedStatics(path, tokens);
       errors += checkIncludeAssociatedHeader(path, tokens);
@@ -94,11 +97,13 @@ uint checkEntry(string path) {
       errors += checkUpcaseNull(path, tokens);
       errors += checkExceptionInheritance(path, tokens);
       errors += checkMutexHolderHasName(path, tokens);
+      if (include_what_you_use) {
+        errors += checkDirectStdInclude(path, tokens);
+      }
     }
     // *** Checks end
   } catch (Exception e) {
-    stderr.writef("Exception thrown during checks on %s.\n%s",
-        path, e.toString());
+    stderr.writef("Flint was unable to lint %s\n", path);
   }
   return errors;
 }

@@ -2,8 +2,52 @@
 // License: Boost License 1.0, http://boost.org/LICENSE_1_0.txt
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
-import std.array, std.conv, std.exception, std.stdio;
+import std.array, std.conv, std.exception, std.random, std.stdio;
 import Checks, Tokenizer;
+
+unittest {
+  string s = "
+#include <vector>
+#include <list1>
+#include <algorith>
+#include \"map\"
+int main() {
+  std::vector<int> s;
+  std::map<Foo> s;
+  std::list<T> s!@#1;
+  std::foo<bar> s;
+  std::find();
+  std::find_if();
+  std::remove();
+  vector<int> s;
+  map<Foo> s;
+  list<T> s!@#1;
+  foo<bar> s;
+  find();
+  find_if();
+  remove();
+}
+
+#include <algorithm>
+void foo() {
+  std::find();
+  std::find_if();
+  std::remove();
+}
+";
+  auto tokens = tokenize(s, "nofile.cpp");
+  EXPECT_EQ(checkDirectStdInclude("nofile.cpp", tokens), 5);
+}
+
+unittest {
+  import std.file;
+  string fpath = "linters/flint/test_files/Test1.cpp";
+  if (fpath.exists()) {
+    string file = fpath.readText;
+    auto tokens = tokenize(file, fpath);
+    EXPECT_EQ(checkDirectStdInclude(fpath, tokens), 3);
+  }
+}
 
 unittest {
   string s = "
@@ -99,6 +143,34 @@ lines. Nyuk-nyuk...
   Token[] tokens = tokenize(s, "nofile.cpp");
   assert(tokens.length == 7);
   assert(tokens[3].type_ == tk!"float");
+}
+
+// Test #pragma/#error preprocessor directives are tokenized
+unittest {
+  string s = "
+#error this is an error
+#pragma omp parallel for
+   #   error with some leading spaces
+#pragma   once
+#error with line \\
+break
+#warning warning warning";
+  Token[] tokens = tokenize(s, "nofile.cpp");
+  assert(tokens.length == 9);
+  assert(tokens[0].type_ == tk!"preprocessor_directive" && tokens[0].value() ==
+    "#error this is an error");
+  assert(tokens[1].type_ == tk!"preprocessor_directive" && tokens[1].value() ==
+    "#pragma omp parallel for");
+  assert(tokens[2].type_ == tk!"preprocessor_directive" && tokens[2].value() ==
+    "#   error with some leading spaces");
+  assert(tokens[3].type_ == tk!"#");
+  assert(tokens[4].type_ == tk!"identifier" && tokens[4].value() == "pragma");
+  assert(tokens[5].type_ == tk!"identifier" && tokens[5].value() == "once");
+  assert(tokens[6].type_ == tk!"preprocessor_directive" && tokens[6].value() ==
+    "#error with line \\\nbreak");
+  assert(tokens[7].type_ == tk!"preprocessor_directive" && tokens[7].value() ==
+    "#warning warning warning");
+  assert(tokens[8].type_ == tk!"\0");
 }
 
 // Test numeric literals
@@ -1129,6 +1201,10 @@ unittest {
   string s6 = "class foo : protected bar { class baz : protected bar { } }";
   tokens = tokenize(s6);
   EXPECT_EQ(checkProtectedInheritance(filename, tokens), 2);
+
+  string s7 = "class foo; class bar : protected foo {};";
+  tokens = tokenize(s7);
+  EXPECT_EQ(checkProtectedInheritance(filename, tokens), 1);
 }
 
 // testExceptionInheritance
@@ -1331,8 +1407,10 @@ unittest {
             }
           }
 ";
-  auto f = "/tmp/cxx_replace_testing";
+  auto f = "/tmp/cxx_replace_testing"
+    ~ to!string(uniform(0,int.max)) ~ to!string(uniform(0,int.max));
   std.file.write(f, s1);
+  scope(exit) std.file.remove(f);
   import std.process;
   EXPECT_EQ(system(("_bin/linters/flint/cxx_replace 'munch' 'crunch' "
                     ~ f)),
@@ -1642,6 +1720,16 @@ unittest {
                 #include \"file.h\"
                 #include \"othertest/testfile.h\"";
   tokens = tokenize(s13);
+
+  EXPECT_EQ(checkIncludeAssociatedHeader(filename, tokens), 0);
+
+  // good with 'nolint' comments and PRECOMPILED
+  filename = "A.cpp";
+  string s14 = "#include <q/r/s> // nolint
+                #include \"abracadabra\" // more than nolint comment
+                #include PRECOMPILED
+                #include \"A.h\"";
+  tokens = tokenize(s14);
 
   EXPECT_EQ(checkIncludeAssociatedHeader(filename, tokens), 0);
 }
@@ -2139,6 +2227,51 @@ unittest {
   tokens.clear();
   tokenize(s3, filename, tokens);
   EXPECT_EQ(checkFollyStringPieceByValue(filename, tokens), 0);
+}
+
+// testCheckRandomUsage
+unittest {
+  string filename = "nofile.cpp";
+  Token[] tokens;
+
+  // random_device
+  string s = "
+    random_device rd;
+    std::uniform_int_distribution<int> dist;
+    std::random_device rd2;
+    r = dist(rd);
+  ";
+  tokenize(s, filename, tokens);
+  EXPECT_EQ(checkRandomUsage(filename, tokens), 2);
+
+  // rand()
+  string s1 = "
+    int randomInt = rand();
+    tr_rand();
+  ";
+  tokens.clear();
+  tokenize(s1, filename, tokens);
+  EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
+
+  // RandomInt32
+  string s2 = "
+    RandomInt32 r;
+    GetRandomInt32();
+    uint32_t rand = r();
+  ";
+  tokens.clear();
+  tokenize(s2, filename, tokens);
+  EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
+
+  // RandomInt64
+  string s3 = "
+    RandomInt64 r;
+    GetRandomInt64();
+    uint64_t rand = r();
+  ";
+  tokens.clear();
+  tokenize(s3, filename, tokens);
+  EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
 }
 
 void main(string[] args) {

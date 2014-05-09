@@ -28,7 +28,7 @@ Dependencies
 - additional platform specific dependencies
 
     Ubuntu 13.10 64-bit
-    - g++
+    - g++ (tested with 4.7.1, 4.8.1)
     - gdc
     - automake
     - autoconf

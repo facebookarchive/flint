@@ -2,8 +2,8 @@
 // License: Boost License 1.0, http://boost.org/LICENSE_1_0.txt
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
-import std.algorithm, std.array, std.ascii, std.conv, std.exception, std.stdio,
-  std.typecons, std.typetuple;
+import std.algorithm, std.array, std.ascii, std.conv, std.exception, std.regex,
+  std.stdio, std.typecons, std.typetuple;
 
 struct TokenizerGenerator(alias tokens, alias reservedTokens) {
   /**
@@ -79,7 +79,8 @@ struct TokenizerGenerator(alias tokens, alias reservedTokens) {
     }
   };
 
-  static string generateCases(string[] tokens, size_t index = 0) {
+  static string generateCases(string[] tokens, size_t index = 0,
+                             bool* mayFallThrough = null) {
     assert(tokens.length > 1);
 
     static bool mustEscape(char c) {
@@ -98,8 +99,8 @@ struct TokenizerGenerator(alias tokens, alias reservedTokens) {
     string result;
     for (size_t i = 0; i < tokens.length; ++i) {
       if (index >= tokens[i].length) {
-        result ~= "default: { t = tk!\""
-          ~ tokens[i] ~ "\"; break token_search; }\n";
+        result ~= "default: t = tk!\""
+          ~ tokens[i] ~ "\"; break token_search;\n";
       } else {
         result ~= "case '" ~ escape(tokens[i][index .. index + 1]) ~ "': ";
         auto j = i + 1;
@@ -115,10 +116,14 @@ struct TokenizerGenerator(alias tokens, alias reservedTokens) {
                  ~ escape(tokens[i][index + 1 .. index + 2]) ~ "') ")
               : ("pc["~to!string(index + 1)~" .. $].startsWith(\""
                  ~ escape(tokens[i][index + 1 .. $]) ~ "\")) ");
+            result ~= "{ t = tk!\""
+              ~ escape(tokens[i]) ~
+              "\"; break token_search; } else break;\n";
+            if (mayFallThrough) *mayFallThrough = true;
+          } else {
+            result ~= "t = tk!\"" ~ escape(tokens[i])
+              ~ "\"; break token_search;\n";
           }
-          result ~= "{ t = tk!\""
-            ~ escape(tokens[i]) ~
-            "\"; break token_search; } break;\n";
           continue;
         }
         auto endOfToken = false;
@@ -130,8 +135,16 @@ struct TokenizerGenerator(alias tokens, alias reservedTokens) {
         }
         result ~= "switch (pc["~to!string(index + 1)~"]) {\n";
         if (!endOfToken) result ~= "default: break;\n";
-        result ~= generateCases(tokens[i .. j], index + 1);
-        result ~= "} break;\n";
+        bool mft;
+        result ~= generateCases(tokens[i .. j], index + 1, &mft)
+          ~ "}";
+        if (!endOfToken || mft) {
+          result ~= " break;\n";
+          if (mayFallThrough) *mayFallThrough = true;
+        }
+        else {
+          result ~= "\n";
+        }
         i = j - 1;
       }
     }
@@ -215,7 +228,8 @@ alias Keywords = TypeTuple!(
 );
 
 static immutable string[] specialTokens = [
-  "identifier", "number", "string_literal", "char_literal"
+  "identifier", "number", "string_literal", "char_literal",
+  "preprocessor_directive"
 ];
 
 alias TokenizerGenerator!([NonAlphaTokens, Keywords], specialTokens)
@@ -260,10 +274,13 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
   string value;
   CppLexer.TokenType2 tt;
   auto initialPc = pc;
+  auto initialLine = line;
+  size_t tokenLine;
 
   for (;;) {
     auto t = CppLexer.match(pc);
     line += t[0];
+    tokenLine = line;
     charsBefore += t[1];
     tt = t[2];
 
@@ -280,7 +297,7 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
         break;
       } else {
         writeln("Illegal character: ", cast(uint) c, " [", c, "]");
-        assert(0);
+        throw new Exception("Illegal character");
       }
     }
 
@@ -302,6 +319,14 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
     if (tt is tk!"/*") {
       charsBefore += munchComment(pc, line).length;
       continue;
+    }
+
+    // #pragma/#error/#warning preprocessor directive (except #pragma once)?
+    if (tt == tk!"#" && match(pc, ctRegex!(`^#\s*(error|warning|pragma)\s`))
+          && !match(pc, ctRegex!(`^#\s*pragma\s+once`))) {
+      value = munchPreprocessorDirective(pc, line);
+      tt = tk!"preprocessor_directive";
+      break;
     }
 
     // Literal string?
@@ -352,10 +377,35 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
     pc = pc[tt.sym.length .. $];
     break;
   }
+
+  version (unittest) {
+    // make sure the we munched the right number of characters
+    auto delta = initialPc.length - pc.length;
+    if (tt is tk!"\0") delta += 1;
+    auto tsz = charsBefore + (value ? value.length : tt.sym().length);
+    if (tsz != delta) {
+      stderr.writeln("Flint tokenization error: Wrong size for token type '",
+          tt.sym(), "': '", initialPc[0 .. charsBefore], "'~'", value, "' ",
+          "of size ", tsz, " != '", initialPc[0 .. delta], "' of size ",
+          delta);
+      throw new Exception("Internal flint error");
+    }
+
+    // make sure that line was incremented the correct number of times
+    auto lskip = std.algorithm.count(initialPc[0 .. delta], '\n');
+    if (initialLine + lskip != line) {
+      stderr.writeln("Flint tokenization error: muched '",
+          initialPc[0 .. delta], "' (token type '", tt.sym(), "'), "
+          "which contains ", lskip, " newlines, "
+          "but line has been incremented by ", line - initialLine);
+      throw new Exception("Internal flint error");
+    }
+  }
+
   return CppLexer.Token(
     tt, value,
     initialPc[0 .. charsBefore],
-    line);
+    tokenLine);
 }
 
 /**
@@ -418,6 +468,30 @@ static string munchComment(ref string pc, ref size_t line) {
     }
   }
   assert(false);
+}
+
+/**
+ * Assuming pc is positioned at the start of a specified preprocessor directive,
+ * munches it from pc and returns it.
+ */
+static string munchPreprocessorDirective(ref string pc, ref size_t line) {
+  for (size_t i = 0; ; ++i) {
+    assert(i < pc.length);
+    auto c = pc[i];
+    if (c == '\n') {
+      if (i > 0 && pc[i - 1] == '\\') {
+        // multiline directive
+        ++line;
+        continue;
+      }
+      // end of directive
+      return munchChars(pc, i);
+    }
+    if (!c) {
+      // directive at end of file
+      return munchChars(pc, i);
+    }
+  }
 }
 
 /**
@@ -536,15 +610,15 @@ static string munchCharLiteral(ref string pc, ref size_t line) {
   assert(pc[0] == '\'');
   for (size_t i = 1; ; ++i) {
     auto const c = pc[i];
+    if (c == '\n') {
+      ++line;
+    }
     if (c == '\'') {
       // That's about it
       return munchChars(pc, i + 1);
     }
     if (c == '\\') {
       ++i;
-      if (pc[i] == '\n') {
-        ++line;
-      }
       continue;
     }
     enforce(c, "Unterminated character constant: ", pc);

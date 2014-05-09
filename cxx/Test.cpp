@@ -1336,7 +1336,7 @@ static bool writeStringToFile(const StringPiece data, const char* filename) {
   return writeFull(f.fd(), data.data(), data.size()) == data.size();
 }
 
-TEST(Lint, testCxxReplace) {
+TEST(Lint, DISABLED_testCxxReplace) {
   if (!regularFileExists("_bin/linters/flint/cxx_replace")) {
     // No prejudice if the file is missing (this may happen e.g. if
     // running fbmake runtests with -j)
@@ -2020,7 +2020,7 @@ TEST(Lint, testCheckMutexHolderHasName) {
   vector<Token> tokens;
   string filename = "nofile.cpp";
   tokenize(s, filename, tokens);
-  EXPECT_EQ(checkMutexHolderHasName(filename, tokens), 5);
+  EXPECT_EQ(checkMutexHolderHasName(filename, tokens), 3);
 
   string s2 = "\
     void foo() {\n\

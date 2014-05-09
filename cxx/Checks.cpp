@@ -448,7 +448,7 @@ uint checkBlacklistedSequences(const string& fpath, const vector<Token>& v) {
       "sharing data, use std::atomic or locks. In addition, 'volatile' may "
       "force the compiler to generate worse code than it could otherwise. "
       "For more about why 'volatile' doesn't do what you think it does, see "
-      "http://fburl.com/volatile or http://www.kernel.org/doc/Documentation/"
+      "http://www.kernel.org/doc/Documentation/"
       "volatile-considered-harmful.txt.\n",
       true, // C++ only.
     },
@@ -2236,8 +2236,7 @@ uint checkMutexHolderHasName(const std::string& fpath,
     return 0;
   }
 
-  std::set<std::string> mutexHolderNames = {"lock_guard",
-                                            "unique_lock"};
+  std::set<std::string> mutexHolderNames = {"lock_guard"};
   uint result = 0;
 
   FOR_EACH (it, v) {
