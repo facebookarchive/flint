@@ -12,13 +12,13 @@ FLINT_SRCS := \
 	Tokenizer.d
 
 flint$(EXEEXT): Main.d $(FLINT_SRCS)
-	$(DC) -o $@ $^
+	$(DC) -of$@ $^
 
 flint_test$(EXEEXT): Test.d $(FLINT_SRCS)
-	$(DC) -o $@ $^
+	$(DC) -of$@ $^
 
 cxx_replace$(EXEEXT): CxxReplace.d $(FLINT_SRCS)
-	$(DC) -o $@ $^
+	$(DC) -of$@ $^
 
 cxx_tokenize$(EXEEXT): CxxTokenize.d $(FLINT_SRCS)
-	$(DC) -o $@ $^
+	$(DC) -of$@ $^
