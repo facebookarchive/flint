@@ -7,7 +7,7 @@ ARCH=64
 CXXFLAGS= -O3 -m$(ARCH) -std=c++11
 LXXFLAGS= 
 
-# Inlude and Library paths
+# Include and Library paths
 INCLUDES=
 LIBS= 
 
@@ -15,7 +15,7 @@ LIBS=
 SOURCES := $(wildcard *.cpp)
 OBJS := $(patsubst %.c,%.o,$(wildcard *.cpp))
 
-# Ouput to binary
+# Output to binary
 BINF=../bin/deb$(ARCH)/flint++
 
 all: core
