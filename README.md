@@ -67,6 +67,11 @@ Does it pass Linting itself?
 	Lint Summary: 13 files
 	Errors: 0 Warnings: 0 Advice: 0
 
+Compiling `Flint++` from source
+-------------------------------
+
+Use `make` with the included makefile to build on a Posix based system using G++ > v4.7. To run the simple output test case run `make test` after compilation. This will run `Flint++` on the test directory and compare it's output to the text stored in `tests/expected.txt`.
+
 Why Lint?
 ---------
 
