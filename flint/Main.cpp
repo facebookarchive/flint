@@ -111,7 +111,8 @@ void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
 
 		errors.addFile(errorFile);
 
-	} catch (exception const &e) {
+	}
+	catch (exception const &e) {
 		fprintf(stderr, "Exception thrown during checks on %s.\n%s", path.c_str(), e.what());
 	}
 };
