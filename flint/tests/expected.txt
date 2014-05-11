@@ -1,0 +1,27 @@
+[Error  ] Constructor.cpp:24: Single - argument constructor 'Foo(int i)' may inadvertently be used as a type conversion constructor.
+[Error  ] Constructor.cpp:29: Move constructors should not take a const argument: Foo(const Foo&& other)
+[Error  ] Constructor.cpp:30: Copy constructors should take a const argument: Foo(Foo &other)
+[Error  ] Constructor.cpp:21: Single - argument constructor 'FooU(char i)' may inadvertently be used as a type conversion constructor.
+[Warning] Constructor.cpp:9: Protected inheritance is sometimes not a good idea.
+[Warning] Constructor.cpp:12: Throw specifications on functions are deprecated.
+[Warning] Constructor.cpp:18: Throw specifications on functions are deprecated.
+[Warning] Constructor.cpp:5: Throw specifications on functions are deprecated.
+[Error  ] Includes.cpp:15: The associated header file of .cpp files should be included before any other includes.
+[Error  ] Includes.cpp:4: An -inl file (Wrong-inl.h) was included even though this is not its associated header.
+[Warning] Includes.cpp:6: Including deprecated header 'common/base/Base.h'
+[Error  ] Ifdef.cpp:15: Unmatched #if/#endif.
+[Error  ] Memset.cpp:11: Did you mean memset(ptr, 0, 4) ?
+[Error  ] Memset.cpp:13: Did you mean memset(ptr, 1, sizeof(int)) ?
+[Error  ] Define.hpp:12: Include guard doesn't cover the entire file.
+[Warning] Define.hpp:5: Symbol __BAD_DEFINE invalid.
+[Error  ] Throw.cpp:8: Heap-allocated exception: throw new MyException(); This is usually a mistake in c++.
+[Error  ] Throw.cpp:10: Heap-allocated exception: throw new (MyException)(); This is usually a mistake in c++.
+[Error  ] Throw.cpp:12: Heap-allocated exception: throw new MyException(); This is usually a mistake in c++.
+[Error  ] ImplicitConversion.cpp:15: operator bool() is dangerous.
+[Error  ] Blacklist.cpp:21: 'strtok' is not thread safe. Consider 'strtok_r'.
+[Warning] Blacklist.cpp:8: 'volatile' is not thread-safe.
+[Advice ] Blacklist.cpp:23: Prefer `nullptr' to `NULL' in new C++ code.
+
+Lint Summary: 8 files
+Errors: 15 Warnings: 7 Advice: 1 
+
