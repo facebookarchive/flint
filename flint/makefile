@@ -31,6 +31,7 @@ core:
 	rm -rf *o
 
 tests:
+	$(MAKE) core
 	$(BINF) ./tests > $(ACTUAL)
 	@cmp -s $(EXPECTED) $(ACTUAL); \
     	RETVAL=$$?; \
