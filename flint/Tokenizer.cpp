@@ -1,5 +1,6 @@
 #include "Tokenizer.hpp"
 
+#include <algorithm>
 #include <map>
 #include <cassert>
 #include <stdexcept>
@@ -9,6 +10,8 @@
 namespace flint {
 
 	namespace { // Anonymous Namespace for Tokenizing and munching functions
+		
+		typedef pair<string::const_iterator*, string::const_iterator> StringRange;
 
 		// Black magic code expansion from Token Definitions
 		// See header...
@@ -37,11 +40,11 @@ namespace flint {
 		* Eats howMany characters out of pc, advances pc appropriately, and
 		* returns the eaten portion.
 		*/
-		static string munchChars(string &pc, size_t howMany) {
-			assert(pc.size() >= howMany);
+		static string munchChars(string::const_iterator &pc, size_t howMany) {
+			//assert(pc.size() >= howMany);
 			assert(howMany > 0);
-			string result = pc.substr(0, howMany);
-			pc.erase(0, howMany);
+			auto result = string(pc, pc + howMany);
+			advance(pc, howMany);
 			return result;
 		};
 
@@ -49,30 +52,32 @@ namespace flint {
 		* Assuming pc is positioned at the start of an identifier, munches it
 		* from pc and returns it.
 		*/
-		static string munchIdentifier(string &pc) {
-			for (size_t i = 0; i < pc.size(); ++i) {
-				assert(i < pc.size());
-				auto const c = pc[i];
+		static string munchIdentifier(StringRange range) {
+			auto& pc = *(range.first);
+			size_t size = distance(pc, range.second);
+			for (size_t i = 0; i < size; ++i) {
+				assert(i < size);
+				const char c = *(pc + i);
 				// g++ allows '$' in identifiers. Also, some crazy inline
 				// assembler uses '@' in identifiers, see e.g.
 				// fbcode/external/cryptopp/rijndael.cpp, line 527
 				if (!isalnum(c) && c != '_' && c != '$' && c != '@') {
 					// done
-					ENFORCE(i > 0, "Invalid identifier: " + pc);
+					ENFORCE(i > 0, "Invalid identifier: " + string(&*pc));
 					return munchChars(pc, i);
 				}
 			}
-			return munchChars(pc, pc.size());
+			return munchChars(pc, distance(pc, range.second));
 		};
 
 		/**
 		* Assuming pc is positioned at the start of a C-style comment,
 		* munches it from pc and returns it.
 		*/
-		static string munchComment(string &pc, size_t &line) {
+		static string munchComment(string::const_iterator &pc, size_t &line) {
 			assert(pc[0] == '/' && pc[1] == '*');
 			for (size_t i = 2;; ++i) {
-				assert(i < pc.size());
+				//assert(i < pc.size());
 				auto c = pc[i];
 				if (c == '\n') {
 					++line;
@@ -85,7 +90,7 @@ namespace flint {
 				}
 				else if (!c) {
 					// end of input
-					FBEXCEPTION("Unterminated comment: " + pc);
+					FBEXCEPTION("Unterminated comment: " + string(&*pc));
 				}
 			}
 			assert(false);
@@ -95,10 +100,10 @@ namespace flint {
 		* Assuming pc is positioned at the start of a single-line comment,
 		* munches it from pc and returns it.
 		*/
-		static string munchSingleLineComment(string &pc, size_t &line) {
+		static string munchSingleLineComment(string::const_iterator &pc, size_t &line) {
 			assert(pc[0] == '/' && pc[1] == '/');
 			for (size_t i = 2;; ++i) {
-				assert(i < pc.size());
+				//assert(i < pc.size());
 				auto c = pc[i];
 				if (c == '\n') {
 					++line;
@@ -123,10 +128,10 @@ namespace flint {
 		* number is assumed to be correct so a number of checks are not
 		* necessary.
 		*/
-		static string munchNumber(string &pc) {
+		static string munchNumber(string::const_iterator &pc) {
 			bool sawDot = false, sawExp = false, sawX = false, sawSuffix = false;
 			for (size_t i = 0;; ++i) {
-				assert(i < pc.size());
+				//assert(i < pc.size());
 				auto const c = pc[i];
 				if (c == '.' && !sawDot && !sawExp && !sawSuffix) {
 					sawDot = true;
@@ -162,7 +167,7 @@ namespace flint {
 				}
 				else {
 					// done
-					ENFORCE(i > 0, "Invalid number: " + pc);
+					ENFORCE(i > 0, "Invalid number: " + string(&*pc));
 					return munchChars(pc, i);
 				}
 			}
@@ -175,7 +180,7 @@ namespace flint {
 		* order to track multiline character literals (yeah, that can
 		* actually happen) correctly.
 		*/
-		static string munchCharLiteral(string &pc, size_t &line) {
+		static string munchCharLiteral(string::const_iterator &pc, size_t &line) {
 			assert(pc[0] == '\'');
 			for (size_t i = 1;; ++i) {
 				auto const c = pc[i];
@@ -190,7 +195,7 @@ namespace flint {
 					}
 					continue;
 				}
-				ENFORCE(c, "Unterminated character constant: " + pc);
+				ENFORCE(c, "Unterminated character constant: " + string(&*pc));
 			}
 		};
 
@@ -199,11 +204,10 @@ namespace flint {
 		* it from pc and returns it. A reference to line is passed in order
 		* to track multiline strings correctly.
 		*/
-		static string munchString(string &pc, size_t &line, bool isIncludeLiteral = false) {
-			char stringStart = (isIncludeLiteral ? '<' : '"');
+		static string munchString(string::const_iterator &pc, size_t &line, bool isIncludeLiteral = false) {
 			char stringEnd = (isIncludeLiteral ? '>' : '"');
 
-			assert(pc[0] == stringStart);
+			assert(*pc == (isIncludeLiteral ? '<' : '"'));			
 			for (size_t i = 1;; ++i) {
 				auto const c = pc[i];
 				if (c == stringEnd) {
@@ -217,7 +221,7 @@ namespace flint {
 					}
 					continue;
 				}
-				ENFORCE(c, "Unterminated string constant: " + pc);
+				ENFORCE(c, "Unterminated string constant: " + string(&*pc));
 			}
 		};
 
@@ -226,12 +230,12 @@ namespace flint {
 		* sources, here is the place. No need for end=of-input checks as the
 		* input always has a '\0' at the end.
 		*/
-		static string munchSpaces(string &pc) {
+		static string munchSpaces(string::const_iterator &pc) {
 			size_t i = 0;
 			for (; pc[i] == ' ' || pc[i] == '\t'; ++i) {
 			}
-			auto const result = pc.substr(0, i);
-			pc.erase(0, i);
+			auto const result = string(pc, pc + i);
+			advance(pc, i);
 			return result;
 		};
 
@@ -244,7 +248,7 @@ namespace flint {
 	void tokenize(const string &input, const string &file, vector<Token> &output) {
 		output.clear();
 		// The string piece includes the terminating null character
-		string pc = string(input);
+		auto pc = input.begin();
 		size_t line = 1;
 
 		TokenType t;
@@ -252,7 +256,7 @@ namespace flint {
 		string whitespace = "";
 
 		while (1) {
-			const char c = pc[0];
+			const char c = *pc;
 
 			// Special case for parseing #include <...>
 			// Previously the include path would not be captured as a string literal
@@ -345,19 +349,19 @@ namespace flint {
 			case '\\':
 				ENFORCE(pc[1] == '\n' || pc[1] == '\r', "Misplaced backslash in " + file + ":" + to_string(line));
 				++line;
-				whitespace += pc.substr(0, 2);
-				pc.erase(0,2);
+				whitespace.append(pc, pc + 2);
+				advance(pc, 2);
 				break;
 				// *** Newline
 			case '\n':
-				whitespace += pc.substr(0, 1);
-				pc.erase(0,1);
+				whitespace.append(pc, pc + 1);
+				pc++;
 				++line;
 				break;
 				// *** Part of a DOS newline; ignored
 			case '\r':
-				whitespace += pc.substr(0, 1);
-				pc.erase(0,1);
+				whitespace.append(pc, pc + 1);
+				pc++;
 				break;
 				// *** ->, --, -=, ->*, and -
 			case '-':
@@ -386,13 +390,13 @@ namespace flint {
 				break;
 				// *** Done parsing!
 			case '\0':
-				assert(pc.size() == 0);
+				//assert(pc.size() == 0);
 				// Push last token, the EOF
-				output.push_back(Token(TK_EOF, pc, line, whitespace));
+				output.push_back(Token(TK_EOF, string(&*pc), line, whitespace));
 				return;
 				// *** Verboten characters (do allow '@' and '$' as extensions)
 			case '`':
-				FBEXCEPTION("Invalid character: " + string(c + " in ") + string(file + ":" + to_string(line)));
+				FBEXCEPTION("Invalid character: " + string(1, c) + " in " + string(file + ":" + to_string(line)));
 				break;
 				// *** Numbers
 			case '0': case '1': case '2': case '3': case '4': case '5':
@@ -437,16 +441,15 @@ namespace flint {
 				break;
 			case '#': {
 				// Skip ws
-				auto pc1 = pc;
-				pc1 = pc1.substr(1);
+				auto pc1 = pc + 1;
 				tokenLen = 1 + munchSpaces(pc1).size();
 				// define, include, pragma, or line
 				if (startsWith(pc1, "line")) {
-					t = TK_HASHLINE; tokenLen += pc1.find_first_of('\n');
+					t = TK_HASHLINE; tokenLen += distance(pc, find(pc1, input.end(), '\n'));
 				}
 				else if (startsWith(pc1, "error")) {
 					// The entire #error line is the token value
-					t = TK_ERROR; tokenLen += pc1.find_first_of('\n');
+					t = TK_ERROR; tokenLen += distance(pc, find(pc1, input.end(), '\n'));
 					ENFORCE(tokenLen > 0, "Unterminated #error message");
 				}
 				else if (startsWith(pc1, "include")) {
@@ -488,12 +491,12 @@ namespace flint {
 				// *** Everything else
 			default:
 				if (iscntrl(c)) {
-					whitespace += pc.substr(0, 1);
-					pc.erase(0,1);
+					whitespace.append(pc, pc + 1);
+					advance(pc, 1);
 				}
 				else if (isalpha(c) || c == '_' || c == '$' || c == '@') {
 					// it's a word
-					auto symbol = munchIdentifier(pc);
+					auto symbol = munchIdentifier(make_pair(&pc, input.end()));
 					auto iter = keywords.find(symbol);
 					if (iter != keywords.end()) {
 						// keyword, baby
@@ -547,7 +550,7 @@ namespace flint {
 #undef CPPLINT_X3
 #undef CPPLINT_X4
 
-			FBEXCEPTION("Unknown token type: " + t);
+			FBEXCEPTION("Unknown token type: " + toString(t));
 	};
 
 };
