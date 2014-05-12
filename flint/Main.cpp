@@ -108,7 +108,8 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
 			//checkIncrementers(errorFile, path, tokens);
 
 			if (!Options.CMODE) {
-				checkUpcaseNull(errorFile, path, tokens);
+				// Merged into banned identifiers
+				//checkUpcaseNull(errorFile, path, tokens);
 			}
 		}
 

@@ -47,6 +47,10 @@ namespace flint {
 			errors.addError(ErrorObject(Lint::ADVICE, tok.line_, title, desc));
 		};
 
+		void lint(ErrorFile &errors, const Token &tok, const Lint level, const string title, const string desc = "") {
+			errors.addError(ErrorObject(level, tok.line_, title, desc));
+		};
+
 		/**
 		* Returns whether the current token is at the start of a given sequence
 		*
@@ -606,9 +610,13 @@ namespace flint {
 	void checkBlacklistedIdentifiers(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 
-		static const map<string, string> blacklist = {
+		static const map<string, pair<Lint,string>> blacklist = {
 			{ "strtok",
-			"'strtok' is not thread safe. Consider 'strtok_r'."
+				{ Lint::ERROR, "'strtok' is not thread safe. Consider 'strtok_r'." }
+			},
+
+			{ "NULL",
+				{ Lint::ADVICE, "Prefer `nullptr' to `NULL' in new C++ code." }
 			}
 		};
 
@@ -617,7 +625,8 @@ namespace flint {
 			if (isTok(tokens[pos], TK_IDENTIFIER)) {
 				for (const auto &entry : blacklist) {
 					if (cmpTok(tokens[pos], entry.first)) {
-						lintError(errors, tokens[pos], entry.second);
+						auto desc = entry.second;
+						lint(errors, tokens[pos], desc.first, desc.second);
 						continue;
 					}
 				}
@@ -1641,6 +1650,9 @@ namespace flint {
 		});
 	};
 
+	// ************************************
+	// Merged with banned identifiers check
+	// ************************************
 	/**
 	* Advise nullptr over NULL in C++ files
 	*
@@ -1650,7 +1662,7 @@ namespace flint {
 	*		The path to the file currently being linted
 	* @param tokens
 	*		The token list for the file
-	*/
+	
 	void checkUpcaseNull(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
@@ -1663,6 +1675,7 @@ namespace flint {
 			}
 		}
 	};
+	*/
 
 // Shorthand for comparing two strings
 #undef cmpStr

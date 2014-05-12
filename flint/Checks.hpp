@@ -15,6 +15,8 @@ namespace flint {
 
 	// Deprecated due to too many false positives
 	//X(Incrementers);
+	// Merged into banned identifiers
+	//X(UpcaseNull);
 
 	X(DefinedNames);
 	X(CatchByReference);
@@ -37,7 +39,6 @@ namespace flint {
 	X(FollyDetail);
 	X(ProtectedInheritance);
 	X(ImplicitCast);
-	X(UpcaseNull);
 	X(ExceptionInheritance);
 	X(SmartPtrUsage);
 	X(UniquePtrUsage);
