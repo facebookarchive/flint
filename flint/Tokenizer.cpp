@@ -259,7 +259,7 @@ namespace flint {
 			if (c == '<') {
 				if (output.size() > 0 && output.back().type_ == TK_INCLUDE) {
 					auto str = munchString(pc, line, true);
-					output.push_back(Token(TK_STRING_LITERAL, str, file, line,
+					output.push_back(Token(TK_STRING_LITERAL, str, line,
 						whitespace));
 					whitespace = "";
 					continue;
@@ -388,7 +388,7 @@ namespace flint {
 			case '\0':
 				assert(pc.size() == 0);
 				// Push last token, the EOF
-				output.push_back(Token(TK_EOF, pc, file, line, whitespace));
+				output.push_back(Token(TK_EOF, pc, line, whitespace));
 				return;
 				// *** Verboten characters (do allow '@' and '$' as extensions)
 			case '`':
@@ -400,7 +400,7 @@ namespace flint {
 			ITS_A_NUMBER : {
 				auto symbol = munchNumber(pc);
 				assert(symbol.size() > 0);
-				output.push_back(Token(TK_NUMBER, symbol, file, line, whitespace));
+				output.push_back(Token(TK_NUMBER, symbol, line, whitespace));
 				whitespace = "";
 			}
 				break;
@@ -422,7 +422,7 @@ namespace flint {
 				// *** Character literal
 			case '\'': {
 				auto charLit = munchCharLiteral(pc, line);
-				output.push_back(Token(TK_CHAR_LITERAL, charLit, file, line,
+				output.push_back(Token(TK_CHAR_LITERAL, charLit, line,
 					whitespace));
 				whitespace = "";
 			}
@@ -430,7 +430,7 @@ namespace flint {
 				// *** String literal
 			case '"': {
 				auto str = munchString(pc, line);
-				output.push_back(Token(TK_STRING_LITERAL, str, file, line,
+				output.push_back(Token(TK_STRING_LITERAL, str, line,
 					whitespace));
 				whitespace = "";
 			}
@@ -497,14 +497,14 @@ namespace flint {
 					auto iter = keywords.find(symbol);
 					if (iter != keywords.end()) {
 						// keyword, baby
-						output.push_back(Token(iter->second, symbol, file, line,
+						output.push_back(Token(iter->second, symbol, line,
 							whitespace));
 						whitespace = "";
 					}
 					else {
 						// Some identifier
 						assert(symbol.size() > 0);
-						output.push_back(Token(TK_IDENTIFIER, symbol, file, line,
+						output.push_back(Token(TK_IDENTIFIER, symbol, line,
 							whitespace));
 						whitespace = "";
 					}
@@ -516,7 +516,7 @@ namespace flint {
 				break;
 				// *** All
 			INSERT_TOKEN:
-				output.push_back(Token(t, munchChars(pc, tokenLen), file, line,
+				output.push_back(Token(t, munchChars(pc, tokenLen), line,
 					whitespace));
 				whitespace = "";
 				break;

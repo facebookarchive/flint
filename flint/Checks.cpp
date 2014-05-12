@@ -717,7 +717,7 @@ namespace flint {
 
 			size_t focal = pos + 1;
 			if (!isTok(tokens[focal], TK_LPAREN)) { // a "(" comes always after catch
-				throw runtime_error(tokens[focal].file_ + ":" + to_string(tokens[focal].line_)
+				throw runtime_error(path + ":" + to_string(tokens[focal].line_)
 					+ ": Invalid C++ source code, please compile before lint.");
 			}
 			++focal;
@@ -756,7 +756,7 @@ namespace flint {
 			// catch (Ex<(1 + 1)> & e).
 			for (size_t parens = 0;; ++focal) {
 				if (focal >= tokens.size()) {
-					throw runtime_error(tokens[focal].file_ + ":" + to_string(tokens[focal].line_)
+					throw runtime_error(path + ":" + to_string(tokens[focal].line_)
 						+ ": Invalid C++ source code, please compile before lint.");
 				}
 				if (isTok(tokens[focal], TK_RPAREN)) {
