@@ -20,12 +20,15 @@ using namespace flint;
 *		An object to hold the error details
 * @param path
 *		The path to lint
+* @param loc
+*		Reference to a var to count the estimated number
+*		of lines linted
 * @param depth
 *		Tracks the recursion depth
 * @return
 *		Returns the number of errors found
 */
-void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
+void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth = 0) {
 
 	FSType fsType = fsObjectExists(path);
 	if (fsType == FSType::NO_ACCESS) {
@@ -44,7 +47,7 @@ void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
 		}
 
 		for (size_t i = 0; i < dirs.size(); ++i) {
-			checkEntry(errors, dirs[i], depth + 1);
+			checkEntry(errors, dirs[i], loc, depth + 1);
 		}
 		return;
 	}
@@ -67,7 +70,7 @@ void checkEntry(ErrorReport &errors, const string &path, uint depth = 0) {
 		ErrorFile errorFile(getFileName(path));
 
 		vector<Token> tokens;
-		tokenize(file, path, tokens);
+		loc += tokenize(file, path, tokens);
 
 		// Checks which note Errors
 		checkBlacklistedIdentifiers(errorFile, path, tokens);
@@ -125,14 +128,15 @@ int main(int argc, char *argv[]) {
 	vector<string> paths;
 	parseArgs(argc, argv, paths);
 
+	size_t totalLOC = 0;
 	// Check each file
 	ErrorReport errors;
 	for (size_t i = 0; i < paths.size(); ++i) {
-		checkEntry(errors, paths[i]);
+		checkEntry(errors, paths[i], totalLOC);
 	}
 
 	// Print summary
-	cout << errors.toString() << endl;
+	cout << errors.toString() << endl << "Estimated Lines of Code: " << to_string(totalLOC) << endl;
 
 #ifdef _DEBUG
 	// Stop visual studio from closing the window...
