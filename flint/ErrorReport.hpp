@@ -54,12 +54,12 @@ namespace flint {
 				return result;
 			}
 
+			if (Options.LEVEL < m_type) {
+				return "";
+			}
+
 			string result = "[" + typeStr[m_type] + "] " + path + ":" 
 				+ to_string(m_line) + ": " + m_title + "\n";
-				
-			if (!m_desc.empty()) {
-				//result += "\n\n" + m_desc + "\n\n";
-			}
 
 			return result;
 		};
