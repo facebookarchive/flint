@@ -99,9 +99,11 @@ namespace flint {
 		* Assuming pc is positioned at the start of a single-line comment,
 		* munches it from pc and returns it.
 		*/
-		static string munchSingleLineComment(string::const_iterator &pc, size_t &line) {
+		static string munchSingleLineComment(string::const_iterator &pc, string::const_iterator inputEnd, size_t &line) {
 			assert(pc[0] == '/' && pc[1] == '/');
-			for (size_t i = 2;; ++i) {
+
+			size_t size = distance(pc, inputEnd);
+			for (size_t i = 2; i < size; ++i) {
 				//assert(i < pc.size());
 				auto c = pc[i];
 				if (c == '\n') {
@@ -113,12 +115,9 @@ namespace flint {
 					// end of comment
 					return munchChars(pc, i + 1);
 				}
-				if (!c) {
-					// single-line comment at end of file, meh
-					return munchChars(pc, i);
-				}
 			}
-			assert(false);
+
+			return munchChars(pc, size);
 		};
 
 		/**
@@ -244,9 +243,10 @@ namespace flint {
 	* Given the contents of a C++ file and a filename, tokenizes the
 	* contents and places it in output.
 	*/
-	void tokenize(const string &input, const string &file, vector<Token> &output) {
+	size_t tokenize(const string &input, const string &file, vector<Token> &output) {
 		output.clear();
 		// The string piece includes the terminating null character
+
 		auto pc = input.begin();
 		size_t line = 1;
 
@@ -334,7 +334,7 @@ namespace flint {
 				}
 				if (pc[1] == '/') {
 					//comment = munchSingleLineComment(pc, line);
-					whitespace += munchSingleLineComment(pc, line);
+					whitespace += munchSingleLineComment(pc, input.end(), line);
 					break;
 				}
 				if (pc[1] == '=') {
@@ -392,7 +392,7 @@ namespace flint {
 				//assert(pc.size() == 0);
 				// Push last token, the EOF
 				output.push_back(Token(TK_EOF, "\0", line, whitespace));
-				return;
+				return line;
 				// *** Verboten characters (do allow '@' and '$' as extensions)
 			case '`':
 				FBEXCEPTION("Invalid character: " + string(1, c) + " in " + string(file + ":" + to_string(line)));
@@ -525,9 +525,9 @@ namespace flint {
 			}
 		}
 
-		if (output.back().type_ != TK_EOF) {
-			output.push_back(Token(TK_EOF, "\0", line, ""));
-		}
+		output.push_back(Token(TK_EOF, " ", line, ""));
+
+		return line;
 	};
 
 	/**
