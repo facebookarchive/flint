@@ -11,8 +11,6 @@ namespace flint {
 
 	namespace { // Anonymous Namespace for Tokenizing and munching functions
 		
-		typedef pair<string::const_iterator*, string::const_iterator> StringRange;
-
 		// Black magic code expansion from Token Definitions
 		// See header...
 		static map<string, TokenType> initializeKeywords() {
@@ -52,12 +50,12 @@ namespace flint {
 		* Assuming pc is positioned at the start of an identifier, munches it
 		* from pc and returns it.
 		*/
-		static string munchIdentifier(StringRange range) {
-			auto& pc = *(range.first);
-			size_t size = distance(pc, range.second);
+		static string munchIdentifier(string::const_iterator &pc, string::const_iterator inputEnd) {
+			
+			size_t size = distance(pc, inputEnd);
 			for (size_t i = 0; i < size; ++i) {
 				assert(i < size);
-				const char c = *(pc + i);
+				const char c = pc[i];
 				// g++ allows '$' in identifiers. Also, some crazy inline
 				// assembler uses '@' in identifiers, see e.g.
 				// fbcode/external/cryptopp/rijndael.cpp, line 527
@@ -67,7 +65,8 @@ namespace flint {
 					return munchChars(pc, i);
 				}
 			}
-			return munchChars(pc, distance(pc, range.second));
+
+			return munchChars(pc, size);
 		};
 
 		/**
@@ -207,7 +206,7 @@ namespace flint {
 		static string munchString(string::const_iterator &pc, size_t &line, bool isIncludeLiteral = false) {
 			char stringEnd = (isIncludeLiteral ? '>' : '"');
 
-			assert(*pc == (isIncludeLiteral ? '<' : '"'));			
+			assert(pc[0] == (isIncludeLiteral ? '<' : '"'));			
 			for (size_t i = 1;; ++i) {
 				auto const c = pc[i];
 				if (c == stringEnd) {
@@ -231,10 +230,10 @@ namespace flint {
 		* input always has a '\0' at the end.
 		*/
 		static string munchSpaces(string::const_iterator &pc) {
-			size_t i = 0;
-			for (; pc[i] == ' ' || pc[i] == '\t'; ++i) {
-			}
-			auto const result = string(pc, pc + i);
+			size_t i;
+			for (i = 0; pc[i] == ' ' || pc[i] == '\t'; ++i) {}
+
+			const string result = string(pc, pc + i);
 			advance(pc, i);
 			return result;
 		};
@@ -255,8 +254,8 @@ namespace flint {
 		size_t tokenLen;
 		string whitespace = "";
 
-		while (1) {
-			const char c = *pc;
+		while (pc != input.end()) {
+			const char c = pc[0];
 
 			// Special case for parseing #include <...>
 			// Previously the include path would not be captured as a string literal
@@ -392,7 +391,7 @@ namespace flint {
 			case '\0':
 				//assert(pc.size() == 0);
 				// Push last token, the EOF
-				output.push_back(Token(TK_EOF, string(&*pc), line, whitespace));
+				output.push_back(Token(TK_EOF, "\0", line, whitespace));
 				return;
 				// *** Verboten characters (do allow '@' and '$' as extensions)
 			case '`':
@@ -496,7 +495,7 @@ namespace flint {
 				}
 				else if (isalpha(c) || c == '_' || c == '$' || c == '@') {
 					// it's a word
-					auto symbol = munchIdentifier(make_pair(&pc, input.end()));
+					auto symbol = munchIdentifier(pc, input.cend());
 					auto iter = keywords.find(symbol);
 					if (iter != keywords.end()) {
 						// keyword, baby
@@ -525,7 +524,10 @@ namespace flint {
 				break;
 			}
 		}
-		assert(false);
+
+		if (output.back().type_ != TK_EOF) {
+			output.push_back(Token(TK_EOF, "\0", line, ""));
+		}
 	};
 
 	/**
