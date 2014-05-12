@@ -138,13 +138,27 @@ namespace flint {
 	*
 	* @param str
 	*		The string to search
-	* @param suffix
+	* @param prefix
 	*		The prefix to search for
 	* @return
 	*		Returns true if str ends with an instance of prefix
 	*/
 	bool startsWith(const string &str, const string &prefix) {
 		return mismatch(begin(prefix), end(prefix), begin(str)).first == end(prefix);
+	};
+
+	/**
+	* Tests if a given string starts with a prefix
+	*
+	* @param str_iter
+	*		The string position to start search
+	* @param prefix
+	*		The prefix to search for
+	* @return
+	*		Returns true if str ends with an instance of prefix
+	*/
+	bool startsWith(string::const_iterator str_iter, const string &prefix) {
+		return mismatch(begin(prefix), end(prefix), str_iter).first == end(prefix);
 	};
 
 	/**

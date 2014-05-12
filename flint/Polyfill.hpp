@@ -41,5 +41,7 @@ namespace flint {
 
 	bool startsWith(const string &str, const string &prefix);
 
+	bool startsWith(string::const_iterator str_iter, const string &prefix);
+
 	string escapeString(const string &input);
 };
