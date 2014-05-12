@@ -229,13 +229,15 @@ namespace flint {
 		TokenType type_;
 		string value_;
 		string precedingWhitespace_;
-		const string file_;
+
+               // Maintain reference to filename
+               // WARNING: pointed to variable must remain accessible (as we're not taking ownership of the memory)
+		const string& file_;
 		size_t line_;
 
-		Token() : line_(0) {}
 		Token(TokenType type, string value, string file, size_t line, string whitespace)
 			: type_(type), value_(move(value)), precedingWhitespace_(move(whitespace)),
-			  file_(move(file)), line_(line) {};
+			  file_(file), line_(line) {};
 
 		string toString() const {
 			return string("Line: " + to_string(line_) + " " + value_);
