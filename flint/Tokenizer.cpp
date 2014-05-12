@@ -39,9 +39,9 @@ namespace flint {
 		*/
 		static string munchChars(string &pc, size_t howMany) {
 			assert(pc.size() >= howMany);
-                       assert(howMany > 0);
+			assert(howMany > 0);
 			string result = pc.substr(0, howMany);
-                       pc.erase(0, howMany);
+			pc.erase(0, howMany);
 			return result;
 		};
 
@@ -231,7 +231,7 @@ namespace flint {
 			for (; pc[i] == ' ' || pc[i] == '\t'; ++i) {
 			}
 			auto const result = pc.substr(0, i);
-                       pc.erase(0, i);
+			pc.erase(0, i);
 			return result;
 		};
 
@@ -242,7 +242,7 @@ namespace flint {
 	* contents and places it in output.
 	*/
 	void tokenize(const string &input, const string &file, vector<Token> &output) {
-               output.clear();
+		output.clear();
 		// The string piece includes the terminating null character
 		string pc = string(input);
 		size_t line = 1;
@@ -346,18 +346,18 @@ namespace flint {
 				ENFORCE(pc[1] == '\n' || pc[1] == '\r', "Misplaced backslash in " + file + ":" + to_string(line));
 				++line;
 				whitespace += pc.substr(0, 2);
-                               pc.erase(0,2);
+				pc.erase(0,2);
 				break;
 				// *** Newline
 			case '\n':
 				whitespace += pc.substr(0, 1);
-                               pc.erase(0,1);
+				pc.erase(0,1);
 				++line;
 				break;
 				// *** Part of a DOS newline; ignored
 			case '\r':
 				whitespace += pc.substr(0, 1);
-                               pc.erase(0,1);
+				pc.erase(0,1);
 				break;
 				// *** ->, --, -=, ->*, and -
 			case '-':
@@ -489,7 +489,7 @@ namespace flint {
 			default:
 				if (iscntrl(c)) {
 					whitespace += pc.substr(0, 1);
-                                       pc.erase(0,1);
+					pc.erase(0,1);
 				}
 				else if (isalpha(c) || c == '_' || c == '$' || c == '@') {
 					// it's a word
