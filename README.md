@@ -70,7 +70,7 @@ Does it pass Linting itself?
 Compiling `Flint++` from source
 -------------------------------
 
-Use `make` with the included makefile to build on a Posix based system using G++ > v4.7. To run the simple output test case run `make test` after compilation. This will run `Flint++` on the test directory and compare it's output to the text stored in `tests/expected.txt`.
+From the flint subdirectory, use `make` with the included makefile to build on a Posix based system using G++ > v4.7. To run the simple output test case run `make tests` after compilation. This will run `Flint++` on the test directory and compare its output to the text stored in `tests/expected.txt`.
 
 Why Lint?
 ---------
