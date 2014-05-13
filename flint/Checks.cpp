@@ -66,13 +66,12 @@ namespace flint {
 		*		Returns true if we were at the start of a given sequence
 		*/
 		bool atSequence(const vector<Token> &tokens, size_t pos, const vector<TokenType> &list) {
-
 			if ((pos + list.size() + 1) >= tokens.size()) {
 				return false;
 			}
 
-      		return find_if(begin(list), end(list), [pos, &tokens](const TokenType &token) mutable { 
-					return !isTok(tokens[pos++], token); 
+      			return find_if(begin(list), end(list), [pos, &tokens](const TokenType &token) mutable { 
+					return !isTok(tokens[pos++], token);
 				}) == end(list);
 		};
 
