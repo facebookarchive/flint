@@ -159,8 +159,8 @@ namespace flint {
 	*/
 	bool startsWith(string::const_iterator str_iter, const char *prefix) {
 		while (*prefix != '\0' && *prefix == *str_iter) {
-        		++prefix, ++str_iter;
-    		}
+        	++prefix, ++str_iter;
+    	}
 
 		return *prefix == '\0';
 	};
