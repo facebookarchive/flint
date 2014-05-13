@@ -9,6 +9,15 @@
 
 namespace flint {
 
+	string to_string(const StringFragment &fragment) {
+		return string(fragment.begin(), fragment.end());
+	}
+
+	bool operator==(const StringFragment &a, const StringFragment &b)
+	{
+		return equal(a.begin(), a.end(), b.begin());
+	}
+
 	namespace { // Anonymous Namespace for Tokenizing and munching functions
 		
 		// Black magic code expansion from Token Definitions
@@ -38,10 +47,10 @@ namespace flint {
 		* Eats howMany characters out of pc, advances pc appropriately, and
 		* returns the eaten portion.
 		*/
-		static string munchChars(string::const_iterator &pc, size_t howMany) {
+		static StringFragment munchChars(string::const_iterator &pc, size_t howMany) {
 			//assert(pc.size() >= howMany);
 			assert(howMany > 0);
-			auto result = string(pc, pc + howMany);
+			auto result = StringFragment{pc, pc + howMany};
 			advance(pc, howMany);
 			return result;
 		};
@@ -50,7 +59,7 @@ namespace flint {
 		* Assuming pc is positioned at the start of an identifier, munches it
 		* from pc and returns it.
 		*/
-		static string munchIdentifier(string::const_iterator &pc, string::const_iterator inputEnd) {
+		static StringFragment munchIdentifier(string::const_iterator &pc, string::const_iterator inputEnd) {
 			
 			size_t size = distance(pc, inputEnd);
 			for (size_t i = 0; i < size; ++i) {
@@ -73,7 +82,7 @@ namespace flint {
 		* Assuming pc is positioned at the start of a C-style comment,
 		* munches it from pc and returns it.
 		*/
-		static string munchComment(string::const_iterator &pc, size_t &line) {
+		static StringFragment munchComment(string::const_iterator &pc, size_t &line) {
 			assert(pc[0] == '/' && pc[1] == '*');
 			for (size_t i = 2;; ++i) {
 				//assert(i < pc.size());
@@ -99,7 +108,7 @@ namespace flint {
 		* Assuming pc is positioned at the start of a single-line comment,
 		* munches it from pc and returns it.
 		*/
-		static string munchSingleLineComment(string::const_iterator &pc, string::const_iterator inputEnd, size_t &line) {
+		static StringFragment munchSingleLineComment(string::const_iterator &pc, string::const_iterator inputEnd, size_t &line) {
 			assert(pc[0] == '/' && pc[1] == '/');
 
 			size_t size = distance(pc, inputEnd);
@@ -126,7 +135,7 @@ namespace flint {
 		* number is assumed to be correct so a number of checks are not
 		* necessary.
 		*/
-		static string munchNumber(string::const_iterator &pc) {
+		static StringFragment munchNumber(string::const_iterator &pc) {
 			bool sawDot = false, sawExp = false, sawX = false, sawSuffix = false;
 			for (size_t i = 0;; ++i) {
 				//assert(i < pc.size());
@@ -178,7 +187,7 @@ namespace flint {
 		* order to track multiline character literals (yeah, that can
 		* actually happen) correctly.
 		*/
-		static string munchCharLiteral(string::const_iterator &pc, size_t &line) {
+		static StringFragment munchCharLiteral(string::const_iterator &pc, size_t &line) {
 			assert(pc[0] == '\'');
 			for (size_t i = 1;; ++i) {
 				auto const c = pc[i];
@@ -202,7 +211,7 @@ namespace flint {
 		* it from pc and returns it. A reference to line is passed in order
 		* to track multiline strings correctly.
 		*/
-		static string munchString(string::const_iterator &pc, size_t &line, bool isIncludeLiteral = false) {
+		static StringFragment munchString(string::const_iterator &pc, size_t &line, bool isIncludeLiteral = false) {
 			char stringEnd = (isIncludeLiteral ? '>' : '"');
 
 			assert(pc[0] == (isIncludeLiteral ? '<' : '"'));			
@@ -228,11 +237,11 @@ namespace flint {
 		* sources, here is the place. No need for end=of-input checks as the
 		* input always has a '\0' at the end.
 		*/
-		static string munchSpaces(string::const_iterator &pc) {
+		static StringFragment munchSpaces(string::const_iterator &pc) {
 			size_t i;
 			for (i = 0; pc[i] == ' ' || pc[i] == '\t'; ++i) {}
 
-			const string result = string(pc, pc + i);
+			const auto result = StringFragment{pc, pc + i};
 			advance(pc, i);
 			return result;
 		};
@@ -261,7 +270,7 @@ namespace flint {
 			if (c == '<') {
 				if (output.size() > 0 && output.back().type_ == TK_INCLUDE) {
 					auto str = munchString(pc, line, true);
-					output.push_back(Token(TK_STRING_LITERAL, str, line,
+					output.push_back(Token(TK_STRING_LITERAL, move(str), line,
 						whitespace));
 					whitespace.clear();
 					continue;
@@ -327,13 +336,13 @@ namespace flint {
 							// *** multi-line comments
 			case '/':
 				if (pc[1] == '*') {
-					//comment = munchComment(pc, line);
-					whitespace += munchComment(pc, line);
+					const auto& comment = munchComment(pc, line); 
+					whitespace.append(comment.begin(), comment.end());
 					break;
 				}
 				if (pc[1] == '/') {
-					//comment = munchSingleLineComment(pc, line);
-					whitespace += munchSingleLineComment(pc, input.end(), line);
+					const auto &single = munchSingleLineComment(pc, input.end(), line);
+					whitespace.append(single.begin(), single.end());
 					break;
 				}
 				if (pc[1] == '=') {
@@ -382,13 +391,17 @@ namespace flint {
 				goto INSERT_TOKEN;
 				// *** Whitespace
 			case ' ': case '\t':
-				whitespace += munchSpaces(pc);
+				{
+					const auto &spaces = munchSpaces(pc);
+					whitespace.append(spaces.begin(), spaces.end());
+				}
 				break;
 				// *** Done parsing!
 			case '\0':
 				//assert(pc.size() == 0);
 				// Push last token, the EOF
-				output.push_back(Token(TK_EOF, "\0", line, whitespace));
+				static const string eof{"\0"};
+				output.push_back(Token(TK_EOF, StringFragment{eof.begin(), eof.end()}, line, whitespace));
 				return line;
 				// *** Verboten characters (do allow '@' and '$' as extensions)
 			case '`':
@@ -492,7 +505,7 @@ namespace flint {
 				else if (isalpha(c) || c == '_' || c == '$' || c == '@') {
 					// it's a word
 					auto symbol = munchIdentifier(pc, input.cend());
-					auto iter = keywords.find(symbol);
+					auto iter = keywords.find(to_string(symbol));
 					if (iter != keywords.end()) {
 						// keyword, baby
 						output.push_back(Token(iter->second, move(symbol), line,
@@ -521,7 +534,8 @@ namespace flint {
 			}
 		}
 
-		output.push_back(Token(TK_EOF, " ", line, ""));
+		static const string empty_eof{" "};
+		output.push_back(Token(TK_EOF, StringFragment{empty_eof.begin(), empty_eof.end()}, line, ""));
 
 		return line;
 	};

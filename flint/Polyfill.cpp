@@ -143,8 +143,9 @@ namespace flint {
 	* @return
 	*		Returns true if str ends with an instance of prefix
 	*/
-	bool startsWith(const string &str, const string &prefix) {
-		return mismatch(begin(prefix), end(prefix), begin(str)).first == end(prefix);
+	template <class T>
+	bool startsWith(const T &str, const T &prefix) {
+		return equal(begin(prefix), end(prefix), begin(str));
 	};
 
 	/**

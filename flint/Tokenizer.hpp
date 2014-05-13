@@ -222,20 +222,49 @@ namespace flint {
 	string toString(TokenType t);
 
 	/**
+	 * Defines a substring of an existing string.  Lifetime is limited to the lifetime of the enclosing string
+	 * In other words, a StringFragment will take no ownership of any memory.
+	 *
+	 * Note: Remember to respect the range of most C++ iterators, which operate on [begin, end) (so end expected to be out of range)
+	 */
+	struct StringFragment {
+		typedef string::const_iterator iterator;
+		typedef char value_type;
+		typedef const char& const_reference;
+		typedef size_t size_type;
+		
+		iterator begin_;
+		iterator end_;
+
+		value_type back() const { return *(end_ - 1); }
+		iterator begin() const { return begin_; }
+		iterator end() const { return end_; }
+		const_reference operator[](size_type pos) const { return *(begin_ + pos); }
+		const_reference operator[](size_type pos) { return *(begin_ + pos); } 
+		size_type size() const { return end_ - begin_; }
+	};
+
+	using std::to_string;
+	string to_string(const StringFragment &fragment);
+	bool operator==(const StringFragment &a, const StringFragment &b);
+	
+	/**
 	* Defines one token together with file and line information. The
 	* precedingComment_ is set if there was one comment before the token.
 	*/
 	struct Token {
 		TokenType type_;
-		string value_;
+		StringFragment value_;
 		string precedingWhitespace_;
 		size_t line_;
 
-		Token(TokenType type, string value, size_t line, string whitespace)
+		Token(TokenType type, StringFragment value, size_t line, string whitespace)
 			: type_(type), value_(move(value)), precedingWhitespace_(move(whitespace)), line_(line) {};
 
 		string toString() const {
-			return string("Line:" + to_string(line_) + ":" + value_);
+			string result = string("Line:" + to_string(line_) + ':');
+			result.append(value_.begin(), value_.end());
+			return result;
 		};
 	};
 

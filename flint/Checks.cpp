@@ -13,8 +13,12 @@
 
 namespace flint {
 
-// Shorthand for comparing two strings
-#define cmpStr(a,b) ((a).compare((b)) == 0)
+// Shorthand for comparing two strings (or fragments)
+template <class S, class T>
+inline bool cmpStr(const S &a, const T &b) { return equal(a.begin(), a.end(), b.begin()); }
+inline bool cmpStr(const StringFragment &a, const char* b) { return startsWith(a.begin(), b); }  
+inline bool cmpStr(const string &a, const string &b) { return a == b; }
+
 #define cmpTok(a,b) cmpStr((a).value_, (b))
 
 #define cmpToks(a,b) cmpStr((a).value_, (b).value_)
@@ -99,6 +103,18 @@ namespace flint {
 		*/
 		string getIncludedPath(const string &path) {
 			return path.substr(1, path.size() - 2);
+		};
+
+		/**
+		* Strips the ""'s or <>'s from an #include path
+		*
+		* @param path
+		*		The string fragment to trim
+		* @return
+		*		Returns the include path without it's wrapping quotes/brackets
+		*/
+		string getIncludedPath(const StringFragment &path) {
+			return string(path.begin() + 1, path.end() - 1);
 		};
 
 		/**
@@ -209,9 +225,9 @@ namespace flint {
 		*		Returns a vector of all the identifier values involved, or an
 		*		empty vector if no identifier was detected.
 		*/
-		vector<string> readQualifiedIdentifier(const vector<Token> &tokens, size_t &pos) {
+		vector<StringFragment> readQualifiedIdentifier(const vector<Token> &tokens, size_t &pos) {
 
-			vector<string> ret;
+			vector<StringFragment> ret;
 			for (; isTok(tokens[pos], TK_IDENTIFIER) || isTok(tokens[pos], TK_DOUBLE_COLON); ++pos) {
 				if (isTok(tokens[pos], TK_IDENTIFIER)) {
 					ret.push_back(tokens[pos].value_);
@@ -352,7 +368,8 @@ namespace flint {
 					result.push_back(' ');
 				}
 
-				result += tokens[pos].value_;
+				const auto &val = tokens[pos].value_;
+				result.append(val.begin(), val.end()); 
 			}
 			return result;
 		};
@@ -521,11 +538,11 @@ namespace flint {
 				size_t innerPos = ++(++pos); // +2 again for the inner identifier
 
 				bool isMember = tokens[outerPos].value_.back() == '_' ||
-								startsWith(tokens[outerPos].value_, "m_");
+								startsWith(tokens[outerPos].value_.begin(), "m_");
 
 				if (isMember && cmpToks(tokens[outerPos], tokens[innerPos])) {
 					lintError(errors, tokens[outerPos],
-						"Initializing class member '" + tokens[outerPos].value_ + "' with itself.");
+						"Initializing class member '" + to_string(tokens[outerPos].value_) + "' with itself.");
 				}
 			}
 		}
@@ -662,7 +679,7 @@ namespace flint {
 			}
 
 			const Token &tok = tokens[pos + 1];
-			const string &sym = tok.value_;
+			const string sym = to_string(tok.value_);
 
 			if (!isTok(tok, TK_IDENTIFIER)) {
 				// This actually happens because people #define private public
@@ -752,7 +769,7 @@ namespace flint {
 			if (!isTok(tokens[focal], TK_IDENTIFIER)) {
 
 				const Token &tok = tokens[focal];
-				lintWarning(errors, tok, "Symbol " + tok.value_ + " invalid in catch clause.",
+				lintWarning(errors, tok, "Symbol " + to_string(tok.value_) + " invalid in catch clause.",
 					"You may only catch user-defined types.");
 				continue;
 			}
@@ -794,9 +811,10 @@ namespace flint {
 			string theType = "";
 			for (size_t j = 2; j <= focal - 1; ++j) {
 				if (j > 2) theType += " ";
-				theType += tokens[j].value_;
+				const auto& val = tokens[j].value_;
+				theType.append(val.begin(), val.end());
 			}
-			lintError(errors, tok, "Symbol " + tok.value_ + " of type " + theType
+			lintError(errors, tok, "Symbol " + to_string(tok.value_) + " of type " + theType
 				+ " caught by value.", "Use catch by (preferably const) reference throughout.");
 		}
 	};
@@ -1036,7 +1054,7 @@ namespace flint {
 			}
 
 			// Get the name of the object
-			const string &objName = tokens[pos].value_;
+			const auto &objName = tokens[pos].value_;
 
 			// Skip to opening '{'
 			for (; pos < tokens.size() && !isTok(tokens[pos], TK_LCURL); ++pos) {
@@ -1315,7 +1333,7 @@ namespace flint {
 
 		if (!cmpToks(tokens[1], tokens[3])) {
 			lintError(errors, tokens[1], "Include guard name mismatch; expected "
-				+	tokens[1].value_ + ", saw " + tokens[3].value_);
+				+	to_string(tokens[1].value_) + ", saw " + to_string(tokens[3].value_));
 		}
 
 		int openIf = 1;
@@ -1458,7 +1476,8 @@ namespace flint {
 					if (!typeString.empty()) {
 						typeString += ' ';
 					}
-					typeString += tokens[typePos].value_;
+					const auto& val = tokens[typePos].value_;
+					typeString.append(val.begin(), val.end());
 				}
 
 				// The operator my not have been an implicit conversion
@@ -1502,13 +1521,13 @@ namespace flint {
 				size_t focal = pos + 2;
 				if (isTok(tokens[focal], TK_IDENTIFIER)) {
 					msg = "Heap-allocated exception: throw new "
-						+ tokens[focal].value_ + "();";
+						+ to_string(tokens[focal].value_) + "();";
 				}
 				else if (atSequence(tokens, focal, throwConstructor)) {
 					// Alternate syntax throw new (Class)()
 					++focal;
 					msg = "Heap-allocated exception: throw new ("
-						+ tokens[focal].value_ + ")();";
+						+ to_string(tokens[focal].value_) + ")();";
 				}
 				else {
 					// Some other usage of throw new Class().
