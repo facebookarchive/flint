@@ -264,7 +264,7 @@ namespace flint {
 					auto str = munchString(pc, line, true);
 					output.push_back(Token(TK_STRING_LITERAL, str, line,
 						whitespace));
-					whitespace = "";
+					whitespace.clear();
 					continue;
 				}
 			}
@@ -353,14 +353,12 @@ namespace flint {
 				break;
 				// *** Newline
 			case '\n':
-				whitespace.append(pc, pc + 1);
-				pc++;
+				whitespace += *(pc++);
 				++line;
 				break;
 				// *** Part of a DOS newline; ignored
 			case '\r':
-				whitespace.append(pc, pc + 1);
-				pc++;
+				whitespace += *(pc++);
 				break;
 				// *** ->, --, -=, ->*, and -
 			case '-':
@@ -403,8 +401,8 @@ namespace flint {
 			ITS_A_NUMBER : {
 				auto symbol = munchNumber(pc);
 				assert(symbol.size() > 0);
-				output.push_back(Token(TK_NUMBER, symbol, line, whitespace));
-				whitespace = "";
+				output.push_back(Token(TK_NUMBER, move(symbol), line, whitespace));
+				whitespace.clear();
 			}
 				break;
 				// *** Number, member selector, ellipsis, or .*
@@ -425,17 +423,17 @@ namespace flint {
 				// *** Character literal
 			case '\'': {
 				auto charLit = munchCharLiteral(pc, line);
-				output.push_back(Token(TK_CHAR_LITERAL, charLit, line,
+				output.push_back(Token(TK_CHAR_LITERAL, move(charLit), line,
 					whitespace));
-				whitespace = "";
+				whitespace.clear();
 			}
 				break;
 				// *** String literal
 			case '"': {
 				auto str = munchString(pc, line);
-				output.push_back(Token(TK_STRING_LITERAL, str, line,
+				output.push_back(Token(TK_STRING_LITERAL, move(str), line,
 					whitespace));
-				whitespace = "";
+				whitespace.clear();
 			}
 				break;
 			case '#': {
@@ -490,8 +488,7 @@ namespace flint {
 				// *** Everything else
 			default:
 				if (iscntrl(c)) {
-					whitespace.append(pc, pc + 1);
-					advance(pc, 1);
+					whitespace += *(pc++);
 				}
 				else if (isalpha(c) || c == '_' || c == '$' || c == '@') {
 					// it's a word
@@ -499,16 +496,16 @@ namespace flint {
 					auto iter = keywords.find(symbol);
 					if (iter != keywords.end()) {
 						// keyword, baby
-						output.push_back(Token(iter->second, symbol, line,
+						output.push_back(Token(iter->second, move(symbol), line,
 							whitespace));
-						whitespace = "";
+						whitespace.clear();
 					}
 					else {
 						// Some identifier
 						assert(symbol.size() > 0);
-						output.push_back(Token(TK_IDENTIFIER, symbol, line,
+						output.push_back(Token(TK_IDENTIFIER, move(symbol), line,
 							whitespace));
-						whitespace = "";
+						whitespace.clear();
 					}
 				}
 				else {
@@ -520,7 +517,7 @@ namespace flint {
 			INSERT_TOKEN:
 				output.push_back(Token(t, munchChars(pc, tokenLen), line,
 					whitespace));
-				whitespace = "";
+				whitespace.clear();
 				break;
 			}
 		}
