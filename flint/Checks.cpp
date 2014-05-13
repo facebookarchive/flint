@@ -1,7 +1,7 @@
 #include "Checks.hpp"
 
 #include <algorithm>
-#include <map>
+#include <unordered_map>
 #include <set>
 #include <cassert>
 #include <stdexcept>
@@ -610,7 +610,7 @@ namespace flint {
 	void checkBlacklistedIdentifiers(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 
-		static const map<string, pair<Lint,string>> blacklist = {
+		static const unordered_map<string, pair<Lint,string>> blacklist = {
 			{ "strtok",
 				{ Lint::ERROR, "'strtok' is not thread safe. Consider 'strtok_r'." }
 			},
@@ -625,7 +625,7 @@ namespace flint {
 			if (isTok(tokens[pos], TK_IDENTIFIER)) {
 				for (const auto &entry : blacklist) {
 					if (cmpTok(tokens[pos], entry.first)) {
-						auto desc = entry.second;
+						auto& desc = entry.second;
 						lint(errors, tokens[pos], desc.first, desc.second);
 						continue;
 					}
