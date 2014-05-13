@@ -42,6 +42,10 @@ namespace flint {
 				"Error  ", "Warning", "Advice "
 			};
 
+			if (Options.LEVEL < m_type) {
+				return "";
+			}
+
 			if (Options.JSON) {
 				string result =
 					"        {\n"
@@ -52,10 +56,6 @@ namespace flint {
 					"        }";
 
 				return result;
-			}
-
-			if (Options.LEVEL < m_type) {
-				return "";
 			}
 
 			string result = "[" + typeStr[m_type] + "] " + path + ":" 
