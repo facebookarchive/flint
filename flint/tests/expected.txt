@@ -19,9 +19,10 @@
 [Error  ] Throw.cpp:12: Heap-allocated exception: throw new MyException(); This is usually a mistake in c++.
 [Error  ] ImplicitConversion.cpp:15: operator bool() is dangerous.
 [Error  ] Blacklist.cpp:21: 'strtok' is not thread safe. Consider 'strtok_r'.
-[Warning] Blacklist.cpp:8: 'volatile' is not thread-safe.
 [Advice ] Blacklist.cpp:23: Prefer `nullptr' to `NULL' in new C++ code.
+[Warning] Blacklist.cpp:8: 'volatile' is not thread-safe.
 
 Lint Summary: 8 files
 Errors: 15 Warnings: 7 Advice: 1 
 
+Estimated Lines of Code: 154
