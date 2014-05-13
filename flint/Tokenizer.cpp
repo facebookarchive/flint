@@ -1,7 +1,7 @@
 #include "Tokenizer.hpp"
 
 #include <algorithm>
-#include <map>
+#include <unordered_map>
 #include <cassert>
 #include <stdexcept>
 
@@ -13,8 +13,8 @@ namespace flint {
 		
 		// Black magic code expansion from Token Definitions
 		// See header...
-		static map<string, TokenType> initializeKeywords() {
-			map<string, TokenType> result;
+		static unordered_map<string, TokenType> initializeKeywords() {
+			unordered_map<string, TokenType> result;
 		#define CPPLINT_ASSIGN(s, tk) result[string(s)] = tk;
 			CPPLINT_FORALL_KEYWORDS(CPPLINT_ASSIGN)
 		#undef CPPLINT_ASSIGN
@@ -32,7 +32,7 @@ namespace flint {
 		/**
 		* Map containing mappings of the kind "virtual" -> TK_VIRTUAL.
 		*/
-		static map<string, TokenType> keywords = initializeKeywords();
+		static unordered_map<string, TokenType> keywords = initializeKeywords();
 
 		/**
 		* Eats howMany characters out of pc, advances pc appropriately, and

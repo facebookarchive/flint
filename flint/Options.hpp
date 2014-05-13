@@ -2,7 +2,8 @@
 
 #include <iostream>
 #include <string>
-#include <map>
+#include <unordered_map>
+#include <vector>
 
 using namespace std;
 
@@ -75,7 +76,7 @@ namespace flint {
 		Arg argJSON			= { ArgType::BOOL, &Options.JSON };
 		Arg argLevel		= { ArgType::INT,  &Options.LEVEL };
 
-		static const map<string, Arg &> params = {
+		static const unordered_map<string, Arg &> params = {
 			{ "-h", argHelp },
 			{ "--help", argHelp },
 
