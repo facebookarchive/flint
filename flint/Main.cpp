@@ -113,7 +113,7 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
 			}
 		}
 
-		errors.addFile(errorFile);
+		errors.addFile(move(errorFile));
 
 	}
 	catch (exception const &e) {
