@@ -21,8 +21,8 @@ namespace flint {
 	public:
 
 		// Constructor
-		ErrorObject(Lint type, size_t line, const string title, const string desc) :
-			m_type(type), m_line(line), m_title(title), m_desc(desc) {};
+		ErrorObject(Lint type, size_t line, string title, string desc) :
+			m_type(type), m_line(line), m_title(move(title)), m_desc(move(desc)) {};
 
 		// Getter
 		uint getType() const {
@@ -38,7 +38,7 @@ namespace flint {
 		*/
 		string toString(const string &path) const {
 
-			const vector<string> typeStr = {
+			static const vector<string> typeStr = {
 				"Error  ", "Warning", "Advice "
 			};
 
@@ -101,7 +101,7 @@ namespace flint {
 
 	public:
 
-		explicit ErrorFile(const string &path) : ErrorBase(), m_path(path) {};
+		explicit ErrorFile(string path) : ErrorBase(), m_path(move(path)) {};
 
 		void addError(ErrorObject error) {
 			if (error.getType() == Lint::ERROR) {
@@ -113,7 +113,7 @@ namespace flint {
 			if (error.getType() == Lint::ADVICE) {
 				++m_advice;
 			}
-			m_objs.push_back(error);
+			m_objs.push_back(move(error));
 		};
 
 		/*
@@ -167,14 +167,12 @@ namespace flint {
 		vector<ErrorFile> m_files;
 	public:
 
-		ErrorReport() : ErrorBase() {};
-
 		void addFile(ErrorFile file) {
 			m_errors	+= file.getErrors();
 			m_warnings	+= file.getWarnings();
 			m_advice	+= file.getAdvice();
 
-			m_files.push_back(file);
+			m_files.push_back(move(file));
 		};
 
 		/*

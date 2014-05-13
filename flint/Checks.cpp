@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <map>
-#include <set>
+#include <unordered_set>
 #include <cassert>
 #include <stdexcept>
 
@@ -24,6 +24,8 @@ namespace flint {
 
 	namespace { // Anonymous Namespace for Token stream traversal functions
 
+		const string emptyString;
+
 		/*
 		* Errors vs. Warnings vs. Advice:
 		*
@@ -37,17 +39,17 @@ namespace flint {
 		*
 		*/
 
-		void lintError(ErrorFile &errors, const Token &tok, const string title, const string desc = "") {
+		void lintError(ErrorFile &errors, const Token &tok, const string &title, const string &desc = emptyString) {
 			errors.addError(ErrorObject(Lint::ERROR, tok.line_, title, desc));
 		};
-		void lintWarning(ErrorFile &errors, const Token &tok, const string title, const string desc = "") {
+		void lintWarning(ErrorFile &errors, const Token &tok, const string &title, const string &desc = emptyString) {
 			errors.addError(ErrorObject(Lint::WARNING, tok.line_, title, desc));
 		};
-		void lintAdvice(ErrorFile &errors, const Token &tok, const string title, const string desc = "") {
+		void lintAdvice(ErrorFile &errors, const Token &tok, const string &title, const string &desc = emptyString) {
 			errors.addError(ErrorObject(Lint::ADVICE, tok.line_, title, desc));
 		};
 
-		void lint(ErrorFile &errors, const Token &tok, const Lint level, const string title, const string desc = "") {
+		void lint(ErrorFile &errors, const Token &tok, const Lint level, const string &title, const string &desc = emptyString) {
 			errors.addError(ErrorObject(level, tok.line_, title, desc));
 		};
 
@@ -651,7 +653,7 @@ namespace flint {
 	void checkDefinedNames(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		// Exceptions to the check
-		static const set<string> okNames = {
+		static const unordered_set<string> okNames = {
 			"__STDC_LIMIT_MACROS",
 			"__STDC_FORMAT_MACROS",
 			"_GNU_SOURCE",
@@ -663,8 +665,8 @@ namespace flint {
 				continue;
 			}
 
-			Token tok = tokens[pos + 1];
-			string sym = tok.value_;
+			const Token &tok = tokens[pos + 1];
+			const string &sym = tok.value_;
 
 			if (!isTok(tok, TK_IDENTIFIER)) {
 				// This actually happens because people #define private public
@@ -1015,15 +1017,15 @@ namespace flint {
 		// Check for constructor specifications inside classes
 		iterateClasses(errors, tokens, [&](ErrorFile &errors, const vector<Token> &tokens, size_t pos) -> void {
 
-			const string lintOverride = "/* implicit */";
+			static const string lintOverride = "/* implicit */";
 
-			const vector<TokenType> stdInitializerSequence = {
+			static const vector<TokenType> stdInitializerSequence = {
 				TK_IDENTIFIER, TK_DOUBLE_COLON, TK_IDENTIFIER, TK_LESS
 			};
-			const vector<TokenType> constructorSequence = {
+			static const vector<TokenType> constructorSequence = {
 				TK_IDENTIFIER, TK_LPAREN
 			};
-			const vector<TokenType> voidConstructorSequence = {
+			static const vector<TokenType> voidConstructorSequence = {
 				TK_IDENTIFIER, TK_LPAREN, TK_VOID, TK_RPAREN
 			};
 
@@ -1038,7 +1040,7 @@ namespace flint {
 			}
 
 			// Get the name of the object
-			string objName = tokens[pos].value_;
+			const string &objName = tokens[pos].value_;
 
 			// Skip to opening '{'
 			for (; pos < tokens.size() && !isTok(tokens[pos], TK_LCURL); ++pos) {
@@ -1365,25 +1367,25 @@ namespace flint {
 		// Check for constructor specifications inside classes
 		iterateClasses(errors, tokens, [&](ErrorFile &errors, const vector<Token> &tokens, size_t pos) -> void {
 
-			const string lintOverride = "/* implicit */";
+			static const string lintOverride = "/* implicit */";
 
-			const vector<TokenType> explicitConstOperator = {
+			static const vector<TokenType> explicitConstOperator = {
 				TK_EXPLICIT, TK_CONSTEXPR, TK_OPERATOR
 			};
-			const vector<TokenType> explicitOperator = {
+			static const vector<TokenType> explicitOperator = {
 				TK_EXPLICIT, TK_OPERATOR
 			};
-			const vector<TokenType> doubleColonOperator = {
+			static const vector<TokenType> doubleColonOperator = {
 				TK_DOUBLE_COLON, TK_OPERATOR
 			};
 
-			const vector<TokenType> boolOperator = {
+			static const vector<TokenType> boolOperator = {
 				TK_OPERATOR, TK_BOOL, TK_LPAREN, TK_RPAREN
 			};
-			const vector<TokenType> operatorDelete = {
+			static const vector<TokenType> operatorDelete = {
 				TK_ASSIGN, TK_DELETE
 			};
-			const vector<TokenType> operatorConstDelete = {
+			static const vector<TokenType> operatorConstDelete = {
 				TK_CONST, TK_ASSIGN, TK_DELETE
 			};
 
@@ -1537,7 +1539,7 @@ namespace flint {
 
 		// Set storing the deprecated includes. Add new headers here if you'd like
 		// to deprecate them
-		static const set<string> deprecatedIncludes = {
+		static const unordered_set<string> deprecatedIncludes = {
 			"common/base/Base.h",
 			"common/base/StringUtil.h",
 		};
@@ -1574,7 +1576,7 @@ namespace flint {
 	*/
 	void checkInlHeaderInclusions(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
-		const vector<TokenType> includeSequence = {
+		static const vector<TokenType> includeSequence = {
 			TK_INCLUDE, TK_STRING_LITERAL
 		};
 
