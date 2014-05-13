@@ -245,8 +245,7 @@ namespace flint {
 	*/
 	size_t tokenize(const string &input, const string &file, vector<Token> &output) {
 		output.clear();
-		// The string piece includes the terminating null character
-
+		
 		auto pc = input.begin();
 		size_t line = 1;
 
@@ -257,7 +256,7 @@ namespace flint {
 		while (pc != input.end()) {
 			const char c = pc[0];
 
-			// Special case for parseing #include <...>
+			// Special case for parsing #include <...>
 			// Previously the include path would not be captured as a string literal
 			if (c == '<') {
 				if (output.size() > 0 && output.back().type_ == TK_INCLUDE) {
