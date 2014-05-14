@@ -535,8 +535,7 @@ namespace flint {
 			}
 		}
 
-		static const string empty_eof{" "};
-		output.push_back(Token(TK_EOF, StringFragment{empty_eof.begin(), empty_eof.end()}, line, ""));
+		output.push_back(Token(TK_EOF, StringFragment{eof.begin(), eof.end()}, line, ""));
 
 		return line;
 	};
