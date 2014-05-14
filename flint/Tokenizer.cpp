@@ -255,6 +255,8 @@ namespace flint {
 	size_t tokenize(const string &input, const string &file, vector<Token> &output) {
 		output.clear();
 		
+		static const string eof{"\0"};
+
 		auto pc = input.begin();
 		size_t line = 1;
 
@@ -400,7 +402,6 @@ namespace flint {
 			case '\0':
 				//assert(pc.size() == 0);
 				// Push last token, the EOF
-				static const string eof{"\0"};
 				output.push_back(Token(TK_EOF, StringFragment{eof.begin(), eof.end()}, line, whitespace));
 				return line;
 				// *** Verboten characters (do allow '@' and '$' as extensions)
