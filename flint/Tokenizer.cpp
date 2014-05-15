@@ -14,15 +14,15 @@ namespace std {
 	template<>
     struct hash<flint::StringFragment> {
 
-        typedef flint::StringFragment argument_type;
-        typedef size_t value_type;
+		typedef flint::StringFragment argument_type;
+		typedef size_t value_type;
  
 		inline value_type operator()(const argument_type &fragment) const {
 			return accumulate(fragment.begin(), fragment.end(), 5381, [](uint64_t curr, char next) {
 				return ((curr << 5) + curr) + next;
 			});
 		}
-    };
+	};
 }
 
 namespace flint {
