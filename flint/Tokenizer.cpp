@@ -7,18 +7,42 @@
 
 #include "Polyfill.hpp"
 
+namespace std {
+	template<>
+    	struct hash<flint::StringFragment>
+    	{
+        	typedef flint::StringFragment argument_type;
+        	typedef size_t value_type;
+ 
+        	inline value_type operator()(const argument_type &fragment) const
+        	{
+			return accumulate(fragment.begin(), fragment.end(), 5381, [](uint64_t curr, char next) {
+				return ((curr << 5) + curr) + next;
+			});
+            	}
+    	};
+}
+
 namespace flint {
 
 	namespace { // Anonymous Namespace for Tokenizing and munching functions
 		
 		// Black magic code expansion from Token Definitions
 		// See header...
-		static unordered_map<string, TokenType> initializeKeywords() {
-			unordered_map<string, TokenType> result;
-		#define CPPLINT_ASSIGN(s, tk) result[string(s)] = tk;
+		static unordered_map<StringFragment, TokenType> initializeKeywords() {
+			static unordered_map<string, TokenType> root; // Will own all the strings
+			unordered_map<StringFragment, TokenType> result;
+
+		#define CPPLINT_ASSIGN(s, tk) root[string(s)] = tk;
 			CPPLINT_FORALL_KEYWORDS(CPPLINT_ASSIGN)
 		#undef CPPLINT_ASSIGN
-				return result;
+
+			for (const auto& item : root) {
+				auto& key = item.first;				
+				result[StringFragment{key.begin(), key.end()}] = item.second;
+			}
+
+			return result;
 		};
 
 		// Oh good lord... Keep this for now,
@@ -32,7 +56,7 @@ namespace flint {
 		/**
 		* Map containing mappings of the kind "virtual" -> TK_VIRTUAL.
 		*/
-		static unordered_map<string, TokenType> keywords = initializeKeywords();
+		static unordered_map<StringFragment, TokenType> keywords = initializeKeywords();
 
 		/**
 		* Eats howMany characters out of pc, advances pc appropriately, and
@@ -497,7 +521,7 @@ namespace flint {
 				else if (isalpha(c) || c == '_' || c == '$' || c == '@') {
 					// it's a word
 					auto symbol = munchIdentifier(pc, input.cend());
-					auto iter = keywords.find(to_string(symbol));
+					auto iter = keywords.find(symbol);
 					if (iter != keywords.end()) {
 						// keyword, baby
 						output.push_back(Token(iter->second, move(symbol), line,
