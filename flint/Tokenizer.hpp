@@ -245,9 +245,14 @@ namespace flint {
 	};
 
 	using std::to_string;
-	string to_string(const StringFragment &fragment);
-	bool operator==(const StringFragment &a, const StringFragment &b);
-	
+	inline string to_string(const StringFragment &fragment) {
+		return string(fragment.begin(), fragment.end());
+	}
+
+	inline bool operator==(const StringFragment &a, const StringFragment &b) {
+		return equal(a.begin(), a.end(), b.begin());
+	}
+
 	/**
 	* Defines one token together with file and line information. The
 	* precedingComment_ is set if there was one comment before the token.

@@ -9,15 +9,6 @@
 
 namespace flint {
 
-	string to_string(const StringFragment &fragment) {
-		return string(fragment.begin(), fragment.end());
-	}
-
-	bool operator==(const StringFragment &a, const StringFragment &b)
-	{
-		return equal(a.begin(), a.end(), b.begin());
-	}
-
 	namespace { // Anonymous Namespace for Tokenizing and munching functions
 		
 		// Black magic code expansion from Token Definitions
