@@ -119,7 +119,7 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
 
 	}
 	catch (exception const &e) {
-		fprintf(stderr, "Exception thrown during checks on %s.\n%s", path.c_str(), e.what());
+		fprintf(stderr, "Exception thrown during checks on %s.\n%s\n\n", path.c_str(), e.what());
 	}
 };
 
