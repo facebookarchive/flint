@@ -33,35 +33,28 @@ namespace flint {
 		* Prints an single error of the report in either
 		* JSON or Pretty Printed format
 		*
-		* @return
-		*		Returns a string containing the report output
 		*/
-		string toString(const string &path) const {
+		void print(const string &path) const {
 
 			static const vector<string> typeStr = {
 				"Error  ", "Warning", "Advice "
 			};
 
 			if (Options.LEVEL < m_type) {
-				return "";
+				return;
 			}
 
 			if (Options.JSON) {
-				string result =
-					"        {\n"
-					"	        \"level\"    : \"" + typeStr[m_type] + "\",\n"
-					"	        \"line\"     : " + to_string(m_line) + ",\n"
-					"	        \"title\"    : \"" + escapeString(m_title) + "\",\n"
-					"	        \"desc\"     : \"" + escapeString(m_desc) + "\"\n"
+				cout <<	"        {\n"
+					"	        \"level\"    : \""	<< typeStr[m_type]			<< "\",\n"
+					"	        \"line\"     : "	<< to_string(m_line)		<< ",\n"
+					"	        \"title\"    : \""	<< escapeString(m_title)	<< "\",\n"
+					"	        \"desc\"     : \""	<< escapeString(m_desc)		<< "\"\n"
 					"        }";
-
-				return result;
 			}
 
-			string result = "[" + typeStr[m_type] + "] " + path + ":" 
-				+ to_string(m_line) + ": " + m_title + "\n";
-
-			return result;
+			cout << '[' << typeStr[m_type] << "] " << path << ':' 
+				 << to_string(m_line) << ": " << m_title << endl;
 		};
 	};
 
@@ -119,42 +112,34 @@ namespace flint {
 		/*
 		* Prints an single file of the report in either
 		* JSON or Pretty Printed format
-		*
-		* @return
-		*		Returns a string containing the report output
 		*/
-		string toString() const {
+		void print() const {
 
 			if (Options.JSON) {
-				string result =
-					"    {\n"
-					"	    \"path\"     : \"" + escapeString(m_path) + "\",\n"
-					"	    \"errors\"   : " + to_string(getErrors()) + ",\n"
-					"	    \"warnings\" : " + to_string(getWarnings()) + ",\n"
-					"	    \"advice\"   : " + to_string(getAdvice()) + ",\n"
+				cout << "    {\n"
+					"	    \"path\"     : \""	<< escapeString(m_path)		<< "\",\n"
+					"	    \"errors\"   : "	<< to_string(getErrors())	<< ",\n"
+					"	    \"warnings\" : "	<< to_string(getWarnings()) << ",\n"
+					"	    \"advice\"   : "	<< to_string(getAdvice())	<< ",\n"
 					"	    \"reports\"  : [\n";
 
-				for (size_t i = 0; i < m_objs.size(); ++i) {
+				for (size_t i = 0, size = m_objs.size(); i < size; ++i) {
 					if (i > 0) {
-						result += ",\n";
+						cout <<  ',' << endl;
 					}
 
-					result += m_objs[i].toString(m_path);
+					m_objs[i].print(m_path);
 				}
 
-				result +=
-					"\n      ]\n"
-					"    }";
+				cout << "\n      ]\n"
+						"    }";
 
-				return result;
+				return;
 			}
 			
-			string result = "";
-			for (size_t i = 0; i < m_objs.size(); ++i) {
-				result += m_objs[i].toString(m_path);
+			for (size_t i = 0, size = m_objs.size(); i < size; ++i) {
+				m_objs[i].print(m_path);
 			}
-
-			return result;
 		};
 	};
 
@@ -182,50 +167,45 @@ namespace flint {
 		* @return
 		*		Returns a string containing the report output
 		*/
-		string toString() const {
+		void print() const {
 			
 			if (Options.JSON) {
-				string result =
-					"{\n"
-					"	\"errors\"   : " + to_string(getErrors()) + ",\n"
-					"	\"warnings\" : " + to_string(getWarnings()) + ",\n"
-					"	\"advice\"   : " + to_string(getAdvice()) + ",\n"
+				cout << "{\n"
+					"	\"errors\"   : " << to_string(getErrors())		<< ",\n"
+					"	\"warnings\" : " << to_string(getWarnings())	<< ",\n"
+					"	\"advice\"   : " << to_string(getAdvice())		<< ",\n"
 					"	\"files\"    : [\n";
 
-				for (size_t i = 0; i < m_files.size(); ++i) {
+				for (size_t i = 0, size = m_files.size(); i < size; ++i) {
 					if (i > 0) {
-						result += ",\n";
+						cout << ',' << endl;
 					}
 
-					result += m_files[i].toString();
+					m_files[i].print();
 				}
 
-				result +=
-					"\n  ]\n"
-					"}";
+				cout <<	"\n  ]\n"
+						"}";
 
-				return result;
+				return;
 			}
 
-			string result = "";
-			for (size_t i = 0; i < m_files.size(); ++i) {
+			for (size_t i = 0, size = m_files.size(); i < size; ++i) {
 				if (m_files[i].getTotal() > 0) {
-					result += m_files[i].toString();
+					m_files[i].print();
 				}
 			}
 
-			result += "\nLint Summary: " 
-				+ to_string(m_files.size()) + " files\n"
-				"Errors: " + to_string(getErrors()) + " ";
+			cout << "\nLint Summary: " << to_string(m_files.size()) << " files\n"
+				"Errors: " << to_string(getErrors());
+
 			if (Options.LEVEL >= Lint::WARNING) {
-				result += "Warnings: " + to_string(getWarnings()) + " ";
+				cout << " Warnings: " << to_string(getWarnings());
 			}
 			if (Options.LEVEL >= Lint::ADVICE) {
-				result += "Advice: " + to_string(getAdvice()) + " ";
+				cout << " Advice: " << to_string(getAdvice());
 			}
-			result += "\n";
-
-			return result;
+			cout << endl;
 		};
 	};
 

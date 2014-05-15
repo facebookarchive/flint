@@ -137,7 +137,10 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Print summary
-	cout << errors.toString() << endl << "Estimated Lines of Code: " << to_string(totalLOC) << endl;
+	errors.print();
+	if (!Options.JSON) {
+		cout << endl << "Estimated Lines of Code: " << to_string(totalLOC) << endl;
+	}
 
 #ifdef _DEBUG
 	// Stop visual studio from closing the window...
