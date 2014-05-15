@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <array>
 #include <vector>
 
 #include "Polyfill.hpp"
@@ -36,8 +37,8 @@ namespace flint {
 		*/
 		void print(const string &path) const {
 
-			static const vector<string> typeStr = {
-				"Error  ", "Warning", "Advice "
+			static const array<string, 6> typeStr = {
+				"[Error  ] ", "[Warning] ", "[Advice ] ", "Error", "Warning", "Advice"
 			};
 
 			if (Options.LEVEL < m_type) {
@@ -46,14 +47,16 @@ namespace flint {
 
 			if (Options.JSON) {
 				cout <<	"        {\n"
-					"	        \"level\"    : \""	<< typeStr[m_type]			<< "\",\n"
-					"	        \"line\"     : "	<< to_string(m_line)		<< ",\n"
-					"	        \"title\"    : \""	<< escapeString(m_title)	<< "\",\n"
-					"	        \"desc\"     : \""	<< escapeString(m_desc)		<< "\"\n"
+					"	        \"level\"    : \"" << typeStr[m_type + 3u]  << "\",\n"
+					"	        \"line\"     : "   << to_string(m_line)     << ",\n"
+					"	        \"title\"    : \"" << escapeString(m_title) << "\",\n"
+					"	        \"desc\"     : \"" << escapeString(m_desc)  << "\"\n"
 					"        }";
+
+				return;
 			}
 
-			cout << '[' << typeStr[m_type] << "] " << path << ':' 
+			cout << typeStr[m_type] << path << ':' 
 				 << to_string(m_line) << ": " << m_title << endl;
 		};
 	};
@@ -117,10 +120,10 @@ namespace flint {
 
 			if (Options.JSON) {
 				cout << "    {\n"
-					"	    \"path\"     : \""	<< escapeString(m_path)		<< "\",\n"
-					"	    \"errors\"   : "	<< to_string(getErrors())	<< ",\n"
-					"	    \"warnings\" : "	<< to_string(getWarnings()) << ",\n"
-					"	    \"advice\"   : "	<< to_string(getAdvice())	<< ",\n"
+					"	    \"path\"     : \"" << escapeString(m_path)     << "\",\n"
+					"	    \"errors\"   : "   << to_string(getErrors())   << ",\n"
+					"	    \"warnings\" : "   << to_string(getWarnings()) << ",\n"
+					"	    \"advice\"   : "   << to_string(getAdvice())   << ",\n"
 					"	    \"reports\"  : [\n";
 
 				for (size_t i = 0, size = m_objs.size(); i < size; ++i) {
@@ -171,9 +174,9 @@ namespace flint {
 			
 			if (Options.JSON) {
 				cout << "{\n"
-					"	\"errors\"   : " << to_string(getErrors())		<< ",\n"
-					"	\"warnings\" : " << to_string(getWarnings())	<< ",\n"
-					"	\"advice\"   : " << to_string(getAdvice())		<< ",\n"
+					"	\"errors\"   : " << to_string(getErrors())   << ",\n"
+					"	\"warnings\" : " << to_string(getWarnings()) << ",\n"
+					"	\"advice\"   : " << to_string(getAdvice())   << ",\n"
 					"	\"files\"    : [\n";
 
 				for (size_t i = 0, size = m_files.size(); i < size; ++i) {
