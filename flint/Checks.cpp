@@ -91,8 +91,9 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		*		Returns true if we are at the given token
 		*/
 		bool skipToToken(const vector<Token> &tokens, size_t &pos, TokenType target) {
-			for (; pos < tokens.size() && !isTok(tokens[pos], target); ++pos) {}
-			return (pos < tokens.size() && isTok(tokens[pos], target));
+			const size_t size = tokens.size();
+			for (; pos < size && !isTok(tokens[pos], target); ++pos) {}
+			return (pos < size && isTok(tokens[pos], target));
 		};
 
 		/**
@@ -142,7 +143,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 				*containsArray = false;
 			}
 
-			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
+			for (const size_t size = tokens.size(); pos < size && !isTok(tokens[pos], TK_EOF); ++pos) {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_LPAREN) {
@@ -254,7 +255,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			uint openBraces = 1; // Because we began on the leading '{'
 
 			++pos;
-			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
+			for (const size_t size = tokens.size(); pos < size && !isTok(tokens[pos], TK_EOF); ++pos) {
 				const Token &tok = tokens[pos];
 
 				if (isTok(tok, TK_LCURL)) {
@@ -326,7 +327,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		*/
 		size_t skipFunctionDeclaration(const vector<Token> &tokens, size_t pos) {
 
-			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
+			for (const size_t size = tokens.size(); pos < size && !isTok(tokens[pos], TK_EOF); ++pos) {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_SEMICOLON) { // Function Prototype
@@ -434,7 +435,8 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			size_t argStart = pos; // First arg starts after parenthesis
 			int parenCount = 1;
 
-			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
+			const size_t size = tokens.size();
+			for (; pos < size && !isTok(tokens[pos], TK_EOF); ++pos) {
 				TokenType tok = tokens[pos].type_;
 
 				if (tok == TK_LPAREN) {
@@ -474,7 +476,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 				}
 			}
 
-			if (pos >= tokens.size() || isTok(tokens[pos], TK_EOF)) {
+			if (pos >= size || isTok(tokens[pos], TK_EOF)) {
 				return false;
 			}
 
@@ -506,10 +508,11 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			func.first = pos;
 			++pos;
 
-			if (pos < tokens.size() && isTok(tokens[pos], TK_LESS)) {
+			const size_t size = tokens.size(); 
+			if (pos < size && isTok(tokens[pos], TK_LESS)) {
 				pos = skipTemplateSpec(tokens, pos);
 
-				if (pos >= tokens.size() || isTok(tokens[pos], TK_EOF)) {
+				if (pos >= size || isTok(tokens[pos], TK_EOF)) {
 					return false;
 				}
 				++pos;
@@ -594,7 +597,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 
 		bool isException = false;
 
-		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {
 
 			// Make sure we aren't at an exception to the blacklist
 			for (const auto &e : exceptions) {
@@ -788,7 +791,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			// balancing parens because there are weird corner cases like
 			// catch (Ex<(1 + 1)> & e).
 			for (size_t parens = 0;; ++focal) {
-				if (focal >= tokens.size()) {
+				if (focal >= size) {
 					throw runtime_error(path + ':' + to_string(tokens[focal].line_)
 						+ ": Invalid C++ source code, please compile before lint.");
 				}
@@ -1053,6 +1056,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		};
 
 		// Check for constructor specifications inside classes
+		const size_t toksize = tokens.size();
 		for (size_t i = 0, size = structures.size(); i < size; ++i) {
 			size_t pos = structures[i];
 
@@ -1070,14 +1074,14 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			const auto &objName = tokens[pos].value_;
 
 			// Skip to opening '{'
-			for (; pos < tokens.size() && !isTok(tokens[pos], TK_LCURL); ++pos) {
-				if (!(pos < tokens.size()) || isTok(tokens[pos], TK_SEMICOLON)) {
+			for (; pos < toksize && !isTok(tokens[pos], TK_LCURL); ++pos) {
+				if (!(pos < toksize) || isTok(tokens[pos], TK_SEMICOLON)) {
 					return;
 				}
 			}
 			++pos;
 
-			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
+			for (; pos < toksize && !isTok(tokens[pos], TK_EOF); ++pos) {
 				const Token &tok = tokens[pos];
 
 				// Any time we find an open curly skip straight to the closing one
@@ -1211,7 +1215,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			TK_IDENTIFIER, TK_LPAREN
 		};
 
-		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {
 			const Token &tok = tokens[pos];
 
 			if (!atSequence(tokens, pos, funcSequence) || !cmpTok(tok, "memset")) {
@@ -1275,7 +1279,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 
 		uint includesFound = 0;
 
-		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {
 
 			if (!isTok(tokens[pos], TK_INCLUDE)) {
 				continue;
@@ -1352,7 +1356,8 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		int openIf = 1;
 
 		size_t pos;
-		for (pos = 1; pos < tokens.size(); ++pos) {
+		const size_t size = tokens.size();
+		for (pos = 1; pos < size; ++pos) {
 
 			if (isTok(tokens[pos], TK_IFNDEF) || isTok(tokens[pos], TK_IFDEF) || isTok(tokens[pos], TK_POUNDIF)) {
 				++openIf;
@@ -1368,7 +1373,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			}
 		}
 
-		if (openIf != 0 || pos < tokens.size() - 2) {
+		if (openIf != 0 || pos < size - 2) {
 			lintError(errors, tokens.back(), "Include guard doesn't cover the entire file.");
 			return;
 		}
@@ -1414,6 +1419,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		};
 
 		// Check for constructor specifications inside classes
+		const size_t toksize = tokens.size();
 		for (size_t i = 0, size = structures.size(); i < size; ++i) {
 			size_t pos = structures[i];
 
@@ -1422,14 +1428,14 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			}
 
 			// Skip to opening '{'
-			for (; pos < tokens.size() && !isTok(tokens[pos], TK_LCURL); ++pos) {
-				if (!(pos < tokens.size()) || isTok(tokens[pos], TK_SEMICOLON)) {
+			for (; pos < toksize && !isTok(tokens[pos], TK_LCURL); ++pos) {
+				if (!(pos < toksize) || isTok(tokens[pos], TK_SEMICOLON)) {
 					return;
 				}
 			}
 			++pos;
 
-			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
+			for (; pos < toksize && !isTok(tokens[pos], TK_EOF); ++pos) {
 				const Token &tok = tokens[pos];
 
 				// Any time we find an open curly skip straight to the closing one
@@ -1478,7 +1484,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 				// Assume it is an implicit conversion unless proven otherwise
 				bool isImplicitConversion = false;
 				string typeString = "";
-				for (size_t typePos = pos + 1; typePos < tokens.size(); ++typePos) {
+				for (size_t typePos = pos + 1; typePos < toksize; ++typePos) {
 					if (isTok(tokens[typePos], TK_LPAREN)) {
 						break;
 					}
@@ -1528,7 +1534,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			TK_LPAREN, TK_IDENTIFIER, TK_RPAREN
 		};
 
-		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {
 			if (atSequence(tokens, pos, throwNew)) {
 
 				string msg;
@@ -1573,7 +1579,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			"common/base/StringUtil.h",
 		};
 
-		for (size_t pos = 0; pos < tokens.size() - 1; ++pos) {
+		for (size_t pos = 0, size = tokens.size(); pos < size - 1; ++pos) {
 
 			if (!isTok(tokens[pos], TK_INCLUDE)) {
 				continue;
@@ -1616,7 +1622,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		}
 		string fileBase = getFileNameBase(file);
 
-		for (size_t pos = 0; pos < tokens.size() - 1; ++pos) {
+		for (size_t pos = 0, size = tokens.size(); pos < size - 1; ++pos) {
 
 			if (!atSequence(tokens, pos, includeSequence)) {
 				continue;
@@ -1664,10 +1670,11 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			TK_COLON, TK_PROTECTED, TK_IDENTIFIER
 		};
 
+		const size_t toksize = tokens.size();
 		for (size_t i = 0, size = structures.size(); i < size; ++i) {
 			size_t pos = structures[i];
 
-			for (; pos < tokens.size() - 2; ++pos) {
+			for (; pos < toksize - 2; ++pos) {
 
 				if (isTok(tokens[pos], TK_LCURL) || isTok(tokens[pos], TK_SEMICOLON)) {
 					break;
