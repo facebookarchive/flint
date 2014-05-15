@@ -23,6 +23,6 @@
 [Warning] Blacklist.cpp:8: 'volatile' is not thread-safe.
 
 Lint Summary: 8 files
-Errors: 15 Warnings: 7 Advice: 1 
+Errors: 15 Warnings: 7 Advice: 1
 
 Estimated Lines of Code: 154

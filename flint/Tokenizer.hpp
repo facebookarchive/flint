@@ -288,3 +288,10 @@ namespace flint {
 	size_t tokenize(string&&, const string &, vector<Token> &, vector<size_t> &) = delete;
 	size_t tokenize(const string&, string &&, vector<Token> &, vector<size_t> &) = delete;
 };
+
+namespace std {
+	template <>
+	struct hash<flint::StringFragment>;
+};
+
+
