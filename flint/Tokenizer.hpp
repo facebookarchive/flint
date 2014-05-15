@@ -278,13 +278,13 @@ namespace flint {
 	* code and a filename, fills output with the tokens in the
 	* file.
 	*/
-	size_t tokenize(const string &input, const string &initialFilename, vector<Token> &output);
+	size_t tokenize(const string &input, const string &initialFilename, vector<Token> &output, vector<size_t> &structures);
 
 	/**
 	* Prevent the use of temporaries for input and filename
 	* because the resulting tokens contain StringPiece objects pointing
 	* into them.
 	*/
-	size_t tokenize(string&&, const string &, vector<Token> &) = delete;
-	size_t tokenize(const string&, string &&, vector<Token> &) = delete;
+	size_t tokenize(string&&, const string &, vector<Token> &, vector<size_t> &) = delete;
+	size_t tokenize(const string&, string &&, vector<Token> &, vector<size_t> &) = delete;
 };

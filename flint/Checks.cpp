@@ -287,7 +287,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		*		The current index position inside the token list
 		* @param callback
 		*		The function to run on each code object
-		*/
+		
 		template<class Callback>
 		void iterateClasses(ErrorFile &errors, const vector<Token> &tokens, const Callback &callback) {
 
@@ -308,6 +308,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 				}
 			}
 		};
+		*/
 
 		/**
 		* Starting from a function name or one of its arguments, skips the entire
@@ -843,23 +844,24 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkThrowSpecification(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
+	void checkThrowSpecification(ErrorFile &errors, const string &path, const vector<Token> &tokens, const vector<size_t> &structures) {
 		auto numTokens = tokens.size();
 		auto posLimit = numTokens - 1;
 
+		static const array<TokenType, 7> destructorSequence = {
+			{ TK_TILDE, TK_IDENTIFIER, TK_LPAREN, TK_RPAREN, TK_THROW, TK_LPAREN, TK_RPAREN }
+		};
+		static const array<TokenType, 6> whatSequence = {
+			{ TK_LPAREN, TK_RPAREN, TK_CONST, TK_THROW, TK_LPAREN, TK_RPAREN }
+		};
+		
 		// Check for throw specifications inside classes
-		iterateClasses(errors, tokens, [&](ErrorFile &errors, const vector<Token> &tokens, size_t pos) -> void {
-
-			static const array<TokenType, 7> destructorSequence = {
-				{ TK_TILDE, TK_IDENTIFIER, TK_LPAREN, TK_RPAREN, TK_THROW, TK_LPAREN, TK_RPAREN }
-			};
-			static const array<TokenType, 6> whatSequence = {
-				{ TK_LPAREN, TK_RPAREN, TK_CONST, TK_THROW, TK_LPAREN, TK_RPAREN }
-			};
+		for (size_t i = 0, size = structures.size(); i < size; ++i) {
+			size_t pos = structures[i];
 
 			// Skip to opening '{'
 			if (!skipToToken(tokens, pos, TK_LCURL)) {
-				return;
+				continue;
 			}
 			++pos;
 
@@ -901,7 +903,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 					continue;
 				}
 			}
-		});
+		}
 
 		// Check for throw specifications in functional style code
 		for (size_t pos = 0; pos < numTokens; ++pos) {
@@ -1033,34 +1035,35 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkConstructors(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
+	void checkConstructors(ErrorFile &errors, const string &path, const vector<Token> &tokens, const vector<size_t> &structures) {
 		if (getFileCategory(path) == FileCategory::SOURCE_C) {
 			return;
 		}
 
+		static const string lintOverride = "/* implicit */";
+
+		static const array<TokenType, 4> stdInitializerSequence = {
+			TK_IDENTIFIER, TK_DOUBLE_COLON, TK_IDENTIFIER, TK_LESS
+		};
+		static const array<TokenType, 2> constructorSequence = {
+			TK_IDENTIFIER, TK_LPAREN
+		};
+		static const array<TokenType, 4> voidConstructorSequence = {
+			TK_IDENTIFIER, TK_LPAREN, TK_VOID, TK_RPAREN
+		};
+
 		// Check for constructor specifications inside classes
-		iterateClasses(errors, tokens, [&](ErrorFile &errors, const vector<Token> &tokens, size_t pos) -> void {
-
-			static const string lintOverride = "/* implicit */";
-
-			static const vector<TokenType> stdInitializerSequence = {
-				TK_IDENTIFIER, TK_DOUBLE_COLON, TK_IDENTIFIER, TK_LESS
-			};
-			static const vector<TokenType> constructorSequence = {
-				TK_IDENTIFIER, TK_LPAREN
-			};
-			static const vector<TokenType> voidConstructorSequence = {
-				TK_IDENTIFIER, TK_LPAREN, TK_VOID, TK_RPAREN
-			};
+		for (size_t i = 0, size = structures.size(); i < size; ++i) {
+			size_t pos = structures[i];
 
 			if (!(isTok(tokens[pos], TK_STRUCT) || isTok(tokens[pos], TK_CLASS))) {
-				return;
+				continue;
 			}
 
 			++pos;
 			// Skip C-Style Structs with no name
 			if (!isTok(tokens[pos], TK_IDENTIFIER)) {
-				return;
+				continue;
 			}
 
 			// Get the name of the object
@@ -1113,7 +1116,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 					if (!getFunctionNameAndArguments(tokens, pos, func, args)) {
 						// Parse fail can be due to limitations in skipTemplateSpec, such as with:
 						// fn(std::vector<boost::shared_ptr<ProjectionOperator>> children);)
-						return;
+						break;
 					}
 
 					// Allow zero-argument constructors
@@ -1186,7 +1189,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 					continue;
 				}
 			}
-		});
+		}
 	};
 
 	/**
@@ -1383,38 +1386,39 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkImplicitCast(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
+	void checkImplicitCast(ErrorFile &errors, const string &path, const vector<Token> &tokens, const vector<size_t> &structures) {
 		if (getFileCategory(path) == FileCategory::SOURCE_C) {
 			return;
 		}
 
+		static const string lintOverride = "/* implicit */";
+
+		static const array<TokenType, 3> explicitConstOperator = {
+			TK_EXPLICIT, TK_CONSTEXPR, TK_OPERATOR
+		};
+		static const array<TokenType, 2> explicitOperator = {
+			TK_EXPLICIT, TK_OPERATOR
+		};
+		static const array<TokenType, 2> doubleColonOperator = {
+			TK_DOUBLE_COLON, TK_OPERATOR
+		};
+
+		static const array<TokenType, 4> boolOperator = {
+			TK_OPERATOR, TK_BOOL, TK_LPAREN, TK_RPAREN
+		};
+		static const array<TokenType, 2> operatorDelete = {
+			TK_ASSIGN, TK_DELETE
+		};
+		static const array<TokenType, 3> operatorConstDelete = {
+			TK_CONST, TK_ASSIGN, TK_DELETE
+		};
+
 		// Check for constructor specifications inside classes
-		iterateClasses(errors, tokens, [&](ErrorFile &errors, const vector<Token> &tokens, size_t pos) -> void {
-
-			static const string lintOverride = "/* implicit */";
-
-			static const vector<TokenType> explicitConstOperator = {
-				TK_EXPLICIT, TK_CONSTEXPR, TK_OPERATOR
-			};
-			static const vector<TokenType> explicitOperator = {
-				TK_EXPLICIT, TK_OPERATOR
-			};
-			static const vector<TokenType> doubleColonOperator = {
-				TK_DOUBLE_COLON, TK_OPERATOR
-			};
-
-			static const vector<TokenType> boolOperator = {
-				TK_OPERATOR, TK_BOOL, TK_LPAREN, TK_RPAREN
-			};
-			static const vector<TokenType> operatorDelete = {
-				TK_ASSIGN, TK_DELETE
-			};
-			static const vector<TokenType> operatorConstDelete = {
-				TK_CONST, TK_ASSIGN, TK_DELETE
-			};
+		for (size_t i = 0, size = structures.size(); i < size; ++i) {
+			size_t pos = structures[i];
 
 			if (!(isTok(tokens[pos], TK_STRUCT) || isTok(tokens[pos], TK_CLASS))) {
-				return;
+				continue;
 			}
 
 			// Skip to opening '{'
@@ -1499,7 +1503,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 					"Prefix the function with the 'explicit' keyword to avoid this,"
 					" or add an /* implicit *""/ comment to suppress this warning.");
 			}
-		});
+		}
 	};
 
 	/**
@@ -1654,13 +1658,14 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 	* @param tokens
 	*		The token list for the file
 	*/
-	void checkProtectedInheritance(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
+	void checkProtectedInheritance(ErrorFile &errors, const string &path, const vector<Token> &tokens, const vector<size_t> &structures) {
 
-		iterateClasses(errors, tokens, [&](ErrorFile &errors, const vector<Token> &tokens, size_t pos) -> void {
+		const array<TokenType, 3> protectedSequence = {
+			TK_COLON, TK_PROTECTED, TK_IDENTIFIER
+		};
 
-			const array<TokenType, 3> protectedSequence = {
-				{ TK_COLON, TK_PROTECTED, TK_IDENTIFIER }
-			};
+		for (size_t i = 0, size = structures.size(); i < size; ++i) {
+			size_t pos = structures[i];
 
 			for (; pos < tokens.size() - 2; ++pos) {
 
@@ -1674,7 +1679,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 						"for more information.");
 				}
 			}
-		});
+		}
 	};
 
 	// ************************************

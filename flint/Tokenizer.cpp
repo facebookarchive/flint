@@ -243,8 +243,9 @@ namespace flint {
 	* Given the contents of a C++ file and a filename, tokenizes the
 	* contents and places it in output.
 	*/
-	size_t tokenize(const string &input, const string &file, vector<Token> &output) {
+	size_t tokenize(const string &input, const string &file, vector<Token> &output, vector<size_t> &structures) {
 		output.clear();
+		structures.clear();
 		
 		static const string eof("\0");
 
@@ -258,16 +259,24 @@ namespace flint {
 		while (pc != input.end()) {
 			const char c = pc[0];
 
-			// Special case for parsing #include <...>
-			// Previously the include path would not be captured as a string literal
-			if (c == '<') {
-				if (output.size() > 0 && output.back().type_ == TK_INCLUDE) {
+			if (output.size() > 0) {
+				const TokenType tok = output.back().type_;
+				if (tok == TK_CLASS || tok == TK_STRUCT || tok == TK_UNION) {
+					// If the last token added was the start of a structure push it onto
+					// the list of structures
+					structures.push_back(output.size() - 1);
+				}
+				else if (c == '<' && tok == TK_INCLUDE) {
+					// Special case for parsing #include <...>
+					// Previously the include path would not be captured as a string literal
 					auto str = munchString(pc, line, true);
 					output.push_back(Token(TK_STRING_LITERAL, move(str), line,
 						whitespace));
 					whitespace.clear();
 					continue;
 				}
+
+
 			}
 
 			switch (c) {

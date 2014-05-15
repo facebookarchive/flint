@@ -70,7 +70,8 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
 		ErrorFile errorFile(getFileName(path));
 
 		vector<Token> tokens;
-		loc += tokenize(file, path, tokens);
+		vector<size_t> structures;
+		loc += tokenize(file, path, tokens, structures);
 
 		// Checks which note Errors
 		checkBlacklistedIdentifiers(errorFile, path, tokens);
@@ -82,7 +83,7 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
 		checkInlHeaderInclusions(errorFile, path, tokens);
 
 		if (!Options.CMODE) {
-			checkConstructors(errorFile, path, tokens);
+			checkConstructors(errorFile, path, tokens, structures);
 			checkCatchByReference(errorFile, path, tokens);
 			checkThrowsHeapException(errorFile, path, tokens);
 		}
@@ -95,9 +96,10 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
 			checkDeprecatedIncludes(errorFile, path, tokens);
 
 			if (!Options.CMODE) {
-				checkImplicitCast(errorFile, path, tokens);
-				checkProtectedInheritance(errorFile, path, tokens);
-				checkThrowSpecification(errorFile, path, tokens);
+				checkImplicitCast(errorFile, path, tokens, structures);
+				checkProtectedInheritance(errorFile, path, tokens, structures);
+
+				checkThrowSpecification(errorFile, path, tokens, structures);
 			}
 		}
 
