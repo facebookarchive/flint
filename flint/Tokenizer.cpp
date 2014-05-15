@@ -454,34 +454,34 @@ namespace flint {
 					ENFORCE(tokenLen > 0, "Unterminated #error message");
 				}
 				else if (startsWith(pc1, "include")) {
-					t = TK_INCLUDE; tokenLen += strlen("include");
+					t = TK_INCLUDE; tokenLen += 7; // strlen("include");
 				}
 				else if (startsWith(pc1, "ifdef")) {
-					t = TK_IFDEF; tokenLen += strlen("ifdef");
+					t = TK_IFDEF; tokenLen += 5; // strlen("ifdef");
 				}
 				else if (startsWith(pc1, "ifndef")) {
-					t = TK_IFNDEF; tokenLen += strlen("ifndef");
+					t = TK_IFNDEF; tokenLen += 6; // strlen("ifndef");
 				}
 				else if (startsWith(pc1, "if")) {
-					t = TK_POUNDIF; tokenLen += strlen("if");
+					t = TK_POUNDIF; tokenLen += 2; // strlen("if");
 				}
 				else if (startsWith(pc1, "undef")) {
-					t = TK_UNDEF; tokenLen += strlen("undef");
+					t = TK_UNDEF; tokenLen += 5; // strlen("undef");
 				}
 				else if (startsWith(pc1, "else")) {
-					t = TK_POUNDELSE; tokenLen += strlen("else");
+					t = TK_POUNDELSE; tokenLen += 4; // strlen("else");
 				}
 				else if (startsWith(pc1, "endif")) {
-					t = TK_ENDIF; tokenLen += strlen("endif");
+					t = TK_ENDIF; tokenLen += 5; // strlen("endif");
 				}
 				else if (startsWith(pc1, "define")) {
-					t = TK_DEFINE; tokenLen += strlen("define");
+					t = TK_DEFINE; tokenLen += 6; // strlen("define");
 				}
 				else if (startsWith(pc1, "pragma")) {
-					t = TK_PRAGMA; tokenLen += strlen("pragma");
+					t = TK_PRAGMA; tokenLen += 6; // strlen("pragma");
 				}
 				else if (startsWith(pc1, "#")) {
-					t = TK_DOUBLEPOUND; tokenLen += strlen("##");
+					t = TK_DOUBLEPOUND; tokenLen += 2; // strlen("##");
 				}
 				else {
 					// We can only assume this is inside a macro definition

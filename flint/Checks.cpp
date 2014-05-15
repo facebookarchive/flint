@@ -69,7 +69,8 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		* @return
 		*		Returns true if we were at the start of a given sequence
 		*/
-		bool atSequence(const vector<Token> &tokens, size_t pos, const vector<TokenType> &list) {
+		template <class Container>
+		bool atSequence(const vector<Token> &tokens, size_t pos, const Container &list) {
 			return equal(begin(list), end(list), begin(tokens) + pos, [](TokenType type, const Token &token) 
 			{ 
 				return type == token.type_; 
@@ -196,7 +197,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		*/
 		bool atBuiltinType(const vector<Token> &tokens, size_t pos) {
 
-			static const vector<TokenType> builtIns = {
+			static const array<TokenType, 11> builtIns = {{
 				TK_DOUBLE,
 				TK_FLOAT,
 				TK_INT,
@@ -208,7 +209,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 				TK_BOOL,
 				TK_WCHAR_T,
 				TK_CHAR
-			};
+			}};
 
 			return find(begin(builtIns), end(builtIns), tokens[pos].type_) != end(builtIns);
 		};
@@ -253,7 +254,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 
 			++pos;
 			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
-				Token tok = tokens[pos];
+				const Token &tok = tokens[pos];
 
 				if (isTok(tok, TK_LCURL)) {
 					++openBraces;
@@ -289,9 +290,13 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		template<class Callback>
 		void iterateClasses(ErrorFile &errors, const vector<Token> &tokens, const Callback &callback) {
 
+			static const array<TokenType, 2> template_types = {
+				{ TK_TEMPLATE, TK_LESS }
+			};
+
 			for (size_t pos = 0; pos < tokens.size() - 1; ++pos) {
 				// Skip template sequence if we find ... template< ...
-				if (atSequence(tokens, pos, { TK_TEMPLATE, TK_LESS })) {
+				if (atSequence(tokens, pos, template_types)) {
 					pos = skipTemplateSpec(tokens, ++pos);
 					continue;
 				}
@@ -365,7 +370,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 
 			for (size_t pos = arg.first; pos < arg.last; ++pos) {
 				if (pos != arg.first && !(tokens[pos].precedingWhitespace_.empty())) {
-					result.push_back(' ');
+					result += ' ';
 				}
 
 				const auto &val = tokens[pos].value_;
@@ -387,18 +392,20 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		*		Returns a string representation of the argument token list
 		*/
 		string formatFunction(const vector<Token> &tokens, const Argument &func, const vector<Argument> &args) {
+			static const string sep(", ");
 
-			string result = formatArg(tokens, func) + "(";
+			string result = formatArg(tokens, func) + '(';
 
-			for (size_t i = 0; i < args.size(); ++i) {
-				if (i > 0) {
-					result += ", ";
-				}
+			if (!args.empty()) {
+				result += formatArg(tokens, args[0]);
+			}
 
+			for (size_t i = 1, size = args.size(); i < size; ++i) {
+				result += sep;
 				result += formatArg(tokens, args[i]);
 			}
 
-			result += ")";
+			result += ')';
 			return result;
 		};
 
@@ -524,14 +531,14 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 	void checkInitializeFromItself(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		// Token Sequences for parameter initializers
-		const vector<TokenType> firstInitializer = {
-			TK_COLON, TK_IDENTIFIER, TK_LPAREN, TK_IDENTIFIER, TK_RPAREN
+		const array<TokenType, 5> firstInitializer = {
+			{ TK_COLON, TK_IDENTIFIER, TK_LPAREN, TK_IDENTIFIER, TK_RPAREN }
 		};
-		const vector<TokenType> nthInitializer = {
-			TK_COMMA, TK_IDENTIFIER, TK_LPAREN, TK_IDENTIFIER, TK_RPAREN
+		const array<TokenType, 5> nthInitializer = {
+			{ TK_COMMA, TK_IDENTIFIER, TK_LPAREN, TK_IDENTIFIER, TK_RPAREN }
 		};
 
-		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {
 			if (atSequence(tokens, pos, firstInitializer) || atSequence(tokens, pos, nthInitializer)) {
 
 				size_t outerPos = ++pos;     // +1 for identifier
@@ -564,8 +571,8 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			vector<TokenType> tokens;
 			string title, descr;
 			bool cpponly;
-			BlacklistEntry(const vector<TokenType> &t, const string &h, const string &d, bool cpponly)
-				: tokens(t), title(h), descr(d), cpponly(cpponly) {};
+			BlacklistEntry(vector<TokenType> t, string h, string d, bool cpponly)
+				: tokens(move(t)), title(move(h)), descr(move(d)), cpponly(cpponly) {};
 		};
 
 		static const vector<BlacklistEntry> blacklist = {
@@ -635,7 +642,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			}
 		};
 
-		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {
 
 			if (isTok(tokens[pos], TK_IDENTIFIER)) {
 				for (const auto &entry : blacklist) {
@@ -673,7 +680,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			"_XOPEN_SOURCE"
 		};
 
-		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {
 			if (!isTok(tokens[pos], TK_DEFINE)) {
 				continue;
 			}
@@ -734,14 +741,14 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 	*/
 	void checkCatchByReference(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
-		for (size_t pos = 0; pos < tokens.size(); ++pos) {
+		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {
 			if (!isTok(tokens[pos], TK_CATCH)) {
 				continue;
 			}
 
 			size_t focal = pos + 1;
 			if (!isTok(tokens[focal], TK_LPAREN)) { // a "(" comes always after catch
-				throw runtime_error(path + ":" + to_string(tokens[focal].line_)
+				throw runtime_error(path + ':' + to_string(tokens[focal].line_)
 					+ ": Invalid C++ source code, please compile before lint.");
 			}
 			++focal;
@@ -780,7 +787,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			// catch (Ex<(1 + 1)> & e).
 			for (size_t parens = 0;; ++focal) {
 				if (focal >= tokens.size()) {
-					throw runtime_error(path + ":" + to_string(tokens[focal].line_)
+					throw runtime_error(path + ':' + to_string(tokens[focal].line_)
 						+ ": Invalid C++ source code, please compile before lint.");
 				}
 				if (isTok(tokens[focal], TK_RPAREN)) {
@@ -810,7 +817,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			// Get the type string
 			string theType = "";
 			for (size_t j = 2; j <= focal - 1; ++j) {
-				if (j > 2) theType += " ";
+				if (j > 2) theType += ' ';
 				const auto& val = tokens[j].value_;
 				theType.append(val.begin(), val.end());
 			}
@@ -836,15 +843,17 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 	*		The token list for the file
 	*/
 	void checkThrowSpecification(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
+		auto numTokens = tokens.size();
+		auto posLimit = numTokens - 1;
 
 		// Check for throw specifications inside classes
 		iterateClasses(errors, tokens, [&](ErrorFile &errors, const vector<Token> &tokens, size_t pos) -> void {
 
-			const vector<TokenType> destructorSequence = {
-				TK_TILDE, TK_IDENTIFIER, TK_LPAREN, TK_RPAREN, TK_THROW, TK_LPAREN, TK_RPAREN
+			static const array<TokenType, 7> destructorSequence = {
+				{ TK_TILDE, TK_IDENTIFIER, TK_LPAREN, TK_RPAREN, TK_THROW, TK_LPAREN, TK_RPAREN }
 			};
-			const vector<TokenType> whatSequence = {
-				TK_LPAREN, TK_RPAREN, TK_CONST, TK_THROW, TK_LPAREN, TK_RPAREN
+			static const array<TokenType, 6> whatSequence = {
+				{ TK_LPAREN, TK_RPAREN, TK_CONST, TK_THROW, TK_LPAREN, TK_RPAREN }
 			};
 
 			// Skip to opening '{'
@@ -853,8 +862,8 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			}
 			++pos;
 
-			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
-				Token tok = tokens[pos];
+			for (; pos < numTokens && !isTok(tokens[pos], TK_EOF); ++pos) {
+				const Token &tok = tokens[pos];
 
 				// Skip warnings for empty throw specifications on destructors,
 				// because sometimes it is necessary to put a throw() clause on
@@ -886,7 +895,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 				}
 
 				// Because we skip the bodies of functions the only throws we should find are function throws
-				if (isTok(tok, TK_THROW) && isTok(tokens[pos + 1], TK_LPAREN)) {
+				if (pos < posLimit && isTok(tok, TK_THROW) && isTok(tokens[pos + 1], TK_LPAREN)) {
 					lintWarning(errors, tok, "Throw specifications on functions are deprecated.");
 					continue;
 				}
@@ -894,8 +903,8 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		});
 
 		// Check for throw specifications in functional style code
-		for (size_t pos = 0; pos < tokens.size(); ++pos) {
-			Token tok = tokens[pos];
+		for (size_t pos = 0; pos < numTokens; ++pos) {
+			const Token &tok = tokens[pos];
 
 			// Don't accidentally identify a using statement as a namespace
 			if (isTok(tok, TK_USING)) {
@@ -981,8 +990,8 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 
 		// Return after the first found error, because otherwise
 		// even one missed #if can be cause of a lot of errors.
-		for (size_t pos = 0; pos < tokens.size(); ++pos) {
-			Token tok = tokens[pos];
+		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {
+			const Token &tok = tokens[pos];
 
 			if (isTok(tok, TK_IFNDEF)
 				|| isTok(tok, TK_IFDEF)
@@ -1065,7 +1074,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			++pos;
 
 			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
-				Token tok = tokens[pos];
+				const Token &tok = tokens[pos];
 
 				// Any time we find an open curly skip straight to the closing one
 				if (isTok(tok, TK_LCURL)) {
@@ -1199,7 +1208,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		};
 
 		for (size_t pos = 0; pos < tokens.size(); ++pos) {
-			Token tok = tokens[pos];
+			const Token &tok = tokens[pos];
 
 			if (!atSequence(tokens, pos, funcSequence) || !cmpTok(tok, "memset")) {
 				continue;
@@ -1416,7 +1425,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			++pos;
 
 			for (; pos < tokens.size() && !isTok(tokens[pos], TK_EOF); ++pos) {
-				Token tok = tokens[pos];
+				const Token &tok = tokens[pos];
 
 				// Any time we find an open curly skip straight to the closing one
 				if (isTok(tok, TK_LCURL)) {
@@ -1648,8 +1657,8 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 
 		iterateClasses(errors, tokens, [&](ErrorFile &errors, const vector<Token> &tokens, size_t pos) -> void {
 
-			const vector<TokenType> protectedSequence = {
-				TK_COLON, TK_PROTECTED, TK_IDENTIFIER
+			const array<TokenType, 3> protectedSequence = {
+				{ TK_COLON, TK_PROTECTED, TK_IDENTIFIER }
 			};
 
 			for (; pos < tokens.size() - 2; ++pos) {
@@ -1695,7 +1704,6 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 	*/
 
 // Shorthand for comparing two strings
-#undef cmpStr
 #undef cmpTok
 #undef cmpToks
 
