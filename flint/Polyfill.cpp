@@ -79,8 +79,9 @@ namespace flint {
 			return false; /* No files found */
 		}
 
-		const string fsObj = fileData.cFileName;
 		do {
+			const string fsObj = fileData.cFileName;
+
 			if (FS_ISNOT_LINK(fsObj) && FS_ISNOT_GIT(fsObj)) {
 				const string fileName = path + FS_SEP + fsObj;
 				dirs.push_back(move(fileName));
