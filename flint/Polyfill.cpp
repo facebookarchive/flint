@@ -79,12 +79,11 @@ namespace flint {
 			return false; /* No files found */
 		}
 
+		const string fsObj = fileData.cFileName;
 		do {
-			const string fsObj = fileData.cFileName;
 			if (FS_ISNOT_LINK(fsObj) && FS_ISNOT_GIT(fsObj)) {
-
 				const string fileName = path + FS_SEP + fsObj;
-				dirs.push_back(fileName);
+				dirs.push_back(move(fileName));
 			}
 		} while (FindNextFile(dir, &fileData));
 
@@ -101,7 +100,7 @@ namespace flint {
 				if (FS_ISNOT_LINK(fsObj) && FS_ISNOT_GIT(fsObj)) {
 
 					const string fileName = path + FS_SEP + fsObj;
-					dirs.push_back(fileName);
+					dirs.push_back(move(fileName));
 				}
 			}
 			closedir(pDIR);
@@ -160,8 +159,9 @@ namespace flint {
 	*/
 	bool startsWith(string::const_iterator str_iter, const char *prefix) {
 		while (*prefix != '\0' && *prefix == *str_iter) {
-        	++prefix, ++str_iter;
-    	}
+        		++prefix;
+			++str_iter;
+    		}
 
 		return *prefix == '\0';
 	};

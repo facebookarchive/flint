@@ -349,7 +349,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			size_t first;
 			size_t last;
 
-			Argument(size_t a, size_t b) : first(a), last(b) {
+			inline Argument(size_t a, size_t b) : first(a), last(b) {
 				// Just to check the port hasn't broken Token traversal somehow
 				assert(first <= last);
 			};
