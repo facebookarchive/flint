@@ -40,10 +40,6 @@ namespace flint {
 	X(InitializeFromItself);
 	X(IfEndifBalance);
 
-	// Pointers
-	X(SmartPtrUsage);
-	X(UniquePtrUsage);
-
 	// Include Errors
 	X(IncludeGuard);
 	X(DeprecatedIncludes);
@@ -51,11 +47,12 @@ namespace flint {
 	X(InlHeaderInclusions);
 	
 	// To be implemented...
+	X(SmartPtrUsage);
+	X(UniquePtrUsage);
 	X(VirtualDestructors);
 	X(ExceptionInheritance);
 	X(NamespaceScopedStatics);
 	X(MutexHolderHasName);
-	X(OSSIncludes);
 	X(BreakInSynchronized);
 	X(UsingDirectives);
 	X(UsingNamespaceDirectives);	
