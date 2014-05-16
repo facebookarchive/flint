@@ -18,7 +18,7 @@ namespace flint {
 template <class S, class T>
 inline bool cmpStr(const S &a, const T &b) { return equal(a.begin(), a.end(), b.begin()); }
 inline bool cmpStr(const StringFragment &a, const char* b) { return startsWith(a.begin(), b); }  
-inline bool cmpStr(const string &a, const string &b) { return a == b; }
+inline bool cmpStr(const string &a, const string &b) { return a.compare(b) == 0; }
 
 #define cmpTok(a,b) cmpStr((a).value_, (b))
 
@@ -651,7 +651,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 
 			if (isTok(tokens[pos], TK_IDENTIFIER)) {
 				for (const auto &entry : blacklist) {
-					if (cmpTok(tokens[pos], entry.first)) {
+					if (cmpTok(tokens[pos], entry.first.c_str())) {
 						auto& desc = entry.second;
 						lint(errors, tokens[pos], desc.first, desc.second);
 						continue;
