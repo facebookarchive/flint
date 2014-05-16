@@ -21,35 +21,42 @@ namespace flint {
 	// Merged into banned identifiers
 	//X(UpcaseNull);
 
-	// These checks get access to a list of identified structs/class/unions's
+	// These checks get access to a list of identified 
+	// structs/class/unions's
 	X_struct(ThrowSpecification);
 	X_struct(Constructors);
 	X_struct(ProtectedInheritance);
 	X_struct(ImplicitCast);
 
+	// Blacklisted Terms
 	X(DefinedNames);
-	X(CatchByReference);
 	X(BlacklistedSequences);
 	X(BlacklistedIdentifiers);
+
+	// Common Mistakes
+	X(CatchByReference);
+	X(Memset);
+	X(ThrowsHeapException);
 	X(InitializeFromItself);
 	X(IfEndifBalance);
-	X(IncludeGuard);
-	X(UsingDirectives);
-	X(UsingNamespaceDirectives);
-	X(ThrowsHeapException);
-	X(HPHPNamespace);
-	X(DeprecatedIncludes);
-	X(IncludeAssociatedHeader);
-	X(Memset);
-	X(InlHeaderInclusions);
-	X(VirtualDestructors);
-	X(FollyDetail);	
-	X(ExceptionInheritance);
+
+	// Pointers
 	X(SmartPtrUsage);
 	X(UniquePtrUsage);
-	X(BannedIdentifiers);
+
+	// Include Errors
+	X(IncludeGuard);
+	X(DeprecatedIncludes);
+	X(IncludeAssociatedHeader);
+	X(InlHeaderInclusions);
+	
+	// To be implemented...
+	X(VirtualDestructors);
+	X(ExceptionInheritance);
 	X(NamespaceScopedStatics);
 	X(MutexHolderHasName);
 	X(OSSIncludes);
 	X(BreakInSynchronized);
+	X(UsingDirectives);
+	X(UsingNamespaceDirectives);	
 };
