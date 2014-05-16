@@ -12,7 +12,7 @@
 
 namespace std {
 	template<>
-    struct hash<flint::StringFragment> {
+	struct hash<flint::StringFragment> {
 
 		typedef flint::StringFragment argument_type;
 		typedef uint64_t value_type;

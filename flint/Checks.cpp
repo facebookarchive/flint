@@ -76,7 +76,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			{ 
 				return type == token.type_; 
 			}); 
-      		};
+			};
 
 		/**
 		* Moves pos to the next position of the target token
