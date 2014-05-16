@@ -122,7 +122,11 @@ namespace flint {
 			}
 			else {
 				// Push another path onto the lint list
-				paths.push_back(string(argv[i]));
+				string p = argv[i];
+				if (p.back() == '/' || p.back() == '\\') {
+					p.erase(p.end()-1, p.end());
+				}
+				paths.push_back(move(p));
 			}
 		}
 
