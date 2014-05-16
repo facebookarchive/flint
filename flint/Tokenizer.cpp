@@ -287,7 +287,8 @@ namespace flint {
 
 			if (output.size() > 0) {
 				const TokenType tok = output.back().type_;
-				if (tok == TK_CLASS || tok == TK_STRUCT || tok == TK_UNION) {
+				if ((tok == TK_CLASS || tok == TK_STRUCT || tok == TK_UNION) && 
+					(structures.empty() || structures.back() != output.size() - 1)) {
 					// If the last token added was the start of a structure push it onto
 					// the list of structures
 					structures.push_back(output.size() - 1);

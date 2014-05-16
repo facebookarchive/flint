@@ -17,8 +17,8 @@ namespace flint {
 // Shorthand for comparing two strings (or fragments)
 template <class S, class T>
 inline bool cmpStr(const S &a, const T &b) { return equal(a.begin(), a.end(), b.begin()); }
-inline bool cmpStr(const StringFragment &a, const char* b) { return startsWith(a.begin(), b); }  
-inline bool cmpStr(const string &a, const string &b) { return a.compare(b) == 0; }
+inline bool cmpStr(const StringFragment &a, const char* b) { return (a.size() == strlen(b)) && startsWith(a.begin(), b); }  
+inline bool cmpStr(const string &a, const string &b) { return a == b; }
 
 #define cmpTok(a,b) cmpStr((a).value_, (b))
 
@@ -1074,10 +1074,9 @@ inline bool cmpStr(const string &a, const string &b) { return a.compare(b) == 0;
 			const auto &objName = tokens[pos].value_;
 
 			// Skip to opening '{'
-			for (; pos < toksize && !isTok(tokens[pos], TK_LCURL); ++pos) {
-				if (!(pos < toksize) || isTok(tokens[pos], TK_SEMICOLON)) {
-					return;
-				}
+			for (; pos < toksize && !(isTok(tokens[pos], TK_LCURL) || isTok(tokens[pos], TK_SEMICOLON)); ++pos);
+			if (isTok(tokens[pos], TK_SEMICOLON)) {
+				continue;
 			}
 			++pos;
 
@@ -1097,7 +1096,7 @@ inline bool cmpStr(const string &a, const string &b) { return a.compare(b) == 0;
 
 				if (isTok(tok, TK_EXPLICIT)) {
 					pos = skipFunctionDeclaration(tokens, pos);
-					break;
+					continue;
 				}
 
 				// Are we on a potential constructor?
@@ -1185,12 +1184,10 @@ inline bool cmpStr(const string &a, const string &b) { return a.compare(b) == 0;
 							+ formatFunction(tokens, func, args)
 							+ "' may inadvertently be used as a type conversion constructor.",
 							"Prefix the function with the 'explicit' keyword to avoid this, or add an "
-							"/* implicit *""/ comment to suppress this warning.");
+							"/* implicit */ comment to suppress this warning.");
 					}
 
-					pos = skipFunctionDeclaration(tokens, pos);
-
-					continue;
+					pos = skipFunctionDeclaration(tokens, pos++);
 				}
 			}
 		}
