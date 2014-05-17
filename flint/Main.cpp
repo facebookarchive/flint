@@ -86,6 +86,7 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
 			checkConstructors(errorFile, path, tokens, structures);
 			checkCatchByReference(errorFile, path, tokens);
 			checkThrowsHeapException(errorFile, path, tokens);
+			checkUniquePtrUsage(errorFile, path, tokens);
 		}
 
 		// Checks which note Warnings
