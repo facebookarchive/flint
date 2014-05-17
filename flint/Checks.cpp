@@ -278,6 +278,43 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		};
 
 		/**
+		* Traverses the token list until the whole parentheses chunk has passed
+		*
+		* @param tokens
+		*		The token list for the file
+		* @param pos
+		*		The current index position inside the token list
+		* @return
+		*		Returns the position of the closing curly bracket
+		*/
+		size_t skipParens(const vector<Token> &tokens, size_t pos) {
+			assert(isTok(tokens[pos], TK_LPAREN));
+
+			uint openParens = 1; // Because we began on the leading '('
+
+			++pos;
+			for (const size_t size = tokens.size(); pos < size && !isTok(tokens[pos], TK_EOF); ++pos) {
+				const Token &tok = tokens[pos];
+
+				if (isTok(tok, TK_LPAREN)) {
+					++openParens;
+					continue;
+				}
+				if (isTok(tok, TK_RPAREN)) {
+					// Removed decrement/zero-check as one line
+					// It's not a race guys, readability > length of code
+					--openParens;
+					if (openParens == 0) {
+						break;
+					}
+					continue;
+				}
+			}
+
+			return pos;
+		};
+
+		/**
 		* Traverses the token list and runs a Callback function on each
 		* class/struct/union it finds
 		*
