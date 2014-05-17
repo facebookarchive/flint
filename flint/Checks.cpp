@@ -672,6 +672,10 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 	*		The token list for the file
 	*/
 	void checkNamespaceScopedStatics(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
+		if (!isHeader(path)) {
+			return;
+		}
+		
 		static const array<TokenType, 3> regularNamespace = {
 			{TK_NAMESPACE, TK_IDENTIFIER, TK_LCURL}
 		};
@@ -680,10 +684,6 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			{TK_NAMESPACE, TK_LCURL}
 		};
 
-		if (!isHeader(path)) {
-			return;
-		}
-
 		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {
 			if (atSequence(tokens, pos, regularNamespace)) {
 				pos += 2;
@@ -691,7 +691,8 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			}
 
 			if (atSequence(tokens, pos, unnamedNamespace)) {
-				pos += 2;
+				++pos;
+				continue;
 			}
 
 			const Token &token = tokens[pos];
