@@ -17,6 +17,10 @@ namespace {
 
   namespace InnerNamed {
     static int s = 8;
+
+	static bool testFunction() {
+		return false;
+	};
   }
 };
 
