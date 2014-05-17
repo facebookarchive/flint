@@ -691,7 +691,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			}
 
 			if (isTok(tokens[pos], TK_STATIC)) {
-				lintWarning(errors, tokens[pos], "Don't use static at global or namespace scopes.");
+				lintWarning(errors, tokens[pos], "Don't use static at global or namespace scopes in headers.");
 			}
 		}
 	};
