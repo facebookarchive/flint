@@ -26,5 +26,12 @@ int main() {
 	std::unique_ptr<int[]> c(new int(42));
 	unique_ptr<Foo> d(new Foo[]());
 
+	std::shared_ptr<Foo> sh1;
+	shared_ptr<int> ptr3(new Foo, &CustomDeleter, &CustomAllocator);
+	std::shared_ptr<Foo> sh2(new Foo);
+	boost::shared_ptr<Foo> sh3(new sh2);
+	std::shared_ptr<Foo> sh4(new Foo, D(), A());
+
+
 	return 0;
 };

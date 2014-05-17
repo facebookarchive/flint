@@ -98,6 +98,7 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
 			checkNamespaceScopedStatics(errorFile, path, tokens);
 
 			if (!Options.CMODE) {
+				checkSmartPtrUsage(errorFile, path, tokens);
 				checkImplicitCast(errorFile, path, tokens, structures);
 				checkProtectedInheritance(errorFile, path, tokens, structures);
 
