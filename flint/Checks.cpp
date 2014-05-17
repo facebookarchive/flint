@@ -591,8 +591,8 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			}
 		};
 
-		static const vector< vector<TokenType> > exceptions = {
-			{ TK_ASM, TK_VOLATILE }
+		static const array< vector<TokenType>, 1 > exceptions = {
+			{ { TK_ASM, TK_VOLATILE } }
 		};
 
 		bool isException = false;
@@ -657,6 +657,41 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 						continue;
 					}
 				}
+			}
+		}
+	};
+
+	void checkNamespaceScopedStatics(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
+		static const array<TokenType, 3> regularNamespace = {
+			{TK_NAMESPACE, TK_IDENTIFIER, TK_LCURL}
+		};
+
+		static const array<TokenType, 2> unnamedNamespace = {
+			{TK_NAMESPACE, TK_LCURL}
+		};
+
+		if (!isHeader(path)) {
+			return;
+		}
+
+		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {
+			if (atSequence(tokens, pos, regularNamespace)) {
+				pos += 2;
+				continue;
+			}
+
+			if (atSequence(tokens, pos, unnamedNamespace)) {
+				pos += 2;
+			}
+
+			const Token &token = tokens[pos];
+			if (isTok(token, TK_LCURL)) {
+				pos = skipBlock(tokens, pos);
+				continue;
+			}
+
+			if (isTok(tokens[pos], TK_STATIC)) {
+				lintWarning(errors, tokens[pos], "Don't use static variables at global or namespace scopes.");
 			}
 		}
 	};

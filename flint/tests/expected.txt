@@ -10,6 +10,11 @@
 [Error  ] Includes.cpp:4: An -inl file (Wrong-inl.h) was included even though this is not its associated header.
 [Warning] Includes.cpp:6: Including deprecated header 'common/base/Base.h'
 [Error  ] Ifdef.cpp:15: Unmatched #if/#endif.
+[Warning] Namespace.hpp:5: Don't use static variables at global or namespace scopes.
+[Warning] Namespace.hpp:6: Don't use static variables at global or namespace scopes.
+[Warning] Namespace.hpp:15: Don't use static variables at global or namespace scopes.
+[Warning] Namespace.hpp:16: Don't use static variables at global or namespace scopes.
+[Warning] Namespace.hpp:19: Don't use static variables at global or namespace scopes.
 [Error  ] Memset.cpp:11: Did you mean memset(ptr, 0, 4) ?
 [Error  ] Memset.cpp:13: Did you mean memset(ptr, 1, sizeof(int)) ?
 [Error  ] Define.hpp:12: Include guard doesn't cover the entire file.
@@ -22,7 +27,7 @@
 [Advice ] Blacklist.cpp:23: Prefer `nullptr' to `NULL' in new C++ code.
 [Warning] Blacklist.cpp:8: 'volatile' is not thread-safe.
 
-Lint Summary: 8 files
-Errors: 15 Warnings: 7 Advice: 1
+Lint Summary: 9 files
+Errors: 15 Warnings: 12 Advice: 1
 
-Estimated Lines of Code: 154
+Estimated Lines of Code: 190
