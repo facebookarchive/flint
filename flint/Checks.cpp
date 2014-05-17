@@ -661,6 +661,16 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 		}
 	};
 
+	/**
+	* Check for static variables and functions in global/namespace scopes
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
 	void checkNamespaceScopedStatics(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 		static const array<TokenType, 3> regularNamespace = {
 			{TK_NAMESPACE, TK_IDENTIFIER, TK_LCURL}
