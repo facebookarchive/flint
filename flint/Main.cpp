@@ -83,6 +83,7 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
 		checkInlHeaderInclusions(errorFile, path, tokens);
 
 		if (!Options.CMODE) {
+			checkMutexHolderHasName(errorFile, path, tokens);
 			checkConstructors(errorFile, path, tokens, structures);
 			checkCatchByReference(errorFile, path, tokens);
 			checkThrowsHeapException(errorFile, path, tokens);
