@@ -1,3 +1,6 @@
+[Error  ] Blacklist.cpp:21: 'strtok' is not thread safe. Consider 'strtok_r'.
+[Advice ] Blacklist.cpp:23: Prefer `nullptr' to `NULL' in new C++ code.
+[Warning] Blacklist.cpp:8: 'volatile' is not thread-safe.
 [Error  ] Constructor.cpp:24: Single - argument constructor 'Foo(int i)' may inadvertently be used as a type conversion constructor.
 [Error  ] Constructor.cpp:29: Move constructors should not take a const argument: Foo(const Foo&& other)
 [Error  ] Constructor.cpp:30: Copy constructors should take a const argument: Foo(Foo &other)
@@ -6,29 +9,30 @@
 [Warning] Constructor.cpp:12: Throw specifications on functions are deprecated.
 [Warning] Constructor.cpp:18: Throw specifications on functions are deprecated.
 [Warning] Constructor.cpp:5: Throw specifications on functions are deprecated.
+[Error  ] Define.hpp:12: Include guard doesn't cover the entire file.
+[Warning] Define.hpp:5: Symbol __BAD_DEFINE invalid.
+[Error  ] Ifdef.cpp:15: Unmatched #if/#endif.
+[Error  ] ImplicitConversion.cpp:15: operator bool() is dangerous.
 [Error  ] Includes.cpp:15: The associated header file of .cpp files should be included before any other includes.
 [Error  ] Includes.cpp:4: An -inl file (Wrong-inl.h) was included even though this is not its associated header.
 [Warning] Includes.cpp:6: Including deprecated header 'common/base/Base.h'
-[Error  ] Ifdef.cpp:15: Unmatched #if/#endif.
+[Error  ] Memset.cpp:11: Did you mean memset(ptr, 0, 4) ?
+[Error  ] Memset.cpp:13: Did you mean memset(ptr, 1, sizeof(int)) ?
 [Warning] Namespace.hpp:5: Don't use static at global or namespace scopes in headers.
 [Warning] Namespace.hpp:6: Don't use static at global or namespace scopes in headers.
 [Warning] Namespace.hpp:15: Don't use static at global or namespace scopes in headers.
 [Warning] Namespace.hpp:16: Don't use static at global or namespace scopes in headers.
 [Warning] Namespace.hpp:19: Don't use static at global or namespace scopes in headers.
 [Warning] Namespace.hpp:21: Don't use static at global or namespace scopes in headers.
-[Error  ] Memset.cpp:11: Did you mean memset(ptr, 0, 4) ?
-[Error  ] Memset.cpp:13: Did you mean memset(ptr, 1, sizeof(int)) ?
-[Error  ] Define.hpp:12: Include guard doesn't cover the entire file.
-[Warning] Define.hpp:5: Symbol __BAD_DEFINE invalid.
+[Error  ] Pointers.cpp:22: unique_ptr<T[]> should be used with an array type.
+[Error  ] Pointers.cpp:23: unique_ptr<T> should be unique_ptr<T[]> when used with an array.
+[Error  ] Pointers.cpp:26: unique_ptr<T[]> should be used with an array type.
+[Error  ] Pointers.cpp:27: unique_ptr<T> should be unique_ptr<T[]> when used with an array.
 [Error  ] Throw.cpp:8: Heap-allocated exception: throw new MyException(); This is usually a mistake in c++.
 [Error  ] Throw.cpp:10: Heap-allocated exception: throw new (MyException)(); This is usually a mistake in c++.
 [Error  ] Throw.cpp:12: Heap-allocated exception: throw new MyException(); This is usually a mistake in c++.
-[Error  ] ImplicitConversion.cpp:15: operator bool() is dangerous.
-[Error  ] Blacklist.cpp:21: 'strtok' is not thread safe. Consider 'strtok_r'.
-[Advice ] Blacklist.cpp:23: Prefer `nullptr' to `NULL' in new C++ code.
-[Warning] Blacklist.cpp:8: 'volatile' is not thread-safe.
 
-Lint Summary: 9 files
-Errors: 15 Warnings: 13 Advice: 1
+Lint Summary: 10 files
+Errors: 19 Warnings: 13 Advice: 1
 
-Estimated Lines of Code: 194
+Estimated Lines of Code: 224
