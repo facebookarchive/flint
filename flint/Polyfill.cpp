@@ -106,6 +106,10 @@ namespace flint {
 			}
 			closedir(pDIR);
 		}
+
+		stable_sort(dirs.begin(), dirs.end(), [](const string &a, const string &b){
+			return a.compare(b) <= 0;
+		});
 #endif
 		return !dirs.empty();
 	};
