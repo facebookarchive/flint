@@ -1,14 +1,16 @@
 #include "Options.hpp"
 
-using namespace std;
+#include <iostream>
+#include <unordered_map>
 
 namespace flint {
+
 	OptionsInfo Options;
 
-        /**
+	/**
 	* Prints the usage information for the program, then exits.
 	*/
-        void printHelp() {
+	void printHelp() {
 		printf("Usage: flint++ [options:] [files:]\n\n"
 			   "\t-r, --recursive		: Search subfolders for files.\n"
 			   "\t-c, --cmode		: Only perform C based lint checks.\n"
@@ -18,14 +20,14 @@ namespace flint {
 			   "			      1 : Errors & Warnings\n"
 			   "			      2 : All feedback\n\n"
 			   "\t-h, --help		: Print usage.\n\n");
-                #ifdef _DEBUG 
+#ifdef _DEBUG 
 		// Stop visual studio from closing the window...
 		system("PAUSE");
-                #endif
+#endif
 		exit(1);
 	};
 
-        /**
+	/**
 	* Given an argument count and list, parses the arguments
 	* and sets the global options as desired
 	*
@@ -36,7 +38,7 @@ namespace flint {
 	* @param paths
 	*		A vector of strings to be filled with lint paths
 	*/
-        void parseArgs(int argc, char* argv[], vector<string> &paths) {
+	void parseArgs(int argc, char* argv[], vector<string> &paths) {
 		// Set default values
 		Options.RECURSIVE	= false;
 		Options.CMODE		= false;

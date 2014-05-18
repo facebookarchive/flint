@@ -1,9 +1,9 @@
 #pragma once
 
-#include <iostream>
 #include <string>
-#include <unordered_map>
 #include <vector>
+
+using namespace std;
 
 namespace flint {
 	
@@ -20,6 +20,6 @@ namespace flint {
 	};
 	extern OptionsInfo Options;	
 	
-        void printHelp(); 
-        void parseArgs(int argc, char* argv[], std::vector<std::string> &paths);
+	void printHelp(); 
+	void parseArgs(int argc, char *argv[], vector<string> &paths);
 };
