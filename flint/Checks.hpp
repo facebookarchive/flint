@@ -39,21 +39,22 @@ namespace flint {
 	X(ThrowsHeapException);
 	X(InitializeFromItself);
 	X(IfEndifBalance);
+	X(NamespaceScopedStatics);
+	X(MutexHolderHasName);
 
 	// Include Errors
 	X(IncludeGuard);
 	X(DeprecatedIncludes);
 	X(IncludeAssociatedHeader);
 	X(InlHeaderInclusions);
-	
-	// To be implemented...
+
+	// Pointer Errors
 	X(SmartPtrUsage);
 	X(UniquePtrUsage);
+	
+	// To be implemented...
 	X(VirtualDestructors);
 	X(ExceptionInheritance);
-	X(NamespaceScopedStatics);
-	X(MutexHolderHasName);
-	X(BreakInSynchronized);
 	X(UsingDirectives);
 	X(UsingNamespaceDirectives);	
 };
