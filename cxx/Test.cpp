@@ -6,6 +6,7 @@
 #include "folly/File.h"
 #include "folly/FileUtil.h"
 #include "folly/String.h"
+#include <gflags/gflags.h>
 #include <gtest/gtest.h>
 #include <boost/algorithm/string/replace.hpp>
 

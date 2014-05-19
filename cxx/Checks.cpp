@@ -8,6 +8,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
 
+#include <gflags/gflags.h>
+
 #include <map>
 #include <unordered_map>
 #include <set>
