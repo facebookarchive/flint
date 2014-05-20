@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "ErrorReport.hpp"
+
 using namespace std;
 
 namespace flint {
@@ -213,6 +215,7 @@ namespace flint {
 #undef CPPLINT_X2
 #undef CPPLINT_X3
 #undef CPPLINT_X4
+		TK_UNEXPECTED,
 		NUM_TOKENS
 	};
 
@@ -278,15 +281,15 @@ namespace flint {
 	* code and a filename, fills output with the tokens in the
 	* file.
 	*/
-	size_t tokenize(const string &input, const string &initialFilename, vector<Token> &output, vector<size_t> &structures);
+	size_t tokenize(const string &input, const string &initialFilename, vector<Token> &output, vector<size_t> &structures, ErrorFile &errors);
 
 	/**
 	* Prevent the use of temporaries for input and filename
 	* because the resulting tokens contain StringPiece objects pointing
 	* into them.
 	*/
-	size_t tokenize(string&&, const string &, vector<Token> &, vector<size_t> &) = delete;
-	size_t tokenize(const string&, string &&, vector<Token> &, vector<size_t> &) = delete;
+	size_t tokenize(string&&, const string &, vector<Token> &, vector<size_t> &, ErrorFile &) = delete;
+	size_t tokenize(const string&, string &&, vector<Token> &, vector<size_t> &, ErrorFile &) = delete;
 };
 
 namespace std {

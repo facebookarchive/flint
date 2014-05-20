@@ -269,7 +269,7 @@ namespace flint {
 	* Given the contents of a C++ file and a filename, tokenizes the
 	* contents and places it in output.
 	*/
-	size_t tokenize(const string &input, const string &file, vector<Token> &output, vector<size_t> &structures) {
+	size_t tokenize(const string &input, const string &file, vector<Token> &output, vector<size_t> &structures, ErrorFile &errors) {
 		output.clear();
 		structures.clear();
 		
@@ -383,7 +383,12 @@ namespace flint {
 				goto INSERT_TOKEN;
 				// *** Backslash
 			case '\\':
-				ENFORCE(pc[1] == '\n' || pc[1] == '\r', "Misplaced backslash in " + file + ":" + to_string(line));
+				// Consume trailing whitespace after a valid backslash
+				while (pc[1] == ' ' || pc[1] == '\t') {
+					++pc;
+				}
+				// Take the case into account where a comment comes after a macro backslash
+				ENFORCE(pc[1] == '\n' || pc[1] == '\r' || (pc[1] == '/' && (pc[2] == '/' || pc[2] == '*')), "Misplaced backslash in " + file + ":" + to_string(line));
 				++line;
 				whitespace.append(pc, pc + 2);
 				advance(pc, 2);
@@ -433,7 +438,10 @@ namespace flint {
 				return line;
 				// *** Verboten characters (do allow '@' and '$' as extensions)
 			case '`':
-				FBEXCEPTION("Invalid character: " + string(1, c) + " in " + string(file + ":" + to_string(line)));
+				errors.addError(ErrorObject(Lint::ERROR, line, "Invalid character found: Back-tick `", ""));
+				output.push_back(Token(TK_UNEXPECTED, StringFragment{ pc, pc + 1 }, line, whitespace));
+				++pc;
+				//cerr << ("Invalid character: " + string(1, c) + " in " + string(file + ":" + to_string(line))) << endl;
 				break;
 				// *** Numbers
 			case '0': case '1': case '2': case '3': case '4': case '5':
