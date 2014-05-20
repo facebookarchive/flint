@@ -2,8 +2,6 @@
 #include <iostream>
 #include <vector>
 
-#include <omp.h>
-
 #include "Options.hpp"
 #include "ErrorReport.hpp"
 #include "Polyfill.hpp"
@@ -134,8 +132,6 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
  * Program entry point
  */
 int main(int argc, char *argv[]) {
-	auto startTime = omp_get_wtime();
-
 	// Parse commandline flags
 	vector<string> paths;
 	parseArgs(argc, argv, paths);
@@ -152,9 +148,6 @@ int main(int argc, char *argv[]) {
 	if (!Options.JSON) {
 		cout << endl << "Estimated Lines of Code: " << to_string(totalLOC) << endl;
 	}
-
-	auto endTime = omp_get_wtime();
-	cout << endl << "Time: " << to_string(endTime - startTime) << endl;
 
 #ifdef _DEBUG
 	// Stop visual studio from closing the window...
