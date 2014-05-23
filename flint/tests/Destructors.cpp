@@ -13,3 +13,7 @@ public:
         virtual void foo();
 };
 
+struct D {};
+struct E : virtual D {
+  void foo();
+};

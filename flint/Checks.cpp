@@ -26,9 +26,11 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 #define cmpToks(a,b) cmpStr((a).value_, (b).value_)
 
 // Shorthand for comparing a Token and TokenType
-#define isTok(a,b) ((a).type_ == (b))
+inline bool isTok(const Token &token, TokenType type) { return token.type_ == type; }
+using TokenIter = vector<Token>::const_iterator;
 
 	namespace { // Anonymous Namespace for Token stream traversal functions
+		
 		const string emptyString;
 
 		/*
@@ -559,6 +561,15 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			return getRealArguments(tokens, pos, args);
 		};
 
+
+		inline TokenIter getEndOfClass(TokenIter start, TokenIter maxPos) {
+			static const array<TokenType, 3> classMarkers = {
+				{ TK_EOF, TK_LCURL, TK_SEMICOLON }	
+			};
+
+			return find_first_of(start, maxPos, begin(classMarkers), end(classMarkers), isTok);
+		};
+
 	}; // Anonymous Namespace
 
 	/**
@@ -772,8 +783,14 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 				continue;
 			}
 
+			// Start at end of class definition to avoid virtual bases
+			auto endOfClass = getEndOfClass(startIter + 1, endIter);
+			if (endOfClass == endIter || !isTok(*endOfClass, TK_LCURL)) {
+				continue;
+			}
+
 			// Find something virtual
-			auto virtualLocation = find_if(startIter + 1, endIter, [](const Token &token){ return isTok(token, TK_VIRTUAL); });
+			auto virtualLocation = find_if(endOfClass + 1, endIter, [](const Token &token){ return isTok(token, TK_VIRTUAL); });
 			if (virtualLocation == endIter) {
 				continue; // No virtual functions or destructor
 			}
@@ -795,10 +812,8 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			}
 
 			// Now what kind of access do we have for our virtual destructor
-			using rev_iter = reverse_iterator<vector<Token>::const_iterator>;
-			auto lastAccess = find_first_of(rev_iter(userDestructor), rev_iter(startIter), begin(accessSpecifiers), end(accessSpecifiers), [](const Token &token, const TokenType &type) {
-				return token.type_ == type;
-			});
+			using rev_iter = reverse_iterator<TokenIter>;
+			auto lastAccess = find_first_of(rev_iter(userDestructor), rev_iter(startIter), begin(accessSpecifiers), end(accessSpecifiers), isTok);
 			auto access = (lastAccess != rev_iter(startIter)) ? lastAccess->type_ : isTok(tok, TK_STRUCT) ? TK_PUBLIC : TK_PRIVATE;
 
 			if (access == TK_PUBLIC) {
@@ -822,10 +837,6 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 			{ TK_EOF, TK_LCURL, TK_SEMICOLON, TK_COLON }	
 		};
 
-		static const array<TokenType, 3> classMarkers = {
-			{ TK_EOF, TK_LCURL, TK_SEMICOLON }	
-		};
-
 		static const array<TokenType, 3> accessSpecifiers = {
 			{ TK_PUBLIC, TK_PRIVATE, TK_PROTECTED }	
 		};
@@ -840,7 +851,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 				continue;
 			}
 
-			auto colon = find_first_of(pos, end(tokens), begin(classMarkersWithColon), end(classMarkersWithColon), [](const Token &token, TokenType t) { return token.type_ == t; });
+			auto colon = find_first_of(pos, end(tokens), begin(classMarkersWithColon), end(classMarkersWithColon), isTok);
 
 			if (colon == end(tokens)) {
 				return;
@@ -850,7 +861,7 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 				continue;
 			}
 
-			auto endOfClass = find_first_of(colon + 1, end(tokens), begin(classMarkers), end(classMarkers), [](const Token &token, TokenType t) { return token.type_ == t; });
+			auto endOfClass = getEndOfClass(colon + 1, end(tokens));
 			auto exceptionPos = find_if(colon + 1, endOfClass, [](const Token &candidate) {
 				return isTok(candidate, TK_IDENTIFIER) && cmpTok(candidate, "exception");
 			});
