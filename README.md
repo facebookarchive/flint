@@ -23,20 +23,26 @@ Current Lint Checks
 * Errors
 	* Blacklisted Identifiers
 	* Initialization from Self
-	* #if #endif Balance
-	* Memset Usage
+	* `#if ... #endif` Balance
+	* `memset` Usage
 	* Include Associated Header First
 	* Include Guards
 	* Inl-Header Inclusions
+	* Check for unamed `mutex` holders
 	* `explicit` single argument constructors
-	* try-catch by reference
-	* check for `throw new ...`
+	* `try-catch` by reference
+	* Check for `throw new ...`
+	* Check `unique_ptr` arrays
 * Warnings
 	* Blacklisted Sequences
-	* #define name rules
-	* deprecated #includes
+	* `#define` name rules
+	* Deprecated `#includes`
+	* Check for `static` scope
+	* Warn about `smart_ptr` usage
 	* `implicit` casts
 	* `protected` inheritance
+	* Check `exception` inheritance
+	* Check for `virtual` destructors
 	* function level `throws`
 * Advice
 	* `nullptr` over `NULL`
