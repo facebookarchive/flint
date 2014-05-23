@@ -11,6 +11,8 @@
 [Warning] Constructor.cpp:5: Throw specifications on functions are deprecated.
 [Error  ] Define.hpp:12: Include guard doesn't cover the entire file.
 [Warning] Define.hpp:5: Symbol __BAD_DEFINE invalid.
+[Warning] Destructors.cpp:1: Classes with virtual functions should not have a public non-virtual destructor.
+[Warning] Destructors.cpp:10: Classes with virtual functions should not have a public non-virtual destructor.
 [Warning] Exceptions.cpp:6: std::exception should be inherited publically (C++ std: 11.2)
 [Warning] Exceptions.cpp:7: std::exception should be inherited publically (C++ std: 11.2)
 [Warning] Exceptions.cpp:8: std::exception should be inherited publically (C++ std: 11.2)
@@ -43,7 +45,7 @@
 [Error  ] Throw.cpp:10: Heap-allocated exception: throw new (MyException)(); This is usually a mistake in c++.
 [Error  ] Throw.cpp:12: Heap-allocated exception: throw new MyException(); This is usually a mistake in c++.
 
-Lint Summary: 11 files
-Errors: 21 Warnings: 22 Advice: 1
+Lint Summary: 12 files
+Errors: 21 Warnings: 24 Advice: 1
 
-Estimated Lines of Code: 251
+Estimated Lines of Code: 267

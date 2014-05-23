@@ -29,7 +29,6 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 #define isTok(a,b) ((a).type_ == (b))
 
 	namespace { // Anonymous Namespace for Token stream traversal functions
-
 		const string emptyString;
 
 		/*
@@ -742,6 +741,68 @@ inline bool cmpStr(const string &a, const string &b) { return a == b; }
 
 			if (isTok(tokens[pos], TK_STATIC)) {
 				lintWarning(errors, tokens[pos], "Don't use static at global or namespace scopes in headers.");
+			}
+		}
+	};
+
+	/**
+	* Check for public non-virtual destructors in classes with virtual functions
+	* 
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkVirtualDestructors(ErrorFile &errors, const string &path, const vector<Token> &tokens, const vector<size_t> &structures) {
+		static const array<TokenType, 3> accessSpecifiers = {
+			{ TK_PUBLIC, TK_PRIVATE, TK_PROTECTED }	
+		};
+
+		auto size = structures.size();
+		auto penultimate = size - 1;
+		for (size_t i = 0; i < size; ++i) {
+			auto startIter = begin(tokens) + structures[i];
+			auto endIter = (i == penultimate) ? end(tokens) : begin(tokens) + structures[i+1];
+
+ 			auto& tok = *startIter; 
+
+			if (isTok(tok, TK_UNION)) {
+				continue;
+			}
+
+			// Find something virtual
+			auto virtualLocation = find_if(startIter + 1, endIter, [](const Token &token){ return isTok(token, TK_VIRTUAL); });
+			if (virtualLocation == endIter) {
+				continue; // No virtual functions or destructor
+			}
+
+			// Now that we have something virtual, we need a destructor
+			auto userDestructor = adjacent_find(startIter, endIter, [](const Token &first, const Token &second) {
+				return isTok(first, TK_TILDE) && isTok(second, TK_IDENTIFIER);
+			});
+
+			// compiler defined is not virtual
+			if (userDestructor == endIter) {
+				lintWarning(errors, *startIter, "Classes with virtual functions should not have a public non-virtual destructor.");
+				continue;
+			}
+
+			// We're good, we've got a virtual destructor
+			if (isTok(*(userDestructor - 1), TK_VIRTUAL)) {
+				continue;
+			}
+
+			// Now what kind of access do we have for our virtual destructor
+			using rev_iter = reverse_iterator<vector<Token>::const_iterator>;
+			auto lastAccess = find_first_of(rev_iter(userDestructor), rev_iter(startIter), begin(accessSpecifiers), end(accessSpecifiers), [](const Token &token, const TokenType &type) {
+				return token.type_ == type;
+			});
+			auto access = (lastAccess != rev_iter(startIter)) ? lastAccess->type_ : isTok(tok, TK_STRUCT) ? TK_PUBLIC : TK_PRIVATE;
+
+			if (access == TK_PUBLIC) {
+				lintWarning(errors, *startIter, "Classes with virtual functions should not have a public non-virtual destructor.");
 			}
 		}
 	};

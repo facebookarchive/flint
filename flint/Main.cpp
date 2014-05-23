@@ -103,6 +103,7 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
 				checkImplicitCast(errorFile, path, tokens, structures);
 				checkProtectedInheritance(errorFile, path, tokens, structures);
 				checkExceptionInheritance(errorFile, path, tokens, structures);
+				checkVirtualDestructors(errorFile, path, tokens, structures);
 
 				checkThrowSpecification(errorFile, path, tokens, structures);
 			}

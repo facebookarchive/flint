@@ -28,6 +28,7 @@ namespace flint {
 	X_struct(ProtectedInheritance);
 	X_struct(ImplicitCast);
 	X_struct(ExceptionInheritance);
+	X_struct(VirtualDestructors);
 
 	// Blacklisted Terms
 	X(DefinedNames);
@@ -54,7 +55,6 @@ namespace flint {
 	X(UniquePtrUsage);
 	
 	// To be implemented...
-	X(VirtualDestructors);
 	X(UsingDirectives);
 	X(UsingNamespaceDirectives);	
 };
