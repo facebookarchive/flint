@@ -1012,8 +1012,7 @@ using TokenIter = vector<Token>::const_iterator;
 			if (!isTok(tokens[focal], TK_IDENTIFIER)) {
 
 				const Token &tok = tokens[focal];
-				lintWarning(errors, tok, "Symbol " + to_string(tok.value_) + " invalid in catch clause.",
-					"You may only catch user-defined types.");
+				lintWarning(errors, tok, "Symbol '" + to_string(tok.value_) + "' invalid in catch clause. You may only catch user-defined types.");
 				continue;
 			}
 			++focal;
@@ -1021,17 +1020,21 @@ using TokenIter = vector<Token>::const_iterator;
 			// We move the focus to the closing paren to detect the "&". We're
 			// balancing parens because there are weird corner cases like
 			// catch (Ex<(1 + 1)> & e).
-			for (size_t parens = 0;; ++focal) {
-				if (focal >= size) {
+			for (size_t parens = 1;; ++focal) {
+				if (focal >= size - 1) {
 					throw runtime_error(path + ':' + to_string(tokens[focal].line_)
 						+ ": Invalid C++ source code, please compile before lint.");
 				}
 				if (isTok(tokens[focal], TK_RPAREN)) {
-					if (parens == 0) break;
 					--parens;
+					if (parens == 0) {
+						break;
+					}
+					continue;
 				}
-				else if (isTok(tokens[focal], TK_LPAREN)) {
+				if (isTok(tokens[focal], TK_LPAREN)) {
 					++parens;
+					continue;
 				}
 			}
 
@@ -1052,13 +1055,13 @@ using TokenIter = vector<Token>::const_iterator;
 			const Token &tok = tokens[focal - 1];
 			// Get the type string
 			string theType = "";
-			for (size_t j = 2; j <= focal - 1; ++j) {
+			for (size_t j = pos + 2; j <= focal - 1; ++j) {
 				if (j > 2) theType += ' ';
-				const auto& val = tokens[j].value_;
+				const auto &val = tokens[j].value_;
 				theType.append(val.begin(), val.end());
 			}
-			lintError(errors, tok, "Symbol " + to_string(tok.value_) + " of type " + theType
-				+ " caught by value.", "Use catch by (preferably const) reference throughout.");
+			lintError(errors, tok, "Symbol '" + to_string(tok.value_) + "' of type '" + theType
+				+ "' caught by value. Use catch by (preferably const) reference throughout.");
 		}
 	};
 
