@@ -771,13 +771,15 @@ using TokenIter = vector<Token>::const_iterator;
 			{ TK_PUBLIC, TK_PRIVATE, TK_PROTECTED }	
 		};
 
+		static const string msg = "Classes with virtual functions should not have a public non-virtual destructor.";
+
 		auto size = structures.size();
 		auto penultimate = size - 1;
 		for (size_t i = 0; i < size; ++i) {
 			auto startIter = begin(tokens) + structures[i];
-			auto endIter = (i == penultimate) ? end(tokens) : begin(tokens) + structures[i+1];
+			auto endIter = (i == penultimate) ? end(tokens) : begin(tokens) + structures[i + 1];
 
- 			auto& tok = *startIter; 
+			auto &tok = *startIter; 
 
 			if (isTok(tok, TK_UNION)) {
 				continue;
@@ -802,7 +804,7 @@ using TokenIter = vector<Token>::const_iterator;
 
 			// compiler defined is not virtual
 			if (userDestructor == endIter) {
-				lintWarning(errors, *startIter, "Classes with virtual functions should not have a public non-virtual destructor.");
+				lintWarning(errors, *startIter, msg);
 				continue;
 			}
 
@@ -817,7 +819,7 @@ using TokenIter = vector<Token>::const_iterator;
 			auto access = (lastAccess != rev_iter(startIter)) ? lastAccess->type_ : isTok(tok, TK_STRUCT) ? TK_PUBLIC : TK_PRIVATE;
 
 			if (access == TK_PUBLIC) {
-				lintWarning(errors, *startIter, "Classes with virtual functions should not have a public non-virtual destructor.");
+				lintWarning(errors, *startIter, msg);
 			}
 		}
 	};
