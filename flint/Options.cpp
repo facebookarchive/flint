@@ -15,10 +15,11 @@ namespace flint {
 			   "\t-r, --recursive		: Search subfolders for files.\n"
 			   "\t-c, --cmode		: Only perform C based lint checks.\n"
 			   "\t-j, --json		: Output report in JSON format.\n"
-			   "\t-l, --level [value:]	: Set the lint level.\n"
-			   "			      0 : Errors only\n"
-			   "			      1 : Errors & Warnings\n"
-			   "			      2 : All feedback\n\n"
+			   "\t-v, --verbose		: Print full file paths.\n"
+			   "\t-l, --level [value: def = 3]	: Set the lint level.\n"
+			   "			      1 : Errors only\n"
+			   "			      2 : Errors & Warnings\n"
+			   "			      3 : All feedback\n\n"
 			   "\t-h, --help		: Print usage.\n\n");
 #ifdef _DEBUG 
 		// Stop visual studio from closing the window...
@@ -43,8 +44,13 @@ namespace flint {
 		Options.RECURSIVE	= false;
 		Options.CMODE		= false;
 		Options.JSON		= false;
+		Options.VERBOSE		= false;
 		Options.LEVEL		= Lint::ADVICE;
 		bool HELP			= false;
+
+		bool l1 = false;
+		bool l2 = false;
+		bool l3 = false;
 
 		enum ArgType {
 			BOOL, INT
@@ -59,7 +65,12 @@ namespace flint {
 		Arg argRecursive	= { ArgType::BOOL, &Options.RECURSIVE };
 		Arg argCMode		= { ArgType::BOOL, &Options.CMODE };
 		Arg argJSON			= { ArgType::BOOL, &Options.JSON };
+		Arg argVerbose		= { ArgType::BOOL, &Options.VERBOSE };
+
 		Arg argLevel		= { ArgType::INT,  &Options.LEVEL };
+		Arg argL1 = { ArgType::BOOL, &l1 };
+		Arg argL2 = { ArgType::BOOL, &l2 };
+		Arg argL3 = { ArgType::BOOL, &l3 };
 
 		static const unordered_map<string, Arg &> params = {
 			{ "-h", argHelp },
@@ -75,7 +86,13 @@ namespace flint {
 			{ "--json", argJSON },
 
 			{ "-l", argLevel },
-			{ "--level", argLevel }
+			{ "--level", argLevel },
+			{ "-l1", argL1 },
+			{ "-l2", argL2 },
+			{ "-l3", argL3 },
+
+			{ "-v", argVerbose },
+			{ "--verbose", argVerbose }
 		};
 
 		// Loop over the given argument list
@@ -100,7 +117,7 @@ namespace flint {
 						printHelp();
 					}
 
-					int val = atoi(argv[i]);
+					int val = atoi(argv[i]) + 1;
 					*arg = val;
 					continue;
 				}
@@ -115,6 +132,16 @@ namespace flint {
 			}
 		}
 
+		if (l1) {
+			Options.LEVEL = Lint::ERROR;
+		}
+		else if (l2) {
+			Options.LEVEL = Lint::WARNING;
+		}
+		else if (l3) {
+			Options.LEVEL = Lint::ADVICE;
+		}
+
 		// Make sure level was given a correct value
 		Options.LEVEL = ((Options.LEVEL > Lint::ADVICE) ? 
 			Lint::ADVICE : 
@@ -122,7 +149,11 @@ namespace flint {
 				Lint::ERROR : 
 				Options.LEVEL));
 
-		if (HELP || argc == 1 || paths.size() == 0) {
+		if (paths.size() == 0) {
+			paths.push_back(".");
+		}
+
+		if (HELP) {
 			printHelp();
 		}
 	};

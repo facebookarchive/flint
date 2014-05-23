@@ -15,7 +15,7 @@ namespace flint {
 		bool RECURSIVE;
 		bool CMODE;
 		bool JSON;
-
+		bool VERBOSE;
 		int  LEVEL;
 	};
 	extern OptionsInfo Options;	

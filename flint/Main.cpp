@@ -67,7 +67,7 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
 	file = removeIgnoredCode(file, path);
 
 	try {
-		ErrorFile errorFile(getFileName(path));
+		ErrorFile errorFile((Options.VERBOSE ? path : getFileName(path)));
 
 		vector<Token> tokens;
 		vector<size_t> structures;
