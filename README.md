@@ -57,7 +57,7 @@ Usage
 	-c, --cmode		: Only perform C based lint checks.
 	-j, --json		: Output report in JSON format.
 	-v, --verbose		: Print full file paths.
-	-l, --level [def = 3]   : Set the lint level.
+	-l, --level [def = 3	: Set the lint level.
 			      1 : Errors only
 			      2 : Errors & Warnings
 			      3 : All feedback
