@@ -53,15 +53,16 @@ Usage
 	$ flint++ --help
 	Usage: flint++ [options:] [files:]
 
-        -r, --recursive         : Search subfolders for files.
-        -c, --cmode             : Only perform C based lint checks.
-        -j, --json              : Output report in JSON format.
-        -l, --level [value:]    : Set the lint level.
-                              0 : Errors only
-                              1 : Errors & Warnings
-                              2 : All feedback
+	-r, --recursive		: Search subfolders for files.
+	-c, --cmode		: Only perform C based lint checks.
+	-j, --json		: Output report in JSON format.
+	-v, --verbose		: Print full file paths.
+	-l, --level [def = 3]   : Set the lint level.
+			      1 : Errors only
+			      2 : Errors & Warnings
+			      3 : All feedback
 
-        -h, --help              : Print usage.
+	-h, --help		: Print usage.
 
 Does it pass Linting itself? 
 -------------------------
