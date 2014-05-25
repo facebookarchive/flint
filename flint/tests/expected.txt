@@ -41,11 +41,14 @@
 [Warning] Pointers.cpp:35: Consider using 'make_shared' which performs better with fewer allocations.
 [Warning] Pointers.cpp:36: Consider using 'make_shared' which performs better with fewer allocations.
 [Warning] Pointers.cpp:37: Consider using 'allocate_shared' which performs better with fewer allocations.
+[Warning] Throw.cpp:14: Symbol 'int' invalid in catch clause. You may only catch user-defined types.
+[Error  ] Throw.cpp:15: Symbol 'i' of type ' Foo i' caught by value. Use catch by (preferably const) reference throughout.
+[Error  ] Throw.cpp:21: Symbol 'Bar' of type ' Bar' caught by value. Use catch by (preferably const) reference throughout.
 [Error  ] Throw.cpp:8: Heap-allocated exception: throw new MyException(); This is usually a mistake in c++.
 [Error  ] Throw.cpp:10: Heap-allocated exception: throw new (MyException)(); This is usually a mistake in c++.
 [Error  ] Throw.cpp:12: Heap-allocated exception: throw new MyException(); This is usually a mistake in c++.
 
 Lint Summary: 12 files
-Errors: 21 Warnings: 24 Advice: 1
+Errors: 23 Warnings: 25 Advice: 1
 
-Estimated Lines of Code: 271
+Estimated Lines of Code: 280

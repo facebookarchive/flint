@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <cassert>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -239,12 +241,24 @@ namespace flint {
 		iterator begin_;
 		iterator end_;
 
+		inline StringFragment(iterator begin, iterator end) noexcept : begin_(begin), end_(end) {}
+
 		value_type back() const { return *(end_ - 1); }
 		iterator begin() const { return begin_; }
 		iterator end() const { return end_; }
 		const_reference operator[](size_type pos) const { return *(begin_ + pos); }
 		const_reference operator[](size_type pos) { return *(begin_ + pos); } 
 		size_type size() const { return end_ - begin_; }
+		void append(iterator startPos, iterator endPos) {
+			assert(begin_ == end_ || end_ == startPos);
+
+			if (begin_ == end_) {
+				begin_ = startPos;
+				end_ = endPos;
+			}
+			end_ = endPos;
+		}
+		bool empty() const { return begin_ == end_; }
 	};
 
 	using std::to_string;
@@ -256,6 +270,10 @@ namespace flint {
 		return equal(a.begin(), a.end(), b.begin());
 	}
 
+	inline bool contains(const StringFragment &fragment, StringFragment::iterator stringBegin, StringFragment::iterator stringEnd) {
+		return search(fragment.begin(), fragment.end(), stringBegin, stringEnd) != fragment.end();
+	}
+
 	/**
 	* Defines one token together with file and line information. The
 	* precedingComment_ is set if there was one comment before the token.
@@ -263,10 +281,10 @@ namespace flint {
 	struct Token {
 		TokenType type_;
 		StringFragment value_;
-		string precedingWhitespace_;
+		StringFragment precedingWhitespace_;
 		size_t line_;
 
-		Token(TokenType type, StringFragment value, size_t line, string whitespace)
+		Token(TokenType type, StringFragment value, size_t line, StringFragment whitespace)
 			: type_(type), value_(move(value)), precedingWhitespace_(move(whitespace)), line_(line) {};
 
 		string toString() const {

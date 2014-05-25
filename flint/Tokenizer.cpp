@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <unordered_map>
-#include <cassert>
 #include <stdexcept>
 
 #include <numeric>
@@ -274,13 +273,15 @@ namespace flint {
 		structures.clear();
 		
 		static const string eof("\0");
+		static const string empty("");
+		static const StringFragment nothing{begin(empty), end(empty)};
 
 		auto pc = input.begin();
 		size_t line = 1;
 
 		TokenType t;
 		size_t tokenLen;
-		string whitespace = "";
+		StringFragment whitespace = nothing;
 
 		while (pc != input.end()) {
 			const char c = pc[0];
@@ -299,7 +300,7 @@ namespace flint {
 					auto str = munchString(pc, line, true);
 					output.push_back(Token(TK_STRING_LITERAL, move(str), line,
 						whitespace));
-					whitespace.clear();
+					whitespace = nothing;
 					continue;
 				}
 
@@ -395,12 +396,14 @@ namespace flint {
 				break;
 				// *** Newline
 			case '\n':
-				whitespace += *(pc++);
+				whitespace.append(pc, pc+1);
+				pc++;
 				++line;
 				break;
 				// *** Part of a DOS newline; ignored
 			case '\r':
-				whitespace += *(pc++);
+				whitespace.append(pc, pc+1);
+				pc++;
 				break;
 				// *** ->, --, -=, ->*, and -
 			case '-':
@@ -450,7 +453,7 @@ namespace flint {
 				auto symbol = munchNumber(pc);
 				assert(symbol.size() > 0);
 				output.push_back(Token(TK_NUMBER, move(symbol), line, whitespace));
-				whitespace.clear();
+				whitespace = nothing;
 			}
 				break;
 				// *** Number, member selector, ellipsis, or .*
@@ -473,7 +476,7 @@ namespace flint {
 				auto charLit = munchCharLiteral(pc, line);
 				output.push_back(Token(TK_CHAR_LITERAL, move(charLit), line,
 					whitespace));
-				whitespace.clear();
+				whitespace = nothing;
 			}
 				break;
 				// *** String literal
@@ -481,7 +484,7 @@ namespace flint {
 				auto str = munchString(pc, line);
 				output.push_back(Token(TK_STRING_LITERAL, move(str), line,
 					whitespace));
-				whitespace.clear();
+				whitespace = nothing;
 			}
 				break;
 			case '#': {
@@ -536,7 +539,8 @@ namespace flint {
 				// *** Everything else
 			default:
 				if (iscntrl(c)) {
-					whitespace += *(pc++);
+					whitespace.append(pc, pc+1);
+					pc++;
 				}
 				else if (isalpha(c) || c == '_' || c == '$' || c == '@') {
 					// it's a word
@@ -546,14 +550,14 @@ namespace flint {
 						// keyword, baby
 						output.push_back(Token(iter->second, move(symbol), line,
 							whitespace));
-						whitespace.clear();
+						whitespace = nothing;
 					}
 					else {
 						// Some identifier
 						assert(symbol.size() > 0);
 						output.push_back(Token(TK_IDENTIFIER, move(symbol), line,
 							whitespace));
-						whitespace.clear();
+						whitespace = nothing;
 					}
 				}
 				else {
@@ -565,12 +569,12 @@ namespace flint {
 			INSERT_TOKEN:
 				output.push_back(Token(t, munchChars(pc, tokenLen), line,
 					whitespace));
-				whitespace.clear();
+				whitespace = nothing;
 				break;
 			}
 		}
 
-		output.push_back(Token(TK_EOF, StringFragment{eof.begin(), eof.end()}, line, ""));
+		output.push_back(Token(TK_EOF, StringFragment{eof.begin(), eof.end()}, line, nothing));
 
 		return line;
 	};

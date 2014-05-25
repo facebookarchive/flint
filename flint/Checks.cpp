@@ -1343,7 +1343,7 @@ using TokenIter = vector<Token>::const_iterator;
 					}
 
 					// Check for preceding /* implicit */
-					if (tok.precedingWhitespace_.find(lintOverride) != string::npos) {
+					if (contains(tok.precedingWhitespace_, lintOverride.cbegin(), lintOverride.cend())) {
 						pos = skipFunctionDeclaration(tokens, pos);
 						continue;
 					}
@@ -1708,7 +1708,7 @@ using TokenIter = vector<Token>::const_iterator;
 
 				// Only want to process operators which do not have the overide
 				if (!isTok(tok, TK_OPERATOR)
-					|| tok.precedingWhitespace_.find(lintOverride) != string::npos) {
+					|| contains(tok.precedingWhitespace_, lintOverride.cbegin(), lintOverride.cend())) {
 					continue;
 				}
 

@@ -40,7 +40,7 @@ namespace flint {
 	 */
 	 template <class Container>
 	 bool containsSuffix(const string &str, Container suffixes) {
-		return find_if(begin(suffixes), end(suffixes), bind(hasSuffix, str, placeholders::_1)) != end(suffixes);
+		return find_if(begin(suffixes), end(suffixes), bind(hasSuffix, cref(str), placeholders::_1)) != end(suffixes);
 	 }
 
 	/**
