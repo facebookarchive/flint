@@ -12,11 +12,14 @@ using namespace std;
 
 typedef unsigned int uint;
 
-#ifdef _WIN32  
+#ifdef _MSC_VER  
 #define FS_SEP "\\"
+#define NOEXCEPT
 #else
 #define FS_SEP "/"
+#define NOEXCEPT noexcept
 #endif
+
 
 // Quick checks for path names
 #define FS_ISNOT_LINK(file) ((file.compare(".") != 0) && (file.compare("..") != 0))

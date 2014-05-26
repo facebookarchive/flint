@@ -241,7 +241,7 @@ namespace flint {
 		iterator begin_;
 		iterator end_;
 
-		inline StringFragment(iterator begin, iterator end) noexcept : begin_(begin), end_(end) {}
+		inline StringFragment(iterator begin, iterator end) NOEXCEPT : begin_(begin), end_(end) {}
 
 		value_type back() const { return *(end_ - 1); }
 		iterator begin() const { return begin_; }
