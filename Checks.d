@@ -3,7 +3,7 @@
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
 import std.algorithm, std.array, std.ascii, std.conv, std.exception, std.path,
-  std.range, std.stdio, std.string;
+  std.range, std.stdio, std.string, std.regex;
 import Tokenizer, FileCategories;
 
 bool c_mode;
@@ -3099,4 +3099,54 @@ uint checkBogusComparisons(string fpath, Token[] v) {
     getBogusComparisons(v, equalityTokens, exprTokens);
 
   return inequalityBogusComparisons + equalityBogusComparisons;
+}
+
+/*
+ * Check if comments containing the word
+ * 'TODO' to be followed by a task number.
+ * find more info at:
+ * https://our.intern.facebook.com/intern/tasks/?t=4064698
+*/
+uint checkToDoFollowedByTaskNumber(string fpath, Token[] v) {
+  uint result = 0;
+  string kToDo = "TODO";
+  auto taskNumReg = regex(r"\s+T[0-9]+\s*");
+
+  for (auto it = v; !it.empty; it.popFront) {
+    string comment = it.front.precedingWhitespace_;
+    size_t pos = 0;
+    while (true) {
+      // Find the position of "TODO" from position pos.
+      auto posToDo = std.string.indexOf(comment[pos .. $], kToDo);
+      // If no instance of "TODO" is found, just return
+      // the current result.
+      if (posToDo < 0) {
+        break;
+      }
+      posToDo += pos;
+
+      // If an instance of "TODO" was found, then try to find the
+      // following task number (TXXXXXX) in the same line.
+      // Try to find the end of the line first.
+      auto posEndLine = std.string.indexOf(comment[posToDo + kToDo.length .. $],
+                                           '\n');
+      // if no new line mark is found, reaches the end of the comment.
+      if (posEndLine < 0) {
+        posEndLine = comment.length-1;
+      }
+      else {
+        posEndLine += posToDo + kToDo.length;
+      }
+
+      // if task number doesn't exist, or task number isn't in the same line
+      // with the instance of "TODO". report it as an error now.
+      if (!match(comment[posToDo + kToDo.length .. posEndLine], taskNumReg)) {
+        lintError(it.front(), "Missing task number after 'TODO'.\n");
+        ++result;
+      }
+
+      pos = posEndLine+1;
+    }
+  }
+  return result;
 }

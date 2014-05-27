@@ -2292,6 +2292,35 @@ unittest {
   EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
 }
 
+// testCheckToDoFollowedByTaskNumber
+unittest {
+  Token[] tokens;
+  string filename = "somefile.cpp";
+
+  string s1 = "
+  // TODO placeholder. \n
+  // TODO another placeholder. \n
+  // TODO T121. This is OK.
+  ";
+  tokenize(s1, filename, tokens);
+  EXPECT_EQ(checkToDoFollowedByTaskNumber(filename, tokens), 2);
+
+  string s2 = "
+  /* TODO task number missing. \n
+   * TODO T123. This is OK. \n
+   */
+  ";
+  tokenize(s2, filename, tokens);
+  EXPECT_EQ(checkToDoFollowedByTaskNumber(filename, tokens), 1);
+
+  string s3 = "
+  /* TODO T. This is NOT OK.
+   */
+  ";
+  tokenize(s3, filename, tokens);
+  EXPECT_EQ(checkToDoFollowedByTaskNumber(filename, tokens), 1);
+}
+
 void main(string[] args) {
   enforce(c_mode == false);
 }
