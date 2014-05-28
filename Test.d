@@ -2295,31 +2295,30 @@ unittest {
 // testCheckToDoFollowedByTaskNumber
 unittest {
   Token[] tokens;
-  string filename = "somefile.cpp";
+  string filename = "somefileforToDo.cpp";
 
   string s1 = "
-  // TODO placeholder. \n
-  // TODO another placeholder. \n
-  // TODO T121. This is OK.
+  // TODO (#123). This is OK.
   ";
   tokenize(s1, filename, tokens);
-  EXPECT_EQ(checkToDoFollowedByTaskNumber(filename, tokens), 2);
+  EXPECT_EQ(checkToDoFollowedByTaskNumber(filename, tokens), 0);
 
-  string s2 = "
-  /* TODO task number missing. \n
-   * TODO T123. This is OK. \n
-   */
+string s2 = "
+  // TODO Task #1970153: It would be great if there were set()\n
+  // methods that didn't bump up the refcount so that we didn't\n
+  // have to decrement it here \n" " tvRefcountedDecRef(&value);\n
+  return arrayRefShuffle<false>(ad, retval, nullptr);
   ";
   tokenize(s2, filename, tokens);
-  EXPECT_EQ(checkToDoFollowedByTaskNumber(filename, tokens), 1);
+  EXPECT_EQ(checkToDoFollowedByTaskNumber(filename, tokens), 0);
 
   string s3 = "
-  /* TODO T. This is NOT OK.
-   */
+  // TODO (#)
   ";
   tokenize(s3, filename, tokens);
   EXPECT_EQ(checkToDoFollowedByTaskNumber(filename, tokens), 1);
 }
+
 
 void main(string[] args) {
   enforce(c_mode == false);

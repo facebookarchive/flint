@@ -3,7 +3,7 @@
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
 import std.algorithm, std.array, std.ascii, std.conv, std.exception, std.path,
-  std.range, std.stdio, std.string, std.regex;
+  std.range, std.stdio, std.string;
 import Tokenizer, FileCategories;
 
 bool c_mode;
@@ -3103,14 +3103,15 @@ uint checkBogusComparisons(string fpath, Token[] v) {
 
 /*
  * Check if comments containing the word
- * 'TODO' to be followed by a task number.
+ * If 'TODO' is found in the comment,
+ * then a task number should be in the same line.
  * find more info at:
+ * https://our.intern.facebook.com/intern/tasks/?t=4405141
  * https://our.intern.facebook.com/intern/tasks/?t=4064698
 */
 uint checkToDoFollowedByTaskNumber(string fpath, Token[] v) {
   uint result = 0;
   string kToDo = "TODO";
-  auto taskNumReg = regex(r"\s+T[0-9]+\s*");
 
   for (auto it = v; !it.empty; it.popFront) {
     string comment = it.front.precedingWhitespace_;
@@ -3126,7 +3127,7 @@ uint checkToDoFollowedByTaskNumber(string fpath, Token[] v) {
       posToDo += pos;
 
       // If an instance of "TODO" was found, then try to find the
-      // following task number (TXXXXXX) in the same line.
+      // following task number (XXXXXX) in the same line.
       // Try to find the end of the line first.
       auto posEndLine = std.string.indexOf(comment[posToDo + kToDo.length .. $],
                                            '\n');
@@ -3139,9 +3140,10 @@ uint checkToDoFollowedByTaskNumber(string fpath, Token[] v) {
       }
 
       // if task number doesn't exist, or task number isn't in the same line
-      // with the instance of "TODO". report it as an error now.
-      if (!match(comment[posToDo + kToDo.length .. posEndLine], taskNumReg)) {
-        lintError(it.front(), "Missing task number after 'TODO'.\n");
+      // with the instance of "TODO". report it as an warning now.
+      if (countchars(comment[posToDo + kToDo.length .. posEndLine],
+                     "0-9") == 0) {
+        lintWarning(it.front(), "Missing task number after 'TODO'.\n");
         ++result;
       }
 
