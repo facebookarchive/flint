@@ -994,7 +994,26 @@ uint checkImplicitCast(string fpath, Token[] tokensV) {
 
   const string lintOverride = "/""* implicit *""/";
 
+  TokenType[TokenType] includeGuardDelimiters = [
+    tk!"\"": tk!"\"",
+    tk!"<" : tk!">"
+  ];
+
   for (auto tox = tokensV; !tox.empty; tox.popFront) {
+    // Skip operator in file name being included
+    if (tox.atSequence(tk!"#", tk!"identifier") && tox[1].value == "include") {
+      if (tox.length > 3 && tox[2].type_ in includeGuardDelimiters) {
+        auto endDelimiterType = includeGuardDelimiters[tox[2].type_];
+        tox.popFrontN(3);
+
+        while (tox.front.type_ != endDelimiterType) {
+          tox.popFront;
+        }
+
+        continue;
+      }
+    }
+
     // Skip past any functions that begin with an "explicit" keyword
     if (tox.atSequence(tk!"explicit", tk!"constexpr", tk!"operator")) {
       tox.popFrontN(2);

@@ -688,6 +688,14 @@ class Foo {
 ";
   tokens = tokenize(code);
   assert(checkImplicitCast(filename, tokens) == 0);
+
+  // operator in any unrelated context
+  code = "
+#include <operator.hpp>
+#include \"operator.hpp\"
+";
+  tokens = tokenize(code);
+  assert(checkImplicitCast(filename, tokens) == 0);
 }
 
 // Test non-virtual destructor detection
