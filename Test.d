@@ -423,6 +423,16 @@ class AA {
 ";
   assert(checkConstructors("nofile.cpp", tokenize(code)) == 1);
 
+  // Move constructors that are deleted doesn't have to be
+  // declared noexcept
+  code = "
+class AA {
+  AA(const AA& acceptable);
+  AA(AA&& mightThrow) = delete;
+};
+";
+  assert(checkConstructors("nofile.cpp", tokenize(code)) == 0);
+
   // Move constructors that throw should be explicitly marked as such
   code = "
 class AA {

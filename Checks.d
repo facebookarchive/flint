@@ -252,6 +252,7 @@ struct FunctionSpec {
   bool isNoexcept;
   bool explicitThrows;
   bool isConst;
+  bool isDeleted;
 };
 
 string formatArg(Argument arg) {
@@ -376,6 +377,14 @@ bool getFunctionSpec(ref Token[] r, ref FunctionSpec spec) {
       spec.isConst = true;
       r2.popFront;
       continue;
+    }
+    if (r2.front.type_ == tk!"=") {
+      r2.popFront;
+      if (r2.front.type_ == tk!"delete") {
+        spec.isDeleted = true;
+        r2.popFront;
+        continue;
+      }
     }
     break;
   }
@@ -965,7 +974,8 @@ uint checkConstructors(string fpath, Token[] tokensV) {
     }
 
     // Warn about move constructors that are not noexcept
-    if (isMoveConstructor && !spec.isNoexcept && !spec.explicitThrows) {
+    if (isMoveConstructor &&
+        !spec.isNoexcept && !spec.explicitThrows && !spec.isDeleted) {
       ++result;
       lintError(tox.front, text(
         "Move constructor '", formatFunction(spec),
