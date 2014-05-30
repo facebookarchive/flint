@@ -80,7 +80,9 @@ uint checkEntry(string path) {
     errors += checkOSSIncludes(path, tokens);
     errors += checkBreakInSynchronized(path, tokens);
     errors += checkBogusComparisons(path, tokens);
-    errors += checkToDoFollowedByTaskNumber(path, tokens);
+    version(facebook) {
+      errors += checkToDoFollowedByTaskNumber(path, tokens);
+    }
     if (!c_mode) {
       errors += checkNamespaceScopedStatics(path, tokens);
       errors += checkIncludeAssociatedHeader(path, tokens);
