@@ -585,10 +585,10 @@ using TokenIter = vector<Token>::const_iterator;
 	void checkInitializeFromItself(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
 
 		// Token Sequences for parameter initializers
-		const array<TokenType, 5> firstInitializer = {
+		static const array<TokenType, 5> firstInitializer = {
 			{ TK_COLON, TK_IDENTIFIER, TK_LPAREN, TK_IDENTIFIER, TK_RPAREN }
 		};
-		const array<TokenType, 5> nthInitializer = {
+		static const array<TokenType, 5> nthInitializer = {
 			{ TK_COMMA, TK_IDENTIFIER, TK_LPAREN, TK_IDENTIFIER, TK_RPAREN }
 		};
 
