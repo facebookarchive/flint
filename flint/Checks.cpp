@@ -200,7 +200,7 @@ using TokenIter = vector<Token>::const_iterator;
 		* @return
 		*		Returns true is the token as pos is a built in type
 		*/
-		bool atBuiltinType(const vector<Token> &tokens, size_t pos) {
+		inline bool atBuiltinType(const vector<Token> &tokens, size_t pos) {
 
 			static const array<TokenType, 11> builtIns = {{
 				TK_DOUBLE,
@@ -733,6 +733,10 @@ using TokenIter = vector<Token>::const_iterator;
 			{TK_NAMESPACE, TK_LCURL}
 		};
 
+		static const array<TokenType, 2> usingNamespace = {
+			{TK_USING, TK_NAMESPACE}
+		};
+
 		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {
 			if (atSequence(tokens, pos, regularNamespace)) {
 				pos += 2;
@@ -752,6 +756,11 @@ using TokenIter = vector<Token>::const_iterator;
 
 			if (isTok(tokens[pos], TK_STATIC)) {
 				lintWarning(errors, tokens[pos], "Don't use static at global or namespace scopes in headers.");
+			}
+
+			// Checking for 'using namespace' violations here as well
+			if (atSequence(tokens, pos, usingNamespace)) {
+				lintWarning(errors, tokens[pos], "Avoid the use of using namespace directives at global/namespace scope in headers");
 			}
 		}
 	};

@@ -55,6 +55,5 @@ namespace flint {
 	X(UniquePtrUsage);
 	
 	// To be implemented...
-	X(UsingDirectives);
 	X(UsingNamespaceDirectives);	
 };

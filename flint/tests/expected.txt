@@ -25,12 +25,13 @@
 [Warning] Includes.cpp:6: Including deprecated header 'common/base/Base.h'
 [Error  ] Memset.cpp:11: Did you mean memset(ptr, 0, 4) ?
 [Error  ] Memset.cpp:13: Did you mean memset(ptr, 1, sizeof(int)) ?
-[Warning] Namespace.hpp:5: Don't use static at global or namespace scopes in headers.
-[Warning] Namespace.hpp:6: Don't use static at global or namespace scopes in headers.
-[Warning] Namespace.hpp:15: Don't use static at global or namespace scopes in headers.
-[Warning] Namespace.hpp:16: Don't use static at global or namespace scopes in headers.
+[Warning] Namespace.hpp:6: Avoid the use of using namespace directives at global/namespace scope in headers
+[Warning] Namespace.hpp:9: Don't use static at global or namespace scopes in headers.
+[Warning] Namespace.hpp:10: Don't use static at global or namespace scopes in headers.
 [Warning] Namespace.hpp:19: Don't use static at global or namespace scopes in headers.
-[Warning] Namespace.hpp:21: Don't use static at global or namespace scopes in headers.
+[Warning] Namespace.hpp:20: Don't use static at global or namespace scopes in headers.
+[Warning] Namespace.hpp:23: Don't use static at global or namespace scopes in headers.
+[Warning] Namespace.hpp:25: Don't use static at global or namespace scopes in headers.
 [Error  ] Pointers.cpp:39: Mutex holder variable declared without a name, causing the lock to be released immediately.
 [Error  ] Pointers.cpp:40: Mutex holder variable declared without a name, causing the lock to be released immediately.
 [Error  ] Pointers.cpp:27: unique_ptr<T[]> should be used with an array type.
@@ -49,6 +50,6 @@
 [Error  ] Throw.cpp:12: Heap-allocated exception: throw new MyException(); This is usually a mistake in c++.
 
 Lint Summary: 12 files
-Errors: 23 Warnings: 25 Advice: 1
+Errors: 23 Warnings: 26 Advice: 1
 
-Estimated Lines of Code: 280
+Estimated Lines of Code: 285

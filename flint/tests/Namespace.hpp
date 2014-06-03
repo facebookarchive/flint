@@ -1,6 +1,10 @@
 #ifndef NAMESPACE_HPP
 #define NAMESPACE_HPP
 
+#include <iostream>
+
+using namespace std;
+
 namespace Named {
   static int x = 5;
   static const int y = 9;
@@ -18,9 +22,10 @@ namespace {
   namespace InnerNamed {
     static int s = 8;
 
-	static bool testFunction() {
-		return false;
-	};
+    static bool testFunction() {
+      using namespace std; // This one is safe
+      return false;
+    };
   }
 };
 
