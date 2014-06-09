@@ -2339,6 +2339,21 @@ version(facebook) {
   }
 }
 
+// testSkipTemplateSpec
+unittest {
+  Token[] tokens;
+  string filename = "src.cpp";
+
+  string content = "<A<B>>C";
+  tokenize(content, filename, tokens);
+
+  auto r = skipTemplateSpec(tokens);
+  EXPECT_EQ(r.length != 0, true);
+  if (r.length > 0) {
+    EXPECT_EQ(r.front.type_, tk!">>");
+  }
+}
+
 
 void main(string[] args) {
   enforce(c_mode == false);

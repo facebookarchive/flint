@@ -119,6 +119,12 @@ R skipTemplateSpec(R)(R r, bool* containsArray = null) {
       }
       continue;
     }
+    if (r.front.type_ == tk!">>") {
+      assert(angleNest >= 2);
+      angleNest -= 2;
+      if (angleNest == 0) break;
+      continue;
+    }
   }
 
   return r;
