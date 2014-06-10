@@ -32,6 +32,9 @@
 [Warning] Namespace.hpp:20: Don't use static at global or namespace scopes in headers.
 [Warning] Namespace.hpp:23: Don't use static at global or namespace scopes in headers.
 [Warning] Namespace.hpp:25: Don't use static at global or namespace scopes in headers.
+[Warning] Namespace.hpp:27: Conflicting namespaces: boost and std
+[Warning] Namespace.hpp:29: Conflicting namespaces: ::std and std
+[Warning] Namespace.hpp:32: Conflicting namespaces: ::boost and std
 [Error  ] Pointers.cpp:39: Mutex holder variable declared without a name, causing the lock to be released immediately.
 [Error  ] Pointers.cpp:40: Mutex holder variable declared without a name, causing the lock to be released immediately.
 [Error  ] Pointers.cpp:27: unique_ptr<T[]> should be used with an array type.
@@ -50,6 +53,6 @@
 [Error  ] Throw.cpp:12: Heap-allocated exception: throw new MyException(); This is usually a mistake in c++.
 
 Lint Summary: 12 files
-Errors: 23 Warnings: 26 Advice: 1
+Errors: 23 Warnings: 29 Advice: 1
 
-Estimated Lines of Code: 285
+Estimated Lines of Code: 292

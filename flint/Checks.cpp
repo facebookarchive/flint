@@ -7,6 +7,7 @@
 #include <numeric>
 #include <cassert>
 #include <stdexcept>
+#include <stack>
 
 #include "Options.hpp"
 #include "Polyfill.hpp"
@@ -20,10 +21,9 @@ template <class S, class T>
 inline bool cmpStr(const S &a, const T &b) { return equal(a.begin(), a.end(), b.begin()); }
 inline bool cmpStr(const StringFragment &a, const char* b) { return (a.size() == strlen(b)) && startsWith(a.begin(), b); }  
 inline bool cmpStr(const string &a, const string &b) { return a == b; }
+inline bool cmpToks(const Token &a, const Token &b) { return cmpStr(a.value_, b.value_); };
 
 #define cmpTok(a,b) cmpStr((a).value_, (b))
-
-#define cmpToks(a,b) cmpStr((a).value_, (b).value_)
 
 // Shorthand for comparing a Token and TokenType
 inline bool isTok(const Token &token, TokenType type) { return token.type_ == type; }
@@ -570,6 +570,24 @@ using TokenIter = vector<Token>::const_iterator;
 			return find_first_of(start, maxPos, begin(classMarkers), end(classMarkers), isTok);
 		};
 
+		bool matchAcrossTokens(const StringFragment &frag, TokenIter start, TokenIter end_iter) {
+			auto f_pos = frag.begin();
+			auto f_end = frag.end();
+			auto f_token_pos = start->value_.begin();
+			auto f_curr_end = start->value_.end();
+
+			while (f_pos != f_end && start != end_iter && *f_pos == *f_token_pos) {
+				f_pos++;
+				f_token_pos++;
+
+				if (f_token_pos == f_curr_end) {
+					start++;
+				}
+			}
+
+			return (f_pos == f_end);
+		};
+
 	}; // Anonymous Namespace
 
 	/**
@@ -707,6 +725,70 @@ using TokenIter = vector<Token>::const_iterator;
 					}
 				}
 			}
+		}
+	};
+
+	/**
+	* Check for conflicting namespace usages 
+	*
+	* @param errors
+	*		Struct to track how many errors/warnings/advice occured
+	* @param path
+	*		The path to the file currently being linted
+	* @param tokens
+	*		The token list for the file
+	*/
+	void checkUsingNamespaceDirectives(ErrorFile &errors, const string &path, const vector<Token> &tokens) {
+		vector<StringFragment> namespaces;
+		stack<size_t> scopes;
+
+		static const array<TokenType, 2> usingNamespace = {
+			{TK_USING, TK_NAMESPACE}
+		};
+
+		static const vector<string> exclusive {
+  			"std", "std::tr1", "boost", "::std", "::std::tr1", "::boost" 
+		};
+
+		static const vector<StringFragment> exclusiveFragments = []()->vector<StringFragment> {
+			vector<StringFragment> out;
+			for_each(begin(exclusive), end(exclusive), [&](const string &str) { out.push_back(StringFragment{begin(str), end(str)}); });
+			return out;
+		}();
+
+		for (size_t pos = 0, size = tokens.size(); pos < size; ++pos) {	
+			if (isTok(tokens[pos], TK_LCURL)) {
+				scopes.push(namespaces.size());
+				continue;
+			}
+
+			if (isTok(tokens[pos], TK_RCURL)) {
+				if (!scopes.empty()) {
+					auto del = scopes.top();
+					while (namespaces.size() > del) {
+						namespaces.pop_back();
+					}
+					scopes.pop();
+				}
+				continue;
+			}
+
+			if (atSequence(tokens, pos, usingNamespace)) {				
+				pos += 2;
+				
+				auto isExclusive = find_if(begin(exclusiveFragments), end(exclusiveFragments), [=](const StringFragment &frag) { return matchAcrossTokens(frag, begin(tokens) + pos, end(tokens)); }); 
+				if (isExclusive == end(exclusiveFragments)) {
+					continue;
+				}
+
+				auto conflict = find_if(begin(namespaces), end(namespaces), [&](const StringFragment &frag) { return !(frag == *isExclusive); });
+				if (conflict != end(namespaces)) {
+					lintWarning(errors, tokens[pos], "Conflicting namespaces: " + to_string(*isExclusive) + " and " + to_string(*conflict));
+				}
+					
+				namespaces.push_back(*isExclusive);
+				continue;
+			}			
 		}
 	};
 

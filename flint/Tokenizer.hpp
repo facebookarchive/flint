@@ -267,7 +267,7 @@ namespace flint {
 	}
 
 	inline bool operator==(const StringFragment &a, const StringFragment &b) {
-		return equal(a.begin(), a.end(), b.begin());
+		return a.size() == b.size() && equal(a.begin(), a.end(), b.begin());
 	}
 
 	inline bool contains(const StringFragment &fragment, StringFragment::iterator stringBegin, StringFragment::iterator stringEnd) {
