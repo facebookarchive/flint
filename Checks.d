@@ -867,8 +867,14 @@ uint checkConstructors(string fpath, Token[] tokensV) {
       continue;
     }
 
-    // Handle an "explicit" keyword
+    // Handle an "explicit" keyword, with or without "constexpr"
     bool checkImplicit = true;
+    if (tox.atSequence(tk!"explicit", tk!"constexpr") ||
+        tox.atSequence(tk!"constexpr", tk!"explicit")) {
+      checkImplicit = false;
+      tox.popFront;
+      tox.popFront;
+    }
     if (tox.front.type_ == tk!"explicit") {
       checkImplicit = false;
       tox.popFront;

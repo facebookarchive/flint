@@ -357,6 +357,16 @@ class CC { \n\
   tokenize(code, filename, tokens);
   EXPECT_EQ(checkConstructors(filename, tokens), 0);
 
+  // Could be "explicit constexpr" or "constexpr explicit" too
+  code = "\
+class AA { \n\
+  explicit constexpr AA(int safe); \n\
+  constexpr explicit AA(int* safe); \n\
+}; \n\
+";
+  tokenize(code, filename, tokens);
+  EXPECT_EQ(checkConstructors(filename, tokens), 0);
+
   // These copy/move constructors are reasonable
   code = "\
 class AA { \n\

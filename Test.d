@@ -396,6 +396,15 @@ class AA {
 ";
   assert(checkConstructors("nofile.cpp", tokenize(code)) == 0);
 
+  // Could be "explicit constexpr" or "constexpr explicit" too
+  code = "
+class AA {
+  explicit constexpr AA(int safe);
+  constexpr explicit AA(int* safe);
+};
+";
+  assert(checkConstructors("nofile.cpp", tokenize(code)) == 0);
+
   // Suppress warnings when single-arg constructors are marked as implicit
   code = "
 class CC {
