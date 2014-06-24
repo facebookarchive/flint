@@ -410,10 +410,10 @@ void tokenize(const string & input, const string & initialFilename,
         // define, include, pragma, or line
         if (pc1.startsWith("line")) {
           t = TK_HASHLINE; tokenLen += qfind(pc1, '\n');
-        } else if (pc1.startsWith("error")) {
-          // The entire #error line is the token value
+        } else if (pc1.startsWith("warning") || pc1.startsWith("error")) {
+          // The entire #warning/#error line is the token value
           t = TK_ERROR; tokenLen += qfind(pc1, '\n');
-          ENFORCE(tokenLen > 0, "Unterminated #error message");
+          ENFORCE(tokenLen > 0, "Unterminated #warning/#error message");
         } else if (pc1.startsWith("include")) {
           t = TK_INCLUDE; tokenLen += strlen("include");
         } else if (pc1.startsWith("ifdef")) {
