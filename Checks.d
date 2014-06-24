@@ -8,6 +8,8 @@ import Tokenizer, FileCategories;
 
 bool c_mode;
 
+enum explicitThrowSpec = "/* may throw */";
+
 /*
  * Errors vs. Warnings vs. Advice:
  *
@@ -370,7 +372,7 @@ bool getFunctionSpec(ref Token[] r, ref FunctionSpec spec) {
   assert(r2.front.type_ == tk!")");
   r2.popFront;
   while (true) {
-    if (r2.front.precedingWhitespace_.canFind("/* may throw */")) {
+    if (r2.front.precedingWhitespace_.canFind(explicitThrowSpec)) {
       spec.explicitThrows = true;
     }
 
@@ -901,6 +903,10 @@ uint checkConstructors(string fpath, Token[] tokensV) {
 
     FunctionSpec spec;
     spec.functionName = Argument(tox[0 .. 1]);
+    if (tox.front.precedingWhitespace_.canFind(explicitThrowSpec)) {
+      spec.explicitThrows = true;
+    }
+
     if (!tox.getFunctionSpec(spec)) {
       // Parse fail can be due to limitations in skipTemplateSpec, such as with:
       // fn(std::vector<boost::shared_ptr<ProjectionOperator>> children);)
@@ -992,7 +998,8 @@ uint checkConstructors(string fpath, Token[] tokensV) {
       lintError(tox.front, text(
         "Move constructor '", formatFunction(spec),
         "' should be declared noexcept.  "
-        "Use a trailing /* may throw */ comment to suppress this warning\n"
+        "Use a trailing or leading " ~ explicitThrowSpec ~
+        " comment to suppress this warning\n"
         ));
     }
 

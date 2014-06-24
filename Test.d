@@ -2363,6 +2363,19 @@ unittest {
   }
 }
 
+// allow /* may throw */ before constructor
+unittest {
+  string code = "
+    struct Foo {
+      Foo() {}
+      /* may throw */ Foo(Foo &&) {}
+    };
+  ";
+  string filename = "nofile.cpp";
+  auto tokens = tokenize(code, filename);
+  EXPECT_EQ(checkConstructors(filename, tokens), 0);
+}
+
 
 void main(string[] args) {
   enforce(c_mode == false);
