@@ -57,9 +57,48 @@ string getSucceedingWhitespace(Token[] v) {
   return v[1].precedingWhitespace_;
 }
 
-// Remove the double quotes or <'s from an included path.
-string getIncludedPath(string p) {
-  return p[1 .. p.length - 1];
+struct IncludedPath {
+  string path;
+  bool angleBrackets;
+  bool nolint;
+  bool precompiled;
+}
+
+bool getIncludedPath(R)(ref R r, out IncludedPath ipath) {
+  if (!r.atSequence(tk!"#", tk!"identifier") || r[1].value != "include") {
+    return false;
+  }
+
+  r.popFrontN(2);
+  bool found = false;
+  if (r.front.value_ == "PRECOMPILED") {
+    ipath.precompiled = true;
+    found = true;
+  }
+
+  if (r.front.type_ == tk!"string_literal") {
+    string val = r.front.value;
+    ipath.path = val[1 .. val.length - 1];
+    found = true;
+  } else if (r.front.type_ == tk!"<") {
+    r.popFront;
+    ipath.path = "";
+    for (; !r.empty; r.popFront) {
+      if (r.front.type_ == tk!">") {
+        break;
+      }
+      ipath.path ~= r.front.value;
+    }
+    ipath.angleBrackets = true;
+    found = true;
+  }
+
+  if (!found) {
+    return false;
+  }
+
+  ipath.nolint = getSucceedingWhitespace(r).canFind("nolint");
+  return true;
 }
 
 /*
@@ -1725,14 +1764,12 @@ uint checkQuestionableIncludes(string fpath, Token[] v) {
   bool includingFileIsHeader = (getFileCategory(fpath) == FileCategory.header);
   uint result = 0;
   for (; !v.empty; v.popFront) {
-    if (!v.atSequence(tk!"#", tk!"identifier") || v[1].value != "include") {
-      continue;
-    }
-    if (v[2].type_ != tk!"string_literal" || v[2].value == "PRECOMPILED") {
+    IncludedPath ipath;
+    if (!getIncludedPath(v, ipath)) {
       continue;
     }
 
-    string includedFile = getIncludedPath(v[2].value);
+    string includedFile = ipath.path;
 
     if (includedFile in deprecatedIncludes) {
       lintWarning(v.front, text("Including deprecated header ",
@@ -1766,27 +1803,20 @@ uint checkIncludeAssociatedHeader(string fpath, Token[] v) {
   uint totalIncludesFound = 0;
 
   for (; !v.empty; v.popFront) {
-    if (!v.atSequence(tk!"#", tk!"identifier") || v[1].value != "include") {
+    IncludedPath ipath;
+    if (!getIncludedPath(v, ipath)) {
       continue;
     }
 
     // Skip PRECOMPILED #includes, or #includes followed by a 'nolint' comment
-    if (v[2].value == "PRECOMPILED") continue;
-    if (v[2].type_ == tk!"string_literal"
-        && getSucceedingWhitespace(v[2 .. $]).canFind("nolint")) continue;
-    if (v[2].type_ == tk!"<") {
-      uint i = 3;
-      for (; i < v.length; ++i) if (v[i].type_ == tk!">") break;
-      if (i < v.length
-          && getSucceedingWhitespace(v[i .. $]).canFind("nolint")) continue;
+    if (ipath.precompiled || ipath.nolint) {
+      continue;
     }
 
     ++totalIncludesFound;
-    if (v[2].type_ != tk!"string_literal") continue;
 
-    string includedFile = getIncludedPath(v[2].value).baseName;
-    string includedParentPath =
-      getIncludedPath(v[2].value_).dirName;
+    string includedFile = ipath.path.baseName;
+    string includedParentPath = ipath.path.dirName;
     if (includedParentPath == ".") includedParentPath = null;
 
     if (getFileNameBase(includedFile) == fileNameBase &&
@@ -1854,13 +1884,12 @@ uint checkInlHeaderInclusions(string fpath, Token[] v) {
   auto fileNameBase = getFileNameBase(fileName);
 
   for (; !v.empty; v.popFront) {
-    if (!v.atSequence(tk!"#", tk!"identifier", tk!"string_literal")
-        || v[1].value_ != "include") {
+    IncludedPath ipath;
+    if (!getIncludedPath(v, ipath)) {
       continue;
     }
-    v.popFrontN(2);
 
-    auto includedPath = getIncludedPath(v.front.value_);
+    auto includedPath = ipath.path;
     if (getFileCategory(includedPath) != FileCategory.inl_header) {
       continue;
     }
@@ -2332,36 +2361,31 @@ uint checkIncludes(
   uint result = 0;
 
   // Find all occurrences of '#include "..."'. Ignore '#include <...>', since
-  // <...> is not used for fbcode includes.
+  // <...> is not used for fbcode includes except to include other OSS
+  // projects.
   for (auto it = v; !it.empty; it.popFront) {
-    if (it.atSequence(tk!"#", tk!"identifier", tk!"string_literal")
-        && it[1].value_ == "include") {
-      it.popFrontN(2);
-      auto includePath = it.front.value_[1 .. $-1];
-
-      // Includes from other projects always contain a '/'.
-      auto slash = includePath.findSplitBefore("/");
-      if (slash[1].empty) continue;
-
-      // If this prefix is allowed, continue
-      if (allowedPrefixes.any!(x => includePath.startsWith(x))) continue;
-
-      // If the include is followed by the comment 'nolint' then it is ok.
-      auto nit = it.save;
-      nit.popFront; // Do not increment 'it' - increment a copy.
-      if (nit.empty || nit.front.precedingWhitespace_.canFind("nolint")) {
-        continue;
-      }
-
-      // Finally, the lint error.
-      fn(it.front, "Open Source Software may not include files from "
-          "other fbcode projects (except what's already open-sourced). "
-          "If this is not an fbcode include, please use "
-          "'#include <...>' instead of '#include \"...\"'. "
-          "You may suppress this warning by including the "
-          "comment 'nolint' after the #include \"...\".\n");
-      ++result;
+    IncludedPath ipath;
+    if (!getIncludedPath(it, ipath) || ipath.angleBrackets || ipath.nolint) {
+      continue;
     }
+
+    auto includePath = ipath.path;
+
+    // Includes from other projects always contain a '/'.
+    auto slash = includePath.findSplitBefore("/");
+    if (slash[1].empty) continue;
+
+    // If this prefix is allowed, continue
+    if (allowedPrefixes.any!(x => includePath.startsWith(x))) continue;
+
+    // Finally, the lint error.
+    fn(it.front, "Open Source Software may not include files from "
+        "other fbcode projects (except what's already open-sourced). "
+        "If this is not an fbcode include, please use "
+        "'#include <...>' instead of '#include \"...\"'. "
+        "You may suppress this warning by including the "
+        "comment 'nolint' after the #include \"...\".\n");
+    ++result;
   }
   return result;
 }
@@ -3200,5 +3224,37 @@ version(facebook) {
       }
     }
     return result;
+  }
+
+  immutable string[] angleBracketErrorDirs = ["folly/", "thrift/"];
+  immutable string[] angleBracketRequiredPrefixes = ["folly/", "thrift/lib/"];
+
+  uint checkAngleBracketIncludes(string fpath, Token[] v) {
+    // strip fpath of '.../fbcode/', if present
+    auto ppath = fpath.findSplitAfter("/fbcode/")[1];
+    bool isError = angleBracketErrorDirs.any!(x => ppath.startsWith(x));
+    auto errorFunc = isError ? &lintError : &lintWarning;
+
+    uint errorCount = 0;
+    for (; !v.empty; v.popFront) {
+      IncludedPath ipath;
+      if (!getIncludedPath(v, ipath)) {
+        continue;
+      }
+      if (ipath.angleBrackets) {
+        continue;
+      }
+
+      if (angleBracketRequiredPrefixes.any!(x => ipath.path.startsWith(x))) {
+        errorFunc(v.front, text(
+            "#include \"", ipath.path, "\" must use angle brackets\n"));
+        if (isError) {
+          errorCount += 1;
+        }
+        break;
+      }
+    }
+
+    return errorCount;
   }
 }

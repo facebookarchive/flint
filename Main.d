@@ -82,6 +82,7 @@ uint checkEntry(string path) {
     errors += checkBogusComparisons(path, tokens);
     version(facebook) {
       errors += checkToDoFollowedByTaskNumber(path, tokens);
+      errors += checkAngleBracketIncludes(path, tokens);
     }
     if (!c_mode) {
       errors += checkNamespaceScopedStatics(path, tokens);

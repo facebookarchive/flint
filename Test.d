@@ -2346,6 +2346,27 @@ version(facebook) {
     tokenize(s3, filename, tokens);
     EXPECT_EQ(checkToDoFollowedByTaskNumber(filename, tokens), 1);
   }
+
+  unittest {
+    Token[] tokens;
+    string filename = "somefileforAngleBrackets.cpp";
+
+    string s1 = "
+    #include PRECOMPILED
+    #include \"folly/Foo.h\"  // not ok
+    #include \"folly/Bar.h\"  // ok because nolint
+    #include <folly/Baz.h>    // ok because folly likes angle brackets
+    ";
+    tokenize(s1, filename, tokens);
+
+    // Only a warning if used outside of folly or thrift
+    EXPECT_EQ(checkAngleBracketIncludes(filename, tokens), 0);
+
+    filename = "thrift/somefileForAngleBrackets.cpp";
+    tokenize(s1, filename, tokens);
+
+    EXPECT_EQ(checkAngleBracketIncludes(filename, tokens), 1);
+  }
 }
 
 // testSkipTemplateSpec
