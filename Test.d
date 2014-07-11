@@ -2184,7 +2184,7 @@ unittest {
     tuple("folly/anyfile.cpp", 4),
     tuple("hphp/anyfile.cpp", 2),
     tuple("hphp/facebook/anyfile.cpp", 0),
-    tuple("proxygen/facebook/lib/anyfile.cpp", 3),
+    tuple("ti/proxygen/lib/anyfile.cpp", 3),
   ];
 
   foreach (ref p; filenamesAndErrors) {
