@@ -372,6 +372,7 @@ class AA { \n\
 class AA { \n\
   AA(const AA& acceptable); \n\
   AA(AA&& acceptable); \n\
+  AA(AA &&) = default; \n\
 }; \n\
 ";
   tokenize(code, filename, tokens);
