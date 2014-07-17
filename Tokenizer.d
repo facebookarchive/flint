@@ -3,7 +3,7 @@
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
 import std.algorithm, std.array, std.ascii, std.conv, std.exception, std.regex,
-  std.stdio, std.typecons, std.typetuple;
+  std.stdio, std.typecons, std.typetuple, std.format;
 
 struct TokenizerGenerator(alias tokens, alias reservedTokens) {
   /**
@@ -252,7 +252,7 @@ CppLexer.Token[] tokenize(string input, string initialFilename = null) {
   size_t line = 1;
 
   for (;;) {
-    auto t = nextToken(input, line);
+    auto t = nextToken(input, line, initialFilename);
     t.file_ = initialFilename;
     //writeln(t);
     output ~= t;
@@ -269,7 +269,7 @@ void tokenize(string input, string initialFilename, ref CppLexer.Token[] t) {
 /**
  * Helper function, gets next token and updates pc and line.
  */
-CppLexer.Token nextToken(ref string pc, ref size_t line) {
+CppLexer.Token nextToken(ref string pc, ref size_t line, ref string fileName) {
   size_t charsBefore;
   string value;
   CppLexer.TokenType2 tt;
@@ -296,8 +296,10 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
         tt = tk!"identifier";
         break;
       } else {
-        writeln("Illegal character: ", cast(uint) c, " [", c, "]");
-        throw new Exception("Illegal character");
+        auto errWriter = appender!string();
+        formattedWrite(errWriter, "Illegal character: %s [%s] at: %s:%s",
+                       cast(uint) c, c, fileName, line);
+        throw new Exception(errWriter.data);
       }
     }
 
@@ -384,28 +386,32 @@ CppLexer.Token nextToken(ref string pc, ref size_t line) {
     if (tt is tk!"\0") delta += 1;
     auto tsz = charsBefore + (value ? value.length : tt.sym().length);
     if (tsz != delta) {
-      stderr.writeln("Flint tokenization error: Wrong size for token type '",
-          tt.sym(), "': '", initialPc[0 .. charsBefore], "'~'", value, "' ",
-          "of size ", tsz, " != '", initialPc[0 .. delta], "' of size ",
-          delta);
-      throw new Exception("Internal flint error");
+      auto errWriter = appender!string();
+      formattedWrite(errWriter,
+                     "Internal flint tokenization error: Wrong size for " ~
+                     "token type '%s': '%s'~'%s' of size %s != '%s' of size %s",
+                     tt.sym(), initialPc[0 .. charsBefore], value, tsz,
+                     initialPc[0 .. delta], delta);
+      throw new Exception(errWriter.data);
     }
 
     // make sure that line was incremented the correct number of times
     auto lskip = std.algorithm.count(initialPc[0 .. delta], '\n');
     if (initialLine + lskip != line) {
-      stderr.writeln("Flint tokenization error: muched '",
-          initialPc[0 .. delta], "' (token type '", tt.sym(), "'), "
-          "which contains ", lskip, " newlines, "
-          "but line has been incremented by ", line - initialLine);
-      throw new Exception("Internal flint error");
+      auto errWriter = appender!string();
+      formattedWrite(errWriter, "Internal flint tokenization error: munched " ~
+                     "'%s' (token type '%s') which contains %s newlines, but " ~
+                     "line has been incremented by %s",
+                     initialPc[0 .. delta], tt.sym(), lskip,
+                     line - initialLine);
+      throw new Exception(errWriter.data);
     }
   }
 
   return CppLexer.Token(
     tt, value,
     initialPc[0 .. charsBefore],
-    tokenLine);
+    tokenLine, fileName);
 }
 
 /**
@@ -539,7 +545,7 @@ static string munchString(ref string pc, ref size_t line) {
 }
 
 /**
-  * Assuming pc is positioned at the start og a raw string, munches
+  * Assuming pc is positioned at the start of a raw string, munches
   * it from pc and returns it.
   */
 static string munchRawString(ref string pc, ref size_t line) {

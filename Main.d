@@ -108,6 +108,7 @@ uint checkEntry(string path) {
     // *** Checks end
   } catch (Exception e) {
     stderr.writef("Flint was unable to lint %s\n", path);
+    stderr.writeln(e.toString());
   }
   return errors;
 }
