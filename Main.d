@@ -80,6 +80,7 @@ uint checkEntry(string path) {
     errors += checkOSSIncludes(path, tokens);
     errors += checkBreakInSynchronized(path, tokens);
     errors += checkBogusComparisons(path, tokens);
+    errors += checkExitStatus(path, tokens);
     version(facebook) {
       errors += checkToDoFollowedByTaskNumber(path, tokens);
       errors += checkAngleBracketIncludes(path, tokens);

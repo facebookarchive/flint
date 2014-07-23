@@ -3265,3 +3265,26 @@ version(facebook) {
     return errorCount;
   }
 }
+
+/**
+  * Lint check: exit(-1) (or any other negative exit code) makes no sense
+  * We should at least use exit(EXIT_FAILURE) instead
+  */
+uint checkExitStatus(string fpath, Token[] v) {
+  uint result = 0;
+  bool[string] exitFunctions = ["exit":true, "_exit":true];
+  for (auto tox = v; !tox.empty; tox.popFront) {
+    if (tox.atSequence(tk!"identifier", tk!"(", tk!"-", tk!"number", tk!")")) {
+      if (tox[0].value !in exitFunctions) {
+        continue;
+      }
+      lintWarning(tox[3], text(
+          "exit(-",
+          tox[3].value_,
+          ") is not well-defined; use exit(EXIT_FAILURE) instead.\n"));
+      ++result;
+    }
+  }
+
+  return result;
+}

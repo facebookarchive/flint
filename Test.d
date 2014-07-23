@@ -2397,6 +2397,40 @@ unittest {
   EXPECT_EQ(checkConstructors(filename, tokens), 0);
 }
 
+// testCheckExitStatus
+unittest {
+  string code = "
+    exit(-1);
+  ";
+  string filename = "nofile.cpp";
+  auto tokens = tokenize(code, filename);
+  EXPECT_EQ(checkExitStatus(filename, tokens), 1);
+  code = "
+    _exit(-1);
+  ";
+  tokens = tokenize(code, filename);
+  EXPECT_EQ(checkExitStatus(filename, tokens), 1);
+  code = "
+    ::exit(-1);
+  ";
+  tokens = tokenize(code, filename);
+  EXPECT_EQ(checkExitStatus(filename, tokens), 1);
+  code = "
+    _exit(EXIT_FAILURE);
+  ";
+  tokens = tokenize(code, filename);
+  EXPECT_EQ(checkExitStatus(filename, tokens), 0);
+  code = "
+    _exit(0);
+  ";
+  tokens = tokenize(code, filename);
+  EXPECT_EQ(checkExitStatus(filename, tokens), 0);
+  code = "
+    validFunction(-1);
+  ";
+  tokens = tokenize(code, filename);
+  EXPECT_EQ(checkExitStatus(filename, tokens), 0);
+}
 
 void main(string[] args) {
   enforce(c_mode == false);
