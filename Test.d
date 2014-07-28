@@ -2194,6 +2194,34 @@ unittest {
   }
 }
 
+// testMultipleIncludes
+
+unittest {
+  import std.typecons;
+  Tuple!(string, int)[] includesAndErrors = [
+    tuple("#include <single_file>\n"
+          "#include <includedTwice>\n"
+          "#include <includedTwice>\n", 1),
+    tuple("#include <single_file>\n"
+          "#include \"includedTwice\"\n"
+          "#include \"includedTwice\"\n", 1),
+    tuple("#include <includedTwice>\n"
+          "include \"includedTwice\"\n", 0),
+    tuple("#include <firstInclude>\n"
+          "#include <secondInclude>\n", 0),
+    tuple("#include <includedTwice>\n"
+          "#include <includedTwice> /* nolint */\n", 0)
+  ];
+
+  foreach (ref p; includesAndErrors) {
+    Token[] tokens;
+    tokenize(p[0], "testFile.cpp", tokens);
+    EXPECT_EQ(p[1], checkMultipleIncludes("testFile.cpp", tokens));
+    tokenize(p[0], "testFile.c", tokens);
+    EXPECT_EQ(p[1], checkMultipleIncludes("testFile.c", tokens));
+  }
+}
+
 // testCheckBreakInSynchronized
 unittest {
   string s = "

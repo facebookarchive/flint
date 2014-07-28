@@ -2398,6 +2398,32 @@ uint checkIncludes(
 }
 
 /*
+ * Lint check: prevent multiple includes of the same file
+ */
+uint checkMultipleIncludes(string fpath, Token[] v) {
+  uint result = 0;
+  bool[string] pathSet;
+  for (auto it = v; !it.empty; it.popFront) {
+    IncludedPath ipath;
+    if (!getIncludedPath(it, ipath) || ipath.nolint) {
+      continue;
+    }
+
+    auto includePath = ipath.path;
+    if (includePath !in pathSet) {
+      pathSet[includePath] = true;
+    } else {
+      lintError(it.front, text("\"", includePath, "\" is included multiple ",
+          "times. Please remove one of the #includes.\nTo suppress this ",
+          "lint error, add the comment 'nolint' at the end of the include ",
+          "line.\n"));
+      ++result;
+    }
+  }
+  return result;
+}
+
+/*
  * Lint check: prevent OSS-fbcode projects from including other projects
  * from fbcode.
  */

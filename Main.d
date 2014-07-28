@@ -78,6 +78,7 @@ uint checkEntry(string path) {
     errors += checkUniquePtrUsage(path, tokens);
     errors += checkBannedIdentifiers(path, tokens);
     errors += checkOSSIncludes(path, tokens);
+    errors += checkMultipleIncludes(path, tokens);
     errors += checkBreakInSynchronized(path, tokens);
     errors += checkBogusComparisons(path, tokens);
     errors += checkExitStatus(path, tokens);
