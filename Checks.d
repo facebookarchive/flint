@@ -524,7 +524,10 @@ uint checkBlacklistedIdentifiers(const string fpath, const CppLexer.Token[] v) {
   string[string] banned = [
     "strtok" :
       "strtok() is not thread safe, and has safer alternatives.  Consider "
-      "folly::split or strtok_r as appropriate.\n"
+      "folly::split or strtok_r as appropriate.\n",
+    "strncpy" :
+      "strncpy is very often used in error; see "
+      "http://meyering.net/crusade-to-eliminate-strncpy/\n"
   ];
 
   foreach (ref t; v) {
