@@ -13,10 +13,16 @@ bool include_what_you_use = false;
  * command line.
  */
 int main(string[] args) {
-  getopt(args,
-    "recursive", &recursive,
-    "c_mode", &c_mode,
-    "include_what_you_use", &include_what_you_use);
+  try {
+    getopt(args,
+           "recursive", &recursive,
+           "c_mode", &c_mode,
+           "include_what_you_use", &include_what_you_use);
+  } catch (Exception e) {
+    stderr.writeln(e.msg);
+    stderr.writeln("usage: flint "
+                   "[--recursive] [--c_mode], [--include_what_you_use]");
+  }
 
   // Check each file
   uint errors = 0;
