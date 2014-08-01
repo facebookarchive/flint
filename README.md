@@ -41,8 +41,6 @@ Dependencies
 To Build
 --------
 
-autoreconf --install
-
-LDFLAGS=-L<double-conversion> CPPFLAGS=-I<double-conversion>/src configure ...
-
-make
+    autoreconf --install
+    LDFLAGS=-L<double-conversion> CPPFLAGS=-I<double-conversion>/src configure ...
+    make
