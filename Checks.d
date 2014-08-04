@@ -518,7 +518,7 @@ uint checkBlacklistedSequences(string fpath, CppLexer.Token[] v) {
   return result;
 }
 
-uint checkBlacklistedIdentifiers(const string fpath, const CppLexer.Token[] v) {
+uint checkBlacklistedIdentifiers(string fpath, CppLexer.Token[] v) {
   uint result = 0;
 
   string[string] banned = [

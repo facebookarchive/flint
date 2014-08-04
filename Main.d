@@ -2,11 +2,15 @@
 // License: Boost License 1.0, http://boost.org/LICENSE_1_0.txt
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
-import std.conv, std.file, std.getopt, std.stdio;
+import std.conv, std.file, std.getopt, std.stdio, std.string;
 import Checks, FileCategories, Ignored, Tokenizer;
 
 bool recursive = true;
 bool include_what_you_use = false;
+string[] exclude_checks;
+
+uint function(string, Token[])[string] checks;
+uint function(string, Token[])[string] cppChecks;
 
 /**
  * Entry point. Reads in turn and verifies each file passed onto the
@@ -17,20 +21,87 @@ int main(string[] args) {
     getopt(args,
            "recursive", &recursive,
            "c_mode", &c_mode,
-           "include_what_you_use", &include_what_you_use);
+           "include_what_you_use", &include_what_you_use,
+           "exclude", &exclude_checks);
   } catch (Exception e) {
     stderr.writeln(e.msg);
     stderr.writeln("usage: flint "
-                   "[--recursive] [--c_mode], [--include_what_you_use]");
+                   "[--recursive] [--c_mode], [--include_what_you_use]"
+                   "[--exclude=<rule>,...]");
   }
 
-  // Check each file
-  uint errors = 0;
-  foreach (arg; args) {
-    errors += checkEntry(arg);
-  }
+checks = mixin(
+    makeHashtable!(
+      checkBlacklistedSequences,
+      checkBlacklistedIdentifiers,
+      checkDefinedNames,
+      checkIfEndifBalance,
+      checkIncludeGuard,
+      checkMemset,
+      checkQuestionableIncludes,
+      checkInlHeaderInclusions,
+      checkInitializeFromItself,
+      checkSmartPtrUsage,
+      checkUniquePtrUsage,
+      checkBannedIdentifiers,
+      checkOSSIncludes,
+      checkMultipleIncludes,
+      checkBreakInSynchronized,
+      checkBogusComparisons,
+      checkExitStatus)
+  );
+
+ version(facebook) {
+   checks["checkToDoFollowedByTaskNumber"] = &checkToDoFollowedByTaskNumber;
+   checks["checkAngleBracketIncludes"] = &checkAngleBracketIncludes;
+ }
+
+ cppChecks = mixin(
+    makeHashtable!(
+      checkNamespaceScopedStatics,
+      checkIncludeAssociatedHeader,
+      checkCatchByReference,
+      checkConstructors,
+      checkVirtualDestructors,
+      checkThrowSpecification,
+      checkThrowsHeapException,
+      checkUsingNamespaceDirectives,
+      checkUsingDirectives,
+      checkFollyDetail,
+      checkFollyStringPieceByValue,
+      checkProtectedInheritance,
+      checkImplicitCast,
+      checkUpcaseNull,
+      checkExceptionInheritance,
+      checkMutexHolderHasName)
+  );
+
+ if (include_what_you_use) {
+   cppChecks["checkDirectStdInclude"] = &checkDirectStdInclude;
+ }
+
+ foreach (string s ; exclude_checks) {
+   string ss = strip(s);
+   checks.remove(ss);
+   cppChecks.remove(ss);
+ }
+
+ // Check each file
+ uint errors = 0;
+ foreach (arg; args) {
+   errors += checkEntry(arg);
+ }
 
   return 0;
+}
+
+auto makeHashtable(T...)() {
+  string result = `[`;
+  foreach (t; T) {
+    string name = __traits(identifier, t);
+    result ~= `"` ~ name ~ `" : &` ~ name ~ ", ";
+  }
+  return result ~= `]`;
 }
 
 bool dontLintPath(string path) {
@@ -70,50 +141,15 @@ uint checkEntry(string path) {
     // Tokenize the file's contents
     tokens = tokenize(file, path);
 
-    // *** Checks begin
-    errors += checkBlacklistedSequences(path, tokens);
-    errors += checkBlacklistedIdentifiers(path, tokens);
-    errors += checkDefinedNames(path, tokens);
-    errors += checkIfEndifBalance(path, tokens);
-    errors += checkIncludeGuard(path, tokens);
-    errors += checkMemset(path, tokens);
-    errors += checkQuestionableIncludes(path, tokens);
-    errors += checkInlHeaderInclusions(path, tokens);
-    errors += checkInitializeFromItself(path, tokens);
-    errors += checkSmartPtrUsage(path, tokens);
-    errors += checkUniquePtrUsage(path, tokens);
-    errors += checkBannedIdentifiers(path, tokens);
-    errors += checkOSSIncludes(path, tokens);
-    errors += checkMultipleIncludes(path, tokens);
-    errors += checkBreakInSynchronized(path, tokens);
-    errors += checkBogusComparisons(path, tokens);
-    errors += checkExitStatus(path, tokens);
-    version(facebook) {
-      errors += checkToDoFollowedByTaskNumber(path, tokens);
-      errors += checkAngleBracketIncludes(path, tokens);
+    // *** Checks each lint rule
+    foreach (uint function(string, Token[]) check ; checks.byValue()) {
+      errors += check(path, tokens);
     }
     if (!c_mode) {
-      errors += checkNamespaceScopedStatics(path, tokens);
-      errors += checkIncludeAssociatedHeader(path, tokens);
-      errors += checkCatchByReference(path, tokens);
-      errors += checkConstructors(path, tokens);
-      errors += checkVirtualDestructors(path, tokens);
-      errors += checkThrowSpecification(path, tokens);
-      errors += checkThrowsHeapException(path, tokens);
-      errors += checkUsingNamespaceDirectives(path, tokens);
-      errors += checkUsingDirectives(path, tokens);
-      errors += checkFollyDetail(path, tokens);
-      errors += checkFollyStringPieceByValue(path, tokens);
-      errors += checkProtectedInheritance(path, tokens);
-      errors += checkImplicitCast(path, tokens);
-      errors += checkUpcaseNull(path, tokens);
-      errors += checkExceptionInheritance(path, tokens);
-      errors += checkMutexHolderHasName(path, tokens);
-      if (include_what_you_use) {
-        errors += checkDirectStdInclude(path, tokens);
+      foreach (uint function(string, Token[]) check ; cppChecks.byValue()) {
+        errors += check(path, tokens);
       }
     }
-    // *** Checks end
   } catch (Exception e) {
     stderr.writef("Flint was unable to lint %s\n", path);
     stderr.writeln(e.toString());
