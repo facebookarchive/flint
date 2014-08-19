@@ -3317,3 +3317,45 @@ uint checkExitStatus(string fpath, Token[] v) {
 
   return result;
 }
+
+/**
+  * Lint check: the argument(s) of __attribute__((...)) should have the
+  * form __KEYWORD__, i.e., with leading and trailing "__".
+  * Otherwise, especially in header files, the unadorned keyword
+  * impinges on the user/application-code namespace.
+  */
+uint checkAttributeArgumentUnderscores(string fpath, Token[] v) {
+  uint result = 0;
+  for (auto tok = v; !tok.empty; tok.popFront) {
+    /* First, detect "__attribute__((T", where T does not start with "__". */
+    if (!tok.atSequence(tk!"identifier", tk!"(", tk!"(", tk!"identifier")
+        || tok[0].value != "__attribute__") {
+      continue;
+    }
+    auto kw = tok[3];
+    if (!kw.value.startsWith("__")) {
+      lintWarning(kw, format("__attribute__ type \"%s\""
+                             " should be written as \"__%s__\"\n",
+                             kw.value_, kw.value_));
+      ++result;
+    }
+
+    /* Pop off the 4 tokens we've just recognized. */
+    tok.popFrontN(4);
+
+    if (kw.value != "__format__") {
+      continue;
+    }
+
+    /* Also detect when the T in "__format__(T" does not start with "__". */
+    if (tok.atSequence(tk!"(", tk!"identifier")
+        && !tok[1].value.startsWith("__")) {
+      lintWarning(tok[1], format("__attribute__ format archetype \"%s\""
+                                 " should be written as \"__%s__\"\n",
+                                 tok[1].value_, tok[1].value_));
+      ++result;
+    }
+  }
+
+  return result;
+}

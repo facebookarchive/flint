@@ -48,7 +48,9 @@ checks = mixin(
       checkMultipleIncludes,
       checkBreakInSynchronized,
       checkBogusComparisons,
-      checkExitStatus)
+      checkExitStatus,
+      checkAttributeArgumentUnderscores
+    )
   );
 
  version(facebook) {

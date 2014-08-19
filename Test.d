@@ -7,6 +7,33 @@ import Checks, Tokenizer;
 
 unittest {
   string s = "
+int main()
+  __attribute__((foo))
+
+  // Two on one line:
+  __attribute__ ((foo)) __attribute__((foo))
+
+  // Two parameters:
+  __attribute__ ( ( foo, bar ) )
+
+  // Here, we ding only the 'format' keyword.
+  __attribute__((format (printf, 1, 2)))
+
+  // Here, now with the proper __format__, we ding the format
+  // sub-type, 'printf':
+  __attribute__((__format__ (printf, 1, 2)))
+
+  // This one is fine.
+  __attribute__((__format__ (__printf__, 1, 2)))
+{
+}
+";
+  auto tokens = tokenize(s, "nofile.cpp");
+  EXPECT_EQ(checkAttributeArgumentUnderscores("nofile.cpp", tokens), 6);
+}
+
+unittest {
+  string s = "
 #include <string>
 // Some code does this, (good!), and someday we may want to exempt
 // such usage from this lint rule.
