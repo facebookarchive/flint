@@ -30,7 +30,7 @@ string removeIgnoredCode(string file, string fpath) {
     // user, with the line number for ignorePause.
     if (posResume < 0) {
       auto lineNo = file[0 .. posPause].count('\n') + 1;
-      stderr.writef("%s(%d): No matching \"%s\" found for \"%s\"\n",
+      stderr.writef("%s:%d: No matching \"%s\" found for \"%s\"\n",
                     fpath, lineNo, kIgnoreResume, kIgnorePause);
       result ~= file[pos .. $];
       break;

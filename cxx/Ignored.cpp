@@ -33,7 +33,7 @@ std::string removeIgnoredCode(const std::string& file,
       if (posResume == std::string::npos) {
         int lineNo = std::count(file.begin(), file.begin() + posPause, '\n');
         lineNo++;
-        fprintf(stderr, "%s(%d): No matching \"%s\" found for \"%s\"\n",
+        fprintf(stderr, "%s:%d: No matching \"%s\" found for \"%s\"\n",
                 fpath.c_str(), lineNo, kIgnoreResume.c_str(),
                 kIgnorePause.c_str());
         result += file.substr(pos);

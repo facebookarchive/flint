@@ -24,7 +24,7 @@ enum explicitThrowSpec = "/* may throw */";
  */
 
 void lintError(CppLexer.Token tok, const string error) {
-  stderr.writef("%.*s(%u): %s",
+  stderr.writef("%.*s:%u: %s",
                 cast(uint) tok.file_.length, tok.file_,
                 cast(uint) tok.line_,
                 error);

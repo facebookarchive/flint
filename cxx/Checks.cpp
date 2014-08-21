@@ -45,7 +45,7 @@ namespace {
  */
 
 void lintError(const Token& tok, const string& error) {
-  checkUnixError(fprintf(stderr, "%.*s(%u): %s",
+  checkUnixError(fprintf(stderr, "%.*s:%u: %s",
     static_cast<uint32_t>(tok.file_.size()), tok.file_.data(),
     static_cast<uint32_t>(tok.line_),
                          error.c_str()));

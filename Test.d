@@ -859,7 +859,7 @@ class BB {
 void EXPECT_EQ(T, U, string f = __FILE__, size_t n = __LINE__)
     (auto ref T lhs, auto ref U rhs) {
   if (lhs == rhs) return;
-  stderr.writeln(text(f, "(", n, "): ", lhs, " != ", rhs));
+  stderr.writeln(text(f, ":", n, ": ", lhs, " != ", rhs));
   assert(0);
 }
 
