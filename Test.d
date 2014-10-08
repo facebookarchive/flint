@@ -2218,15 +2218,14 @@ unittest {
     "#include \"random/unsafe/in/oss\"\n"
     "#include \"oss-is-safe\" // nolint\n"
     "#include \"oss/is/safe\" // nolint\n"
-    "#include \"configerator/structs/is/for/proxygen\"\n"
     "#include \"oss-at-eof-should-be-safe\" // nolint";
 
   import std.typecons;
   Tuple!(string, int)[] filenamesAndErrors = [
     tuple("anyfile.cpp", 0),
     tuple("non-oss-project/anyfile.cpp", 0),
-    tuple("folly/anyfile.cpp", 4),
-    tuple("hphp/anyfile.cpp", 2),
+    tuple("folly/anyfile.cpp", 3),
+    tuple("hphp/anyfile.cpp", 1),
     tuple("hphp/facebook/anyfile.cpp", 0),
     tuple("proxygen/lib/anyfile.cpp", 3),
   ];
