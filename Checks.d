@@ -161,9 +161,10 @@ R skipTemplateSpec(R)(R r, bool* containsArray = null) {
       continue;
     }
     if (r.front.type_ == tk!">>") {
-      assert(angleNest >= 2);
+      // it is possible to munch a template from within a template, so we
+      // only want to consume one of the '>>'
       angleNest -= 2;
-      if (angleNest == 0) break;
+      if (angleNest <= 0) break;
       continue;
     }
   }
@@ -2120,7 +2121,7 @@ uint checkUniquePtrUsage(string fpath, Token[] v) {
     if (i.front.type_ == tk!"\0") {
       return result;
     }
-    assert(i.front.type_ == tk!">");
+    assert(i.front.type_ == tk!">" || i.front.type_ == tk!">>");
     i.popFront;
 
     /*
