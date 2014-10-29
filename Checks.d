@@ -1103,7 +1103,12 @@ uint checkImplicitCast(string fpath, Token[] tokensV) {
       continue;
     }
 
-    // Special case operator bool(), we don't want to allow over-riding
+    // Only want to process operators which do not have the overide
+    if (tox.front.type_ != tk!"operator" ||
+        tox.front.precedingWhitespace_.canFind(lintOverride)) {
+      continue;
+    }
+
     if (tox.atSequence(tk!"operator", tk!"bool", tk!"(", tk!")")) {
       if (tox[4 .. $].atSequence(tk!"=", tk!"delete") ||
           tox[4 .. $].atSequence(tk!"const", tk!"=", tk!"delete")) {
@@ -1119,12 +1124,6 @@ uint checkImplicitCast(string fpath, Token[] tokensV) {
         "function (see http://www.artima.com/cppsource/safebool.html for more "
         "details).\n"
       );
-      continue;
-    }
-
-    // Only want to process operators which do not have the overide
-    if (tox.front.type_ != tk!"operator" ||
-        tox.front.precedingWhitespace_.canFind(lintOverride)) {
       continue;
     }
 
