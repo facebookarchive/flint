@@ -1337,6 +1337,12 @@ uint checkIncludeGuard(string fpath, Token[] v) {
     return 0;
   }
 
+  // Allow override-include-guard
+  enum override_string = "override-include-guard";
+  if (!v.empty && v.front().precedingWhitespace_.canFind(override_string)) {
+    return 0;
+  }
+
   // Allow #pragma once
   if (v.atSequence(tk!"#", tk!"identifier", tk!"identifier")
       && v[1].value_ == "pragma" && v[2].value_ == "once") {
@@ -1350,7 +1356,11 @@ uint checkIncludeGuard(string fpath, Token[] v) {
           tk!"#", tk!"identifier", tk!"identifier")
       || v[1].value_ != "ifndef" || v[4].value_ != "define") {
     // There is no include guard in this file.
-    lintError(v.front(), "Missing include guard.\n");
+    lintError(v.front(),
+        text("Missing include guard. If you are ABSOLUTELY sure that you "
+             "don't want an include guard, then include a comment "
+             "containing ", override_string, " in lieu of an include "
+             "guard.\n"));
     return 1;
   }
 
