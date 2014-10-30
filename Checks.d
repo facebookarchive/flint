@@ -622,6 +622,7 @@ uint checkCatchByReference(string fpath, Token[] v) {
   uint result = 0;
   foreach (i, ref e; v) {
     if (e.type_ != tk!"catch") continue;
+    if (getSucceedingWhitespace(v[i..$]).canFind("nolint")) continue;
     size_t focal = 1;
     enforce(v[i + focal].type_ == tk!"(", // a "(" comes always after catch
         text(v[i + focal].file_, ":", v[i + focal].line_,
