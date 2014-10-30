@@ -569,6 +569,7 @@ uint checkDefinedNames(string fpath, Token[] v) {
   foreach (i, ref t; v) {
     if (i == 0 || v[i - 1].type_ != tk!"#" || t.type_ != tk!"identifier"
         || t.value != "define") continue;
+    if (v[i - 1].precedingWhitespace_.canFind("nolint")) continue;
     const t1 = v[i + 1];
     auto const sym = t1.value_;
     if (t1.type_ != tk!"identifier") {
