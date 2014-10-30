@@ -592,13 +592,13 @@ struct BB {
 };
 ";
   tokens = tokenize(code);
-  assert(checkImplicitCast(filename, tokens) == 1);
+  assert(checkImplicitCast(filename, tokens) == 0);
 
   // It's ok to delete an implicit bool operator.
   code = "(
 class AA {
-  /* implicit */ operator bool() = delete;
-  /* implicit */ operator bool() const = delete;
+  operator bool() = delete;
+  operator bool() const = delete;
 };
 )";
   tokens = tokenize(code);
