@@ -511,6 +511,7 @@ uint checkBlacklistedSequences(string fpath, CppLexer.Token[] v) {
       if (!atSequence(v[i .. $], entry.tokens)) { continue; }
       if (isException) { isException = false; continue; }
       if (c_mode && entry.cpponly == true) { continue; }
+      if (v[i].precedingWhitespace_.canFind("nolint")) { continue; }
       lintWarning(v[i], entry.descr);
       ++result;
     }
