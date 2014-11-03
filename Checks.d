@@ -57,6 +57,23 @@ string getSucceedingWhitespace(Token[] v) {
   return v[1].precedingWhitespace_;
 }
 
+bool isInMacro(Token[] v, const long idx) {
+  // Walk backwards through the tokens, continuing until a newline
+  // that is not preceded by a backslash is encountered (i.e. a
+  // true line break).
+  for (long i = idx; i >= 0; --i) {
+    if (v[i..$].atSequence(tk!"#", tk!"identifier") &&
+        v[i + 1].value == "define") return true;
+    if (i == 0) return false;
+    string pws = v[i].precedingWhitespace_;
+    auto pos = lastIndexOf(pws, '\n');
+    if (pos == -1) continue;
+    if (pos != 0) return false;
+    if (v[i - 1].type_ != tk!"\\") return false;
+  }
+  return false;
+}
+
 struct IncludedPath {
   string path;
   bool angleBrackets;
@@ -2312,7 +2329,9 @@ uint checkBannedIdentifiers(string fpath, Token[] v) {
  * harmful (generates unnecessary code in each TU). Find more information
  * here: https://our.intern.facebook.com/intern/tasks/?t=2435344
 */
-uint checkNamespaceScopedStatics(string fpath, Token[] v) {
+uint checkNamespaceScopedStatics(string fpath, Token[] w) {
+  auto v = w;
+
   if (!isHeader(fpath)) {
     // This check only looks at headers. Inside .cpp files, knock
     // yourself out.
@@ -2333,10 +2352,12 @@ uint checkNamespaceScopedStatics(string fpath, Token[] v) {
       // which are interesting for this rule.
       v = skipBlock(v);
     } else if (v.front.type_ == tk!"static") {
-      lintWarning(v.front,
-                  "Avoid using static at global or namespace scope "
-                  "in C++ header files.\n");
-      ++result;
+      if (!isInMacro(w, w.length - v.length)) {
+        lintWarning(v.front,
+                    "Avoid using static at global or namespace scope "
+                    "in C++ header files.\n");
+        ++result;
+      }
     }
   }
 
