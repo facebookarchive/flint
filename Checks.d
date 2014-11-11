@@ -3299,8 +3299,12 @@ version(facebook) {
     return result;
   }
 
-  immutable string[] angleBracketErrorDirs = ["folly/", "thrift/"];
-  immutable string[] angleBracketRequiredPrefixes = ["folly/", "thrift/lib/"];
+  immutable string[] angleBracketErrorDirs = [
+    "folly/", "thrift/", "proxygen/lib", "proxygen/httpserver"
+  ];
+  immutable string[] angleBracketRequiredPrefixes = [
+    "folly/", "thrift/lib/", "proxygen/lib", "proxygen/httpserver"
+  ];
 
   uint checkAngleBracketIncludes(string fpath, Token[] v) {
     // strip fpath of '.../fbcode/', if present
