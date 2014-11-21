@@ -2476,10 +2476,10 @@ uint checkOSSIncludes(string fpath, Token[] v) {
     tuple("hphp/", ["hphp/", "folly/", "thrift/", "proxygen/lib/"], &lintError),
     tuple("thrift/", ["thrift/", "folly/"], &lintError),
     tuple("proxygen/lib/",
-          ["proxygen/lib/", "folly/", "thrift/"],
+          ["proxygen/lib/", "folly/"],
           &lintError),
     tuple("proxygen/httpserver/",
-          ["proxygen/httpserver/", "proxygen/lib/", "folly/", "thrift/"],
+          ["proxygen/httpserver/", "proxygen/lib/", "folly/"],
           &lintError),
   ];
 
