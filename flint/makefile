@@ -9,8 +9,7 @@ SOURCES := $(wildcard *.cpp)
 OBJS := $(SOURCES:.cpp=.o)
 
 # Output to binary
-BINDIR:=../bin/$(shell uname -m)/
-BINF:=$(BINDIR)/flint++
+BINF:=flint++
 
 # Test files
 EXPECTED=tests/expected.txt
@@ -21,10 +20,7 @@ ACTUAL=tests/actual.txt
 all: $(BINF)
 
 
-$(BINDIR):
-	mkdir -p $(BINDIR)
-
-$(BINF): $(OBJS) | $(BINDIR)
+$(BINF): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(BINF) $(OBJS)
 
 tests: $(BINF)

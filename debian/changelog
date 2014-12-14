@@ -1,0 +1,8 @@
+flintplusplus (0.0-1) unstable; urgency=low
+
+  * Initial package. There is no official release number
+    as I know of but the debian package was developed on upstream
+    commit 40c8bee7fb nov 2014.
+
+
+ -- Paul Dreik <github@pauldreik.se>  Fri, 12 Dec 2014 10:06:06 +0100
