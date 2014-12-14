@@ -1,0 +1,38 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" (C) Copyright 2014 Paul Dreik <github@pauldreik.se>,
+.TH FLINT++ "1" "December 2014" "flint++ " "User Commands"
+.SH NAME
+flint++ \- static code analyzer for c++
+.SH SYNOPSIS
+.B flint++
+[\fI\,options\/\fR] [\fI\,files\/\fR]
+.SH DESCRIPTION
+.TP
+\fB\-r\fR, \fB\-\-recursive\fR
+: Search subfolders for files.
+.TP
+\fB\-c\fR, \fB\-\-cmode\fR
+: Only perform C based lint checks.
+.TP
+\fB\-j\fR, \fB\-\-json\fR
+: Output report in JSON format.
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+: Print full file paths.
+.TP
+\fB\-l\fR, \fB\-\-level\fR [def=3] : Set the lint level.
+1 : Errors only
+2 : Errors & Warnings
+3 : All feedback
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+: Print usage.
+.PP
+
+
+See /usr/share/doc/flintplusplus/README.md for full details.
+
+.SH "SEE ALSO"
+.BR cppcheck (1),
+.BR scan-build (1).
+.br
