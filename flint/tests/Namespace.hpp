@@ -24,6 +24,13 @@ namespace {
 
     static bool testFunction() {
       using namespace std; // This one is safe
+      using namespace boost;
+      using namespace foobar;
+      using namespace ::std;
+      {
+        using namespace tag;
+        using namespace ::boost;
+      }
       return false;
     };
   }

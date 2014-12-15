@@ -97,6 +97,7 @@ void checkEntry(ErrorReport &errors, const string &path, size_t &loc, uint depth
 			checkDefinedNames(errorFile, path, tokens);
 			checkDeprecatedIncludes(errorFile, path, tokens);
 			checkNamespaceScopedStatics(errorFile, path, tokens);
+			checkUsingNamespaceDirectives(errorFile, path, tokens);
 
 			if (!Options.CMODE) {
 				checkSmartPtrUsage(errorFile, path, tokens);
