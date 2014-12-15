@@ -1,0 +1,16 @@
+Source: flintplusplus
+Section: unknown
+Priority: optional
+Maintainer: Paul Dreik <github@pauldreik.se>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.5
+Homepage: https://github.com/L2Program/FlintPlusPlus
+Vcs-Git: https://github.com/L2Program/FlintPlusPlus.git
+
+
+Package: flintplusplus
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: static code analyzer for c++
+ A Cross Platform Port of Facebook's C++ Linter
+
