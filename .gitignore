@@ -8,8 +8,12 @@ config.status
 
 cxx_replace
 cxx_tokenize
+fcxx_replace
+fcxx_tokenize
 flint
 flint_test
+fflint
+fflint_test
 
 libtool
 m4/libtool.m4
