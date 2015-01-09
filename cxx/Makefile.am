@@ -13,7 +13,7 @@ libflint_la_SOURCES = \
 	Tokenizer.h \
 	Tokenizer.cpp
 libflint_la_LIBADD = \
-	/usr/local/lib/libfolly.la \
+	-lfolly \
 	$(BOOST_LIBS) \
 	$(BOOST_FILESYSTEM_LIB)
 libflint_la_CPPFLAGS = $(BOOST_CPPFLAGS)
