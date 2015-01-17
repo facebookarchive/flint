@@ -1676,7 +1676,9 @@ uint checkDeprecatedIncludes(const string& fpath, const vector<Token>& v) {
   // to deprecate them
   static const std::set<string> deprecatedIncludes = {
     "common/base/Base.h",
+    "common/base/StlTypes.h",
     "common/base/StringUtil.h",
+    "common/base/Types.h",
   };
 
   uint result = 0;

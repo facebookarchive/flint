@@ -1790,7 +1790,9 @@ uint checkQuestionableIncludes(string fpath, Token[] v) {
   // to deprecate them
   const bool[string] deprecatedIncludes = [
     "common/base/Base.h":1,
+    "common/base/StlTypes.h":1,
     "common/base/StringUtil.h":1,
+    "common/base/Types.h":1,
   ];
 
   // Set storing the expensive includes. Add new headers here if you'd like
