@@ -2540,7 +2540,10 @@ uint checkBreakInSynchronized(string fpath, Token[] v) {
   StatementBlockInfo[] nestedStatements;
 
   for (Token[] tox = v; !tox.empty; tox.popFront) {
-    if (tox.front.type_.among(tk!"while", tk!"switch", tk!"do", tk!"for")) {
+    if (tox.front.type_.among(tk!"while", tk!"switch", tk!"do", tk!"for")
+        || (tox.front.type_ == tk!"identifier"
+        && tox.front.value_.among("FOR_EACH_KV", "FOR_EACH", "FOR_EACH_R",
+                                  "FOR_EACH_ENUMERATE"))) {
       StatementBlockInfo s;
       s.name = tox.front.value_;
       s.openBraces = 0;
