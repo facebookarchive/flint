@@ -101,7 +101,7 @@ uint checkEntry(fs::path path) {
  * command line.
  */
 int main(int argc, char ** argv) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
 
   // Check each file
