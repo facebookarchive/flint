@@ -2388,6 +2388,14 @@ unittest {
   tokens.clear();
   tokenize(s3, filename, tokens);
   EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
+
+  // std::random_shuffle
+  string s4 = "
+    random_shuffle(x, y, z);
+  ";
+  tokens.clear();
+  tokenize(s4, filename, tokens);
+  EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
 }
 
 // testCheckToDoFollowedByTaskNumber

@@ -41,6 +41,7 @@ checks = mixin(
       checkQuestionableIncludes,
       checkInlHeaderInclusions,
       checkInitializeFromItself,
+      checkRandomUsage,
       checkSmartPtrUsage,
       checkUniquePtrUsage,
       checkBannedIdentifiers,

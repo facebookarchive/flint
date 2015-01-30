@@ -2618,15 +2618,19 @@ uint checkRandomUsage(string fpath, Token[] v) {
   uint result = 0;
 
   string[string] random_banned = [
-    "random_device":
+    "random_device" :
       "random_device uses /dev/urandom, which is expensive. "
-      "Use follly::Random::rand32 or other methods in folly/Random.h.\n",
+      "Use folly::Random::rand32 or other methods in folly/Random.h.\n",
     "RandomInt32" :
       "using RandomInt32 (in common/base/Random.h) to generate random number "
       "is discouraged, please consider folly::Random::rand32().\n",
     "RandomInt64" :
       "using RandomInt64 (in common/base/Random.h) to generate random number "
-      "is discouraged, please consider folly::Random::rand64().\n"
+      "is discouraged, please consider folly::Random::rand64().\n",
+    "random_shuffle" :
+      "std::random_shuffle is bankrupt (see http://fburl.com/evilrand) and is "
+      "scheduled for removal from C++17. Please consider the overload of"
+      "std::shuffle that takes a random # generator."
   ];
 
   for (; !v.empty; v.popFront) {
@@ -2636,7 +2640,7 @@ uint checkRandomUsage(string fpath, Token[] v) {
     if (!mapIt) {
       if (v.atSequence(tk!"identifier", tk!"(", tk!")")
             && t.value_ == "rand") {
-          lintError(
+          lintWarning(
             t,
             "using C rand() to generate random number causes lock contention, "
             "please consider folly::Random::rand32().\n");
@@ -2644,7 +2648,7 @@ uint checkRandomUsage(string fpath, Token[] v) {
       }
       continue;
     }
-    lintError(t, *mapIt);
+    lintWarning(t, *mapIt);
     ++result;
   }
 
