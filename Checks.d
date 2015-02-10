@@ -2655,6 +2655,52 @@ uint checkRandomUsage(string fpath, Token[] v) {
   return result;
 }
 
+/*
+ * Lint check: sleep and sleep-like functions.
+ * Sleep calls are rarely actually the solution to your problems
+ * and accordingly, warrant explanation.
+ */
+uint checkSleepUsage(string fpath, Token[] v) {
+  auto isTestingFile = isTestFile(fpath);
+  auto lintType = delegate(Token t, string msg) {
+    isTestingFile ? lintError(t, msg) : lintWarning(t, msg);
+  };
+
+  uint result = 0;
+
+  immutable string lintOverride = "sleep override";
+  immutable string message = "Most sleep calls are inappropriate. "
+    "Sleep calls are especially harmful in test cases, whereby they make the "
+    "tests, and by extension, contbuild, flakey. In general, the correctness "
+    "of a program should not depend on its execution speed.\n"
+    "Consider condition variables and/or futures as a replacement "
+    "(see http://fburl.com/SleepsToFuturesDex)."
+    "\n\nOverride lint rule by preceding the call with a /* sleep override */"
+    "comment.";
+  byte[string] sleep_banned = [
+    "sleep" : true,
+    "usleep" : true,
+    "sleep_for" : true,
+    "sleep_until" : true
+  ];
+
+  for (; !v.empty; v.popFront) {
+    auto t = v.front;
+    if (t.type_ != tk!"identifier") continue;
+    auto matched = t.value_ in sleep_banned;
+    if (!matched) {
+      continue;
+    }
+    if (t.precedingWhitespace_.canFind(lintOverride)) {
+      continue;
+    }
+
+    lintType(t, message);
+    ++result;
+  }
+
+  return result;
+}
 
 /**
  * Checks that the proper C++11 headers are directly (i.e. non-transitively)

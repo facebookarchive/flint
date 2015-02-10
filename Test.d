@@ -3,7 +3,32 @@
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
 import std.array, std.conv, std.exception, std.random, std.stdio;
-import Checks, Tokenizer;
+import Checks, Tokenizer, FileCategories;
+
+unittest {
+  EXPECT_EQ(FileCategory.header, getFileCategory("foo.h"));
+  EXPECT_EQ(FileCategory.header, getFileCategory("baz/bar/foo.h"));
+  EXPECT_EQ(FileCategory.inl_header, getFileCategory("foo-inl.h"));
+  EXPECT_EQ(FileCategory.source_cpp, getFileCategory("foo.cpp"));
+  EXPECT_EQ(FileCategory.source_c, getFileCategory("foo.c"));
+  EXPECT_EQ(FileCategory.unknown, getFileCategory("foo"));
+
+  assert(isHeader("foo.h"));
+  assert(!isHeader("foo.cpp"));
+  assert(!isHeader("foo.c"));
+
+  assert(!isSource("foo.h"));
+  assert(isSource("foo.cpp"));
+  assert(isSource("foo.c"));
+
+  assert(!isTestFile("foo.h"));
+  assert(isTestFile("testFoo.h"));
+  assert(isTestFile("/test/foo.h"));
+
+  EXPECT_EQ("foo", getFileNameBase("foo.h"));
+  EXPECT_EQ("foo", getFileNameBase("foo.cpp"));
+  EXPECT_EQ("foo", getFileNameBase("foo.c"));
+}
 
 unittest {
   string s = "
@@ -2396,6 +2421,64 @@ unittest {
   tokens.clear();
   tokenize(s4, filename, tokens);
   EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
+}
+
+// testCheckSleepUsage
+unittest {
+  string filename = "testFile.cpp";
+  Token[] tokens;
+
+  // sleep
+  string s = "
+    sleep(1);
+    //Nothing
+    sleep(5);
+  ";
+  tokenize(s, filename, tokens);
+  EXPECT_EQ(checkSleepUsage(filename, tokens), 2);
+
+  // usleep()
+  string s1 = "
+    usleep(200);
+  ";
+  tokens.clear();
+  tokenize(s1, filename, tokens);
+  EXPECT_EQ(checkSleepUsage(filename, tokens), 1);
+
+  // sleep_for
+  string s2 = "
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+  ";
+  tokens.clear();
+  tokenize(s2, filename, tokens);
+  EXPECT_EQ(checkSleepUsage(filename, tokens), 1);
+
+  // sleep_until
+  string s3 = "
+    this_thread::sleep_until(chrono::system_clock::now());
+  ";
+  tokens.clear();
+  tokenize(s3, filename, tokens);
+  EXPECT_EQ(checkSleepUsage(filename, tokens), 1);
+
+  // No false positives
+  string s4 = "
+    //sleep comment
+    sleepy_code();
+  ";
+  tokens.clear();
+  tokenize(s4, filename, tokens);
+  EXPECT_EQ(checkSleepUsage(filename, tokens), 0);
+
+  // Override lint rule mechanism
+  // Scope test: one lint error will apply for this test (the second line).
+  string s5 = "
+    /* sleep override */ sleep();
+    /* sleep override */ appliesToThisInstead(); sleep();
+  ";
+  tokens.clear();
+  tokenize(s5, filename, tokens);
+  EXPECT_EQ(checkSleepUsage(filename, tokens), 1);
 }
 
 // testCheckToDoFollowedByTaskNumber

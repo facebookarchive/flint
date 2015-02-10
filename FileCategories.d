@@ -43,6 +43,11 @@ bool isSource(string fpath) {
     fileCategory == FileCategory.source_cpp;
 }
 
+bool isTestFile(string fpath) {
+  import std.string : toLower;
+  return !fpath.toLower.find("test").empty;
+}
+
 string getFileNameBase(string filename) {
   foreach (ext; extsHeader) {
     auto inlExt = "-inl" ~ ext;
