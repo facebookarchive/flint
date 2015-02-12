@@ -333,7 +333,6 @@ unittest {
 int main(int argc, char** argv) {
   auto p = strtok(argv[0], ',');
   while ((p = strtok(nullptr, ','))) {
-    sleep(1);
   }
 }
 )";
@@ -345,7 +344,6 @@ int main(int argc, char** argv) {
   char* state;
   auto p = strtok_r(argv[0], ',', &state);
   while ((p = strtok_r(nullptr, ',', &state))) {
-    sleep(1);
   }
 }
 )";
@@ -2471,9 +2469,11 @@ unittest {
   EXPECT_EQ(checkSleepUsage(filename, tokens), 0);
 
   // Override lint rule mechanism
-  // Scope test: one lint error will apply for this test (the second line).
+  // Scope test: one lint error will apply for this test (the last line).
   string s5 = "
     /* sleep override */ sleep();
+    /* sleep override */ this_thread::sleep_for(std::chrono::milliseconds(200));
+    /* sleep override */ std::this_thread::sleep_for(std::chrono::milliseconds(200));
     /* sleep override */ appliesToThisInstead(); sleep();
   ";
   tokens.clear();

@@ -2677,19 +2677,36 @@ uint checkSleepUsage(string fpath, Token[] v) {
     "(see http://fburl.com/SleepsToFuturesDex)."
     "\n\nOverride lint rule by preceding the call with a /* sleep override */"
     "comment.";
-  byte[string] sleep_banned = [
+  byte[string] sleepBanned = [
     "sleep" : true,
     "usleep" : true,
-    "sleep_for" : true,
-    "sleep_until" : true
   ];
+  immutable sequence = [ tk!"identifier", tk!"::", tk!"identifier" ];
+  immutable sequenceWithStd = [ tk!"identifier", tk!"::" ].idup ~ sequence;
+  bool hasBannedSequenceIdentifiers(const(Token)[] v) {
+    return v[0].value_ == "this_thread"
+        && (v[2].value_ == "sleep_for" || v[2].value_ == "sleep_until");
+  }
 
   for (; !v.empty; v.popFront) {
     auto t = v.front;
-    if (t.type_ != tk!"identifier") continue;
-    auto matched = t.value_ in sleep_banned;
-    if (!matched) {
+    if (t.type_ != tk!"identifier") {
       continue;
+    }
+    auto matched = t.value_ in sleepBanned;
+    if (!matched) {
+      if (!v.atSequence(sequence)) {
+        continue;
+      }
+      auto sequenceStart = v;
+      if (v.atSequence(sequenceWithStd)) {
+        sequenceStart = v[2 .. $];
+      }
+      if (!hasBannedSequenceIdentifiers(sequenceStart)) {
+        continue;
+      }
+      //No double jeopardy when we look past std::
+      v = sequenceStart;
     }
     if (t.precedingWhitespace_.canFind(lintOverride)) {
       continue;
