@@ -2475,8 +2475,13 @@ uint checkOSSIncludes(string fpath, Token[] v) {
   import std.typecons;
   Tuple!(string, string[], Fn)[] projects = [
     tuple("folly/", ["folly/"], &lintError),
-    tuple("hphp/", ["hphp/", "folly/", "thrift/", "proxygen/lib/"], &lintError),
+    tuple("mcrouter/", ["mcrouter/", "folly/"], &lintError),
+    tuple("hphp/",
+          ["hphp/", "folly/", "thrift/", "proxygen/lib/",
+           "mcrouter/", "squangle/"],
+          &lintError),
     tuple("thrift/", ["thrift/", "folly/"], &lintError),
+    tuple("squangle/", ["squangle/", "folly/", "thrift/"], &lintError),
     tuple("proxygen/lib/",
           ["proxygen/lib/", "folly/"],
           &lintError),
