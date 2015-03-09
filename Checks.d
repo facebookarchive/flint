@@ -2185,6 +2185,9 @@ uint checkUniquePtrUsage(string fpath, Token[] v) {
 
       // We're looking at the new expression we care about.  Try to
       // ensure it has array brackets only if the unique_ptr type did.
+      while (i.front.type_.among(tk!"const", tk!"volatile")) {
+        i.popFront;
+      }
       while (i.front.type_ == tk!"identifier" || i.front.type_ == tk!"::") {
         i.popFront;
       }

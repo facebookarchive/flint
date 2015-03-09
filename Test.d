@@ -2129,6 +2129,16 @@ int main() {
 ";
   tokenize(s16, filename, tokens);
   EXPECT_EQ(checkUniquePtrUsage(filename, tokens), 0);
+
+  string s17 = "
+int main() {
+  unique_ptr<const volatile char*[]> p(
+    new const volatile char*[1]
+  );
+}
+";
+  tokenize(s17, filename, tokens);
+  EXPECT_EQ(checkUniquePtrUsage(filename, tokens), 0);
 }
 
 // testThreadSpecificPtr
