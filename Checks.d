@@ -30,10 +30,12 @@ void lintError(CppLexer.Token tok, const string error) {
                 error);
 }
 
+immutable string warningPrefix = "Warning: ";
+
 void lintWarning(CppLexer.Token tok, const string warning) {
   // The FbcodeCppLinter just looks for the text "Warning" in the
   // message.
-  lintError(tok, "Warning: " ~ warning);
+  lintError(tok, warningPrefix ~ warning);
 }
 
 void lintAdvice(CppLexer.Token tok, string advice) {
@@ -1437,7 +1439,8 @@ uint checkUsingDirectives(string fpath, Token[] v) {
   }
   uint result = 0;
   uint openBraces = 0;
-  uint openNamespaces = 0;
+  string[] namespaceStack; // keep track of which namespace we are in
+  immutable string lintOverride = "using override";
 
   for (auto i = v; !i.empty; i.popFront) {
     if (i.front.type_ == tk!"{") {
@@ -1449,9 +1452,9 @@ uint checkUsingDirectives(string fpath, Token[] v) {
         // Closed more braces than we had.  Syntax error.
         return 0;
       }
-      if (openBraces == openNamespaces) {
+      if (openBraces == namespaceStack.length) {
         // This brace closes namespace.
-        --openNamespaces;
+        namespaceStack.length--;
       }
       --openBraces;
       continue;
@@ -1466,14 +1469,14 @@ uint checkUsingDirectives(string fpath, Token[] v) {
       // to nest namespaces inside of functions or classes here
       // (invalid C++), so we have an invalid parse and should give
       // up.
-      if (openBraces != openNamespaces) {
+      if (openBraces != namespaceStack.length) {
         return result;
       }
 
       // Introducing an actual namespace.
       if (i[1].type_ == tk!"{") {
         // Anonymous namespace, let it be. Next iteration will hit the '{'.
-        ++openNamespaces;
+        namespaceStack ~= "anonymous";
         continue;
       }
 
@@ -1494,26 +1497,46 @@ uint checkUsingDirectives(string fpath, Token[] v) {
         // Invalid parse for us.
         return result;
       }
-      ++openNamespaces;
+      namespaceStack ~= i.front.value_;
       // Continue analyzing, next iteration will hit the '{' or the '::'
       continue;
     }
     if (i.front.type_ == tk!"using") {
+
       // We're on a "using" keyword
+      auto usingTok = i.front;
       i.popFront;
-      if (i.front.type_ != tk!"namespace") {
-        // we only care about "using namespace"
+
+      if (usingTok.precedingWhitespace_.canFind(lintOverride)) {
         continue;
       }
-      if (openBraces == 0) {
-        lintError(i.front, "Using directive not allowed at top level"
-          " or inside namespace facebook.\n");
-        ++result;
-      } else if (openBraces == openNamespaces) {
-        // We are directly inside the namespace.
-        lintError(i.front, "Using directive not allowed in header file, "
-          "unless it is scoped to an inline function or function template.\n");
-        ++result;
+
+      // look for 'using namespace' or 'using x::y'
+      bool usingCompound = i.atSequence(tk!"identifier", tk!"::",
+                                        tk!"identifier");
+
+      if (!usingCompound && (i.front.type_ != tk!"namespace")) {
+        continue;
+      }
+      else {
+        string errorPrefix = usingCompound ? warningPrefix : "";
+        if (openBraces == 0) {
+          lintError(i.front, errorPrefix ~ "Using directive not allowed at top "
+                    "level or inside namespace facebook.\n");
+          ++result;
+        } else if (openBraces == namespaceStack.length) {
+          // It is only an error to pollute the facebook or global namespaces,
+          // otherwise it is a warning
+          if (namespaceStack.length >= 1 && namespaceStack[$-1] != "facebook") {
+            errorPrefix = warningPrefix;
+          }
+
+          // We are directly inside the namespace.
+          lintError(i.front, errorPrefix ~ "Using directive not allowed in "
+                    "header file, unless it is scoped to an inline function "
+                    "or function template.\n");
+          ++result;
+        }
       }
     }
   }

@@ -1011,20 +1011,20 @@ void qux() {
   EXPECT_EQ(checkUsingDirectives(filename, tokens), 0);
 
   string s1 = "
-namespace facebook {
+  namespace facebook {
 
-  namespace { void unnamed(); }
-  namespace fs = boost::filesystem;
+    namespace { void unnamed(); }
+    namespace fs = boost::filesystem;
 
-  void foo() { }
-  using namespace not_ok;
-  namespace whatever {
+    void foo() { }
     using namespace not_ok;
-    namespace facebook {
+    namespace whatever {
+      using namespace warn;
+      namespace facebook {
+      }
     }
   }
-}
-using namespace not_ok;
+  using namespace not_ok;
 ";
   tokens = tokenize(s1);
   EXPECT_EQ(checkUsingDirectives(filename, tokens), 4);
@@ -1035,6 +1035,46 @@ void foo() {
 }";
   tokens = tokenize(s2);
   EXPECT_EQ(checkUsingDirectives(filename, tokens), 0);
+}
+
+// test that we allow 'using x=y::z; but not 'using abc::def'
+unittest {
+  string s1 = "
+    using not_ok::nope;
+    using not_ok::nope::stillnotok;
+    using SomeAlias1 = is::ok;
+    using SomeAlias2 = is::ok::cool;
+  ";
+  string filename = "nofile.h";
+  auto tokens = tokenize(s1);
+  EXPECT_EQ(checkUsingDirectives(filename, tokens), 2);
+
+  string s2 = "
+    void foo() { using is::ok; }
+    namespace facebook {
+      using not_ok::nope;
+      using alias3 = is::ok;
+    }";
+  auto tokens2 = tokenize(s2);
+  EXPECT_EQ(checkUsingDirectives(filename, tokens2), 1);
+
+  string s3 = "
+    namespace notfacebook {
+      using is::warn;
+      using namespace warn;
+    }";
+  auto tokens3 = tokenize(s3);
+  EXPECT_EQ(checkUsingDirectives(filename, tokens3), 2);
+
+  string s4 = "
+    /* using override */ using ok::good;
+    /* using override */ using namespace ok;
+    namespace facebook {
+      /* using override */ using ok::good;
+    }";
+
+  auto tokens4 = tokenize(s4);
+  EXPECT_EQ(checkUsingDirectives(filename, tokens4), 0);
 }
 
 // testCheckUsingNamespaceDirectives
@@ -1050,8 +1090,14 @@ unittest {
   string nothing = "";
   RUN_THIS_TEST(nothing, 0);
 
-  string simple = "using namespace std;";
-  RUN_THIS_TEST(simple, 0);
+  string simple1 = "using namespace std;";
+  RUN_THIS_TEST(simple1, 0);
+
+  string simple2 = "using ok::good;";
+  RUN_THIS_TEST(simple2, 0);
+
+  string simple3 = "using alias = ok::good;";
+  RUN_THIS_TEST(simple3, 0);
 
   string simpleFail = "
 using namespace std;
