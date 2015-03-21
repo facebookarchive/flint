@@ -2516,16 +2516,18 @@ unittest {
   EXPECT_EQ(checkSleepUsage(filename, tokens), 1);
 
   // No false positives
-  string s4 = "
+  string s4 = `
     //sleep comment
     sleepy_code();
-  ";
+    DEFINE_int32(sleep, 0, "trolololol");
+  `;
   tokens.clear();
   tokenize(s4, filename, tokens);
   EXPECT_EQ(checkSleepUsage(filename, tokens), 0);
 
   // Override lint rule mechanism
   // Scope test: one lint error will apply for this test (the last line).
+  stderr.writeln("-------------------------------------TESTASFASDFASDASDASD");
   string s5 = "
     /* sleep override */ sleep();
     /* sleep override */ this_thread::sleep_for(std::chrono::milliseconds(200));

@@ -2715,8 +2715,9 @@ uint checkSleepUsage(string fpath, Token[] v) {
   immutable sequence = [ tk!"identifier", tk!"::", tk!"identifier" ];
   immutable sequenceWithStd = [ tk!"identifier", tk!"::" ].idup ~ sequence;
   bool hasBannedSequenceIdentifiers(const(Token)[] v) {
-    return v[0].value_ == "this_thread"
-        && (v[2].value_ == "sleep_for" || v[2].value_ == "sleep_until");
+    return v.length >= 4 && v[0].value_ == "this_thread"
+        && (v[2].value_ == "sleep_for" || v[2].value_ == "sleep_until")
+        && v[3].type_ == tk!"(";
   }
 
   for (; !v.empty; v.popFront) {
@@ -2724,7 +2725,8 @@ uint checkSleepUsage(string fpath, Token[] v) {
     if (t.type_ != tk!"identifier") {
       continue;
     }
-    auto matched = t.value_ in sleepBanned;
+    auto matched = t.value_ in sleepBanned
+                   && v.length >= 2 && v[1].type_ == tk!"(";
     if (!matched) {
       if (!v.atSequence(sequence)) {
         continue;
@@ -2739,6 +2741,7 @@ uint checkSleepUsage(string fpath, Token[] v) {
       //No double jeopardy when we look past std::
       v = sequenceStart;
     }
+    stderr.writeln("----------------", t, " Whitespace: ", t.precedingWhitespace_);
     if (t.precedingWhitespace_.canFind(lintOverride)) {
       continue;
     }
