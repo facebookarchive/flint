@@ -1441,6 +1441,8 @@ uint checkUsingDirectives(string fpath, Token[] v) {
   uint openBraces = 0;
   string[] namespaceStack; // keep track of which namespace we are in
   immutable string lintOverride = "using override";
+  immutable string lintOverrideMessage =
+    "Override this lint warning with a /* " ~ lintOverride ~ " */ comment\n";
 
   for (auto i = v; !i.empty; i.popFront) {
     if (i.front.type_ == tk!"{") {
@@ -1522,7 +1524,8 @@ uint checkUsingDirectives(string fpath, Token[] v) {
         string errorPrefix = usingCompound ? warningPrefix : "";
         if (openBraces == 0) {
           lintError(i.front, errorPrefix ~ "Using directive not allowed at top "
-                    "level or inside namespace facebook.\n");
+                    "level or inside namespace facebook. "
+                    ~ lintOverrideMessage);
           ++result;
         } else if (openBraces == namespaceStack.length) {
           // It is only an error to pollute the facebook or global namespaces,
@@ -1534,7 +1537,8 @@ uint checkUsingDirectives(string fpath, Token[] v) {
           // We are directly inside the namespace.
           lintError(i.front, errorPrefix ~ "Using directive not allowed in "
                     "header file, unless it is scoped to an inline function "
-                    "or function template.\n");
+                    "or function template. "
+                    ~ lintOverrideMessage);
           ++result;
         }
       }
