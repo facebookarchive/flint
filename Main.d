@@ -56,7 +56,6 @@ checks = mixin(
   );
 
  version(facebook) {
-   checks["checkToDoFollowedByTaskNumber"] = &checkToDoFollowedByTaskNumber;
    checks["checkAngleBracketIncludes"] = &checkAngleBracketIncludes;
  }
 
