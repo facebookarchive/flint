@@ -2696,11 +2696,6 @@ uint checkRandomUsage(string fpath, Token[] v) {
  * and accordingly, warrant explanation.
  */
 uint checkSleepUsage(string fpath, Token[] v) {
-  auto isTestingFile = isTestFile(fpath);
-  auto lintType = delegate(Token t, string msg) {
-    isTestingFile ? lintError(t, msg) : lintWarning(t, msg);
-  };
-
   uint result = 0;
 
   immutable string lintOverride = "sleep override";
@@ -2750,7 +2745,7 @@ uint checkSleepUsage(string fpath, Token[] v) {
       continue;
     }
 
-    lintType(t, message);
+    lintWarning(t, message);
     ++result;
   }
 
