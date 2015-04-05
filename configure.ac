@@ -60,6 +60,5 @@ AX_BOOST_BASE([1.20.0], [], [AC_MSG_ERROR(
 AX_BOOST_FILESYSTEM
 
 # Output
-AC_CONFIG_FILES([Makefile
-                 cxx/Makefile])
+AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
