@@ -95,8 +95,8 @@ namespace flint {
 		//
 		DIR *pDIR;
 		struct dirent *entry;
-		if (pDIR = opendir(path.c_str())) {
-			while (entry = readdir(pDIR)) {
+		if ((pDIR = opendir(path.c_str()))) {
+			while ((entry = readdir(pDIR))) {
 				const string fsObj = entry->d_name;
 				if (FS_ISNOT_LINK(fsObj) && FS_ISNOT_GIT(fsObj)) {
 
