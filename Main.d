@@ -95,7 +95,7 @@ checks = mixin(
    errors += checkEntry(arg);
  }
 
-  return 0;
+  return errors == 0 ? 0 : 1;
 }
 
 auto makeHashtable(T...)() {
