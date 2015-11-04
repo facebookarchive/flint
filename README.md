@@ -50,3 +50,13 @@ To Build
     autoreconf --install
     LDFLAGS=-L<double-conversion> CPPFLAGS=-I<double-conversion>/src configure ...
     make
+
+Build and run with Docker
+-------------------------
+
+Run flint on a repository of yours by mounting it into the `/root` folder of the docker container.
+
+```
+sudo docker build -t facebook/flint .
+docker run -v /path/to/your/project/src:/root facebook/flint /root
+```
