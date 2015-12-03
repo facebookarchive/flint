@@ -385,8 +385,9 @@ namespace flint {
 				// *** Backslash
 			case '\\':
 				// Consume trailing whitespace after a valid backslash
-				while (pc[1] == ' ' || pc[1] == '\t') {
-					++pc;
+				{
+					const auto &spaces = munchSpaces(pc);
+					whitespace.append(spaces.begin(), spaces.end());
 				}
 				// Take the case into account where a comment comes after a macro backslash
 				ENFORCE(pc[1] == '\n' || pc[1] == '\r' || (pc[1] == '/' && (pc[2] == '/' || pc[2] == '*')), "Misplaced backslash in " + file + ":" + to_string(line));
