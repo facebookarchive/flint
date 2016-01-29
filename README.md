@@ -23,7 +23,7 @@ Dependencies
 
     Follow the instructions to download and install folly.
 
-- double-conversion (http://code.google.com/p/double-conversion/)
+- double-conversion (https://github.com/google/double-conversion)
     
     Follow the instructions listed on the Folly page to build and install
 
