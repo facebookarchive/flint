@@ -19,6 +19,7 @@ namespace flint {
 // Shorthand for comparing two strings (or fragments)
 template <class S, class T>
 inline bool cmpStr(const S &a, const T &b) { return equal(a.begin(), a.end(), b.begin()); }
+inline bool cmpStr(const StringFragment &a, const StringFragment& b) { return (a == b); }
 inline bool cmpStr(const StringFragment &a, const char* b) { return (a.size() == strlen(b)) && startsWith(a.begin(), b); }  
 inline bool cmpStr(const string &a, const string &b) { return a == b; }
 inline bool cmpToks(const Token &a, const Token &b) { return cmpStr(a.value_, b.value_); };
