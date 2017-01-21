@@ -24,7 +24,7 @@ $(BINF): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(BINF) $(OBJS)
 
 tests: $(BINF)
-	$(BINF) ./tests > $(ACTUAL)
+	./$(BINF) ./tests > $(ACTUAL)
 	@cmp -s $(EXPECTED) $(ACTUAL); \
 	RETVAL=$$?; \
 	  if [ $$RETVAL -eq 0 ]; then \
