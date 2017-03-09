@@ -155,6 +155,11 @@ int main(int argc, char *argv[]) {
 	// Stop visual studio from closing the window...
 	system("PAUSE");
 #endif
+
+	if (errors.getWarnings() || errors.getErrors()) {
+		return 1;
+	}
+
 	return 0;
 };
 
