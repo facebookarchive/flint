@@ -59,23 +59,6 @@ int main()
 
 unittest {
   string s = "
-#include <string>
-// Some code does this, (good!), and someday we may want to exempt
-// such usage from this lint rule.
-#define strncpy(d,s,n) do_not_use_this_function
-int main() {
-  // Using strncpy(a,b,c) in a comment does not provoke a warning.
-  char buf[10];
-  strncpy(buf, \"foo\", 3);
-  return 0;
-}
-";
-  auto tokens = tokenize(s, "nofile.cpp");
-  EXPECT_EQ(checkBlacklistedIdentifiers("nofile.cpp", tokens), 2);
-}
-
-unittest {
-  string s = "
 #include <vector>
 #include <list1>
 #include <algorith>
@@ -329,6 +312,44 @@ volatile int foo;
 unittest {
   string filename = "nofile.cpp";
 
+  string s = "
+#include <string>
+// Some code does this, (good!), and someday we may want to exempt
+// such usage from this lint rule.
+#define strncpy(d,s,n) do_not_use_this_function
+int main() {
+  // Using strncpy(a,b,c) in a comment does not provoke a warning.
+  char buf[10];
+  strncpy(buf, \"foo\", 3);
+  return 0;
+}
+";
+  auto tokens = tokenize(s, filename);
+  EXPECT_EQ(checkBlacklistedIdentifiers(filename, tokens), 2);
+}
+
+unittest {
+  string filename = "nofile.cpp";
+
+  string s = "
+#include <string>
+// Some code does this, (good!), and someday we may want to exempt
+// such usage from this lint rule.
+#define strcpy(d,s) do_not_use_this_function
+int main() {
+  // Using strcpy(a,b) in a comment does not provoke a warning.
+  char buf[10];
+  strcpy(buf, \"foo\", 3);
+  return 0;
+}
+";
+  auto tokens = tokenize(s, filename);
+  EXPECT_EQ(checkBlacklistedIdentifiers(filename, tokens), 2);
+}
+
+unittest {
+  string filename = "nofile.cpp";
+
   string s = "(
 int main(int argc, char** argv) {
   auto p = strtok(argv[0], ',');
@@ -337,7 +358,7 @@ int main(int argc, char** argv) {
 }
 )";
   Token[] tokens = tokenize(s, filename);
-  assert(checkBlacklistedIdentifiers(filename, tokens) == 2);
+  EXPECT_EQ(checkBlacklistedIdentifiers(filename, tokens), 2);
 
   string s1 = "(
 int main(int argc, char** argv) {
@@ -348,7 +369,111 @@ int main(int argc, char** argv) {
 }
 )";
   tokens = tokenize(s1, filename);
-  assert(checkBlacklistedIdentifiers(filename, tokens) == 0);
+  EXPECT_EQ(checkBlacklistedIdentifiers(filename, tokens), 0);
+}
+
+unittest {
+  string filename = "nofile.cpp";
+
+  string s = "(
+int main(int argc, char** argv) {
+  strcat(dest, src);
+  strncat(dest, src, size);
+}
+)";
+  Token[] tokens = tokenize(s, filename);
+  EXPECT_EQ(checkBlacklistedIdentifiers(filename, tokens), 1);
+}
+
+unittest {
+  string filename = "nofile.cpp";
+
+  string s = "(
+int main(int argc, char** argv) {
+  sprintf(dest, format);
+  snprintf(dest, size, format);
+}
+)";
+  Token[] tokens = tokenize(s, filename);
+  EXPECT_EQ(checkBlacklistedIdentifiers(filename, tokens), 1);
+}
+
+unittest {
+  string filename = "nofile.cpp";
+
+  string s = "(
+int main(int argc, char** argv) {
+  vsprintf(dest, format);
+  vsnprintf(dest, size, format);
+}
+)";
+  Token[] tokens = tokenize(s, filename);
+  EXPECT_EQ(checkBlacklistedIdentifiers(filename, tokens), 1);
+}
+
+unittest {
+  string filename = "nofile.cpp";
+
+  string s = "(
+int main(int argc, char** argv) {
+  gets(s);
+  fgets(s, size, stream);
+}
+)";
+  Token[] tokens = tokenize(s, filename);
+  EXPECT_EQ(checkBlacklistedIdentifiers(filename, tokens), 1);
+}
+
+unittest {
+  string filename = "nofile.cpp";
+
+  string s = "(
+int main(int argc, char** argv) {
+  asctime(tm);
+  asctime_r(tm, buf);
+}
+)";
+  Token[] tokens = tokenize(s, filename);
+  EXPECT_EQ(checkBlacklistedIdentifiers(filename, tokens), 1);
+}
+
+unittest {
+  string filename = "nofile.cpp";
+
+  string s = "(
+int main(int argc, char** argv) {
+  ctime(timep);
+  ctime_r(timep, buf);
+}
+)";
+  Token[] tokens = tokenize(s, filename);
+  EXPECT_EQ(checkBlacklistedIdentifiers(filename, tokens), 1);
+}
+
+unittest {
+  string filename = "nofile.cpp";
+
+  string s = "(
+int main(int argc, char** argv) {
+  gmtime(timep);
+  gmtime_r(timep, result);
+}
+)";
+  Token[] tokens = tokenize(s, filename);
+  EXPECT_EQ(checkBlacklistedIdentifiers(filename, tokens), 1);
+}
+
+unittest {
+  string filename = "nofile.cpp";
+
+  string s = "(
+int main(int argc, char** argv) {
+  localtime(timep);
+  localtime_r(timep, result);
+}
+)";
+  Token[] tokens = tokenize(s, filename);
+  EXPECT_EQ(checkBlacklistedIdentifiers(filename, tokens), 1);
 }
 
 // Test catch clauses in exceptions

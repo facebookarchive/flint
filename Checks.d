@@ -544,11 +544,38 @@ uint checkBlacklistedIdentifiers(string fpath, CppLexer.Token[] v) {
 
   string[string] banned = [
     "strtok" :
-      "strtok() is not thread safe, and has safer alternatives.  Consider "
+      "strtok is not thread safe, and has safer alternatives.  Consider "
       "folly::split or strtok_r as appropriate.\n",
     "strncpy" :
       "strncpy is very often used in error; see "
-      "http://meyering.net/crusade-to-eliminate-strncpy/\n"
+      "http://meyering.net/crusade-to-eliminate-strncpy/\n",
+    "strcpy" :
+      "strcpy is not buffer overflow safe; see "
+      "http://meyering.net/crusade-to-eliminate-strncpy/\n",
+    "strcat":
+      "strcat is not buffer overflow safe. Consider using strncat. See"
+      "http://linux.die.net/man/3/strcat",
+    "sprintf":
+      "sprintf is not buffer overflow safe. Consider using snprintf. See"
+      "http://linux.die.net/man/3/printf",
+    "vsprintf":
+      "vsprintf is not buffer overflow safe. Consider using vsnprintf. See"
+      "http://linux.die.net/man/3/printf",
+    "gets":
+      "Never use gets as is not buffer overflow safe, use fgets instead. See"
+      "http://linux.die.net/man/3/fgetc",
+    "asctime":
+      "asctime is not thread safe. Consider using asctime_r instead. See"
+      "http://linux.die.net/man/3/asctime",
+    "ctime":
+      "ctime is not thread safe. Consider using ctime_r instead. See"
+      "http://linux.die.net/man/3/asctime",
+    "gmtime":
+      "gmtime is not thread safe. Consider using gmtime_r instead. See"
+      "http://linux.die.net/man/3/asctime",
+    "localtime":
+      "localtime is not thread safe. Consider using localtime_r instead. See"
+      "http://linux.die.net/man/3/asctime"
   ];
 
   foreach (ref t; v) {
