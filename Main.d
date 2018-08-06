@@ -25,8 +25,8 @@ int main(string[] args) {
            "exclude", &exclude_checks);
   } catch (Exception e) {
     stderr.writeln(e.msg);
-    stderr.writeln("usage: flint "
-                   "[--recursive] [--c_mode], [--include_what_you_use]"
+    stderr.writeln("usage: flint " ~
+                   "[--recursive] [--c_mode], [--include_what_you_use]" ~
                    "[--exclude=<rule>,...]");
   }
 
