@@ -2406,7 +2406,7 @@ uint checkMutexHolderHasName(string fpath, Token[] v) {
     return 0;
   }
 
-  bool[string] mutexHolderNames = ["lock_guard":1];
+  bool[string] mutexHolderNames = ["lock_guard":1/*, "shared_lock":1, "unique_lock":1*/];
   uint result = 0;
 
   for (; !v.empty; v.popFront) {
@@ -3237,8 +3237,8 @@ uint getBogusComparisons(Token[] v,
       if (0 < lhsLParenCount) {
         lhsExprHead ~= lhs.length;
       } else {
-        specialTokenHead[] = 0; //.clear();
-        lhs = ""; //.clear;
+        specialTokenHead.destroy();
+        lhs.destroy();
         lhsExprHead = [0];
         lhsLParenCount = 0;
       }

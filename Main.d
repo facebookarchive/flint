@@ -2,7 +2,7 @@
 // License: Boost License 1.0, http://boost.org/LICENSE_1_0.txt
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
-import std.conv, std.file, std.getopt, std.stdio, std.string;
+import std.conv, std.file, std.getopt, std.stdio, std.string, std.path;
 import Checks, FileCategories, Ignored, Tokenizer;
 
 bool recursive = true;
