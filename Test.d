@@ -2,7 +2,7 @@
 // License: Boost License 1.0, http://boost.org/LICENSE_1_0.txt
 // @author Andrei Alexandrescu (andrei.alexandrescu@facebook.com)
 
-import std.array, std.conv, std.exception, std.random, std.stdio;
+import std.array, std.conv, std.exception, std.random, std.stdio, std.file;
 import Checks, Tokenizer, FileCategories;
 
 unittest {
@@ -1321,12 +1321,12 @@ struct something {
   tokens = tokenize(s13);
   EXPECT_EQ(checkThrowSpecification(filename, tokens), 0);
 
-  string s14 = "struct Foo : std::exception { ~Foo() throw() {} "
+  string s14 = "struct Foo : std::exception { ~Foo() throw() {} " ~
     "virtual const char* what() const throw() {} };";
   tokens = tokenize(s14);
   EXPECT_EQ(checkThrowSpecification(filename, tokens), 0);
 
-  string s15 = "struct Foo { const char* what() const throw() {}"
+  string s15 = "struct Foo { const char* what() const throw() {}" ~
     "~Foo() throw() {} };";
   tokens = tokenize(s15);
   EXPECT_EQ(checkThrowSpecification(filename, tokens), 0);
@@ -1450,17 +1450,17 @@ unittest {
   tokens = tokenize(s);
   EXPECT_EQ(checkExceptionInheritance(filename, tokens), 1);
 
-  s = "class bar: public std::exception "
+  s = "class bar: public std::exception " ~
     "{class foo: private std::exception { } c;}";
   tokens = tokenize(s);
   EXPECT_EQ(checkExceptionInheritance(filename, tokens), 1);
 
-  s = "class bar: public std::exception "
+  s = "class bar: public std::exception " ~
     "{class foo: protected exception { } c;}";
   tokens = tokenize(s);
   EXPECT_EQ(checkExceptionInheritance(filename, tokens), 1);
 
-  s = "class bar: public std::exception "
+  s = "class bar: public std::exception " ~
     "{class foo: protected std::exception { } c;}";
   tokens = tokenize(s);
   EXPECT_EQ(checkExceptionInheritance(filename, tokens), 1);
@@ -1543,8 +1543,8 @@ unittest {
   if (!std.file.exists("_bin/linters/flint/cxx_replace")) {
     // No prejudice if the file is missing (this may happen e.g. if
     // running fbmake runtests with -j)
-    stderr.writeln("_bin/linters/flint/cxx_replace is missing"
-      " so it cannot be tested this time around. This may happen"
+    stderr.writeln("_bin/linters/flint/cxx_replace is missing" ~
+      " so it cannot be tested this time around. This may happen" ~
       " during a parallel build.");
     return;
   }
@@ -1570,12 +1570,12 @@ unittest {
   std.file.write(f, s1);
   scope(exit) std.file.remove(f);
   import std.process;
-  EXPECT_EQ(system(("_bin/linters/flint/cxx_replace 'munch' 'crunch' "
-                    ~ f)),
+  EXPECT_EQ(executeShell("_bin/linters/flint/cxx_replace 'munch' 'crunch' "
+                    ~ f).status,
             0);
   EXPECT_EQ(std.file.readText(f), s1);
-  EXPECT_EQ(system(("_bin/linters/flint/cxx_replace 'break' 'continue' "
-                    ~ f)),
+  EXPECT_EQ(executeShell("_bin/linters/flint/cxx_replace 'break' 'continue' "
+                    ~ f).status,
             0);
   string s2 = std.array.replace(s1, "break", "continue");
   EXPECT_EQ(std.file.readText(f), s2);
@@ -1891,6 +1891,7 @@ unittest {
 
   EXPECT_EQ(checkIncludeAssociatedHeader(filename, tokens), 0);
 }
+
 
 // testMemset
 unittest {
@@ -2272,7 +2273,7 @@ unittest {
       return unique_lock<mutex>(m_lock);
     }
    ";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s2, filename, tokens);
   EXPECT_EQ(checkMutexHolderHasName(filename, tokens), 0);
 
@@ -2280,7 +2281,7 @@ unittest {
     void foo(lock_guard<mutex>& m, lock_guard<x>* m2) {
     }
    ";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s3, filename, tokens);
   EXPECT_EQ(checkMutexHolderHasName(filename, tokens), 0);
 }
@@ -2288,15 +2289,15 @@ unittest {
 // testOSSIncludes
 unittest {
   string s =
-    "#include <super-safe>\n"
-    "#include <braces/are/safe>\n"
-    "#include \"no-slash-is-safe\"\n"
-    "#include \"folly/is/safe\"\n"
-    "#include \"hphp/is/safe/in/hphp\"\n"
-    "#include \"hphp/facebook/hphp-facebook-is-safe-subdirectory\"\n"
-    "#include \"random/unsafe/in/oss\"\n"
-    "#include \"oss-is-safe\" // nolint\n"
-    "#include \"oss/is/safe\" // nolint\n"
+    "#include <super-safe>\n" ~
+    "#include <braces/are/safe>\n" ~
+    "#include \"no-slash-is-safe\"\n" ~
+    "#include \"folly/is/safe\"\n" ~
+    "#include \"hphp/is/safe/in/hphp\"\n" ~
+    "#include \"hphp/facebook/hphp-facebook-is-safe-subdirectory\"\n" ~
+    "#include \"random/unsafe/in/oss\"\n" ~
+    "#include \"oss-is-safe\" // nolint\n" ~
+    "#include \"oss/is/safe\" // nolint\n" ~
     "#include \"oss-at-eof-should-be-safe\" // nolint";
 
   import std.typecons;
@@ -2321,17 +2322,17 @@ unittest {
 unittest {
   import std.typecons;
   Tuple!(string, int)[] includesAndErrors = [
-    tuple("#include <single_file>\n"
-          "#include <includedTwice>\n"
+    tuple("#include <single_file>\n" ~
+          "#include <includedTwice>\n" ~
           "#include <includedTwice>\n", 1),
-    tuple("#include <single_file>\n"
-          "#include \"includedTwice\"\n"
+    tuple("#include <single_file>\n" ~
+          "#include \"includedTwice\"\n" ~
           "#include \"includedTwice\"\n", 1),
-    tuple("#include <includedTwice>\n"
+    tuple("#include <includedTwice>\n" ~
           "include \"includedTwice\"\n", 0),
-    tuple("#include <firstInclude>\n"
+    tuple("#include <firstInclude>\n" ~
           "#include <secondInclude>\n", 0),
-    tuple("#include <includedTwice>\n"
+    tuple("#include <includedTwice>\n" ~
           "#include <includedTwice> /* nolint */\n", 0)
   ];
 
@@ -2381,7 +2382,7 @@ unittest {
       }\n
     }\n
    ";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s2, filename, tokens);
   EXPECT_EQ(checkBreakInSynchronized(filename, tokens), 2);
 
@@ -2396,7 +2397,7 @@ unittest {
     }\n
    ";
 
-  tokens.clear();
+  tokens.destroy();
   tokenize(s3, filename, tokens);
   EXPECT_EQ(checkBreakInSynchronized(filename, tokens), 0);
 }
@@ -2413,13 +2414,13 @@ unittest {
 
   // non-const & is ok
   string s2 = "folly::StringPiece& g(StringPiece&)\n";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s2, filename, tokens);
   EXPECT_EQ(checkFollyStringPieceByValue(filename, tokens), 0);
 
   // by value is ok
   string s3 = "folly::StringPiece g(StringPiece)\n";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s3, filename, tokens);
   EXPECT_EQ(checkFollyStringPieceByValue(filename, tokens), 0);
 }
@@ -2444,7 +2445,7 @@ unittest {
     int randomInt = rand();
     tr_rand();
   ";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s1, filename, tokens);
   EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
 
@@ -2454,7 +2455,7 @@ unittest {
     GetRandomInt32();
     uint32_t rand = r();
   ";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s2, filename, tokens);
   EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
 
@@ -2464,7 +2465,7 @@ unittest {
     GetRandomInt64();
     uint64_t rand = r();
   ";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s3, filename, tokens);
   EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
 
@@ -2472,7 +2473,7 @@ unittest {
   string s4 = "
     random_shuffle(x, y, z);
   ";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s4, filename, tokens);
   EXPECT_EQ(checkRandomUsage(filename, tokens), 1);
 }
@@ -2495,7 +2496,7 @@ unittest {
   string s1 = "
     usleep(200);
   ";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s1, filename, tokens);
   EXPECT_EQ(checkSleepUsage(filename, tokens), 1);
 
@@ -2503,7 +2504,7 @@ unittest {
   string s2 = "
     std::this_thread::sleep_for(std::chrono::seconds(3));
   ";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s2, filename, tokens);
   EXPECT_EQ(checkSleepUsage(filename, tokens), 1);
 
@@ -2511,7 +2512,7 @@ unittest {
   string s3 = "
     this_thread::sleep_until(chrono::system_clock::now());
   ";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s3, filename, tokens);
   EXPECT_EQ(checkSleepUsage(filename, tokens), 1);
 
@@ -2521,7 +2522,7 @@ unittest {
     sleepy_code();
     DEFINE_int32(sleep, 0, "trolololol");
   `;
-  tokens.clear();
+  tokens.destroy();
   tokenize(s4, filename, tokens);
   EXPECT_EQ(checkSleepUsage(filename, tokens), 0);
 
@@ -2534,7 +2535,7 @@ unittest {
     /* sleep override */ std::this_thread::sleep_for(std::chrono::milliseconds(200));
     /* sleep override */ appliesToThisInstead(); sleep();
   ";
-  tokens.clear();
+  tokens.destroy();
   tokenize(s5, filename, tokens);
   EXPECT_EQ(checkSleepUsage(filename, tokens), 1);
 }

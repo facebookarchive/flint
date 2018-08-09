@@ -506,11 +506,11 @@ uint checkBlacklistedSequences(string fpath, CppLexer.Token[] v) {
 
   const static BlacklistEntry[] blacklist = [
     BlacklistEntry([tk!"volatile"],
-      "'volatile' does not make your code thread-safe. If multiple threads are "
-      "sharing data, use std::atomic or locks. In addition, 'volatile' may "
-      "force the compiler to generate worse code than it could otherwise. "
-      "For more about why 'volatile' doesn't do what you think it does, see "
-      "http://www.kernel.org/doc/Documentation/"
+      "'volatile' does not make your code thread-safe. If multiple threads are " ~
+      "sharing data, use std::atomic or locks. In addition, 'volatile' may " ~
+      "force the compiler to generate worse code than it could otherwise. " ~
+      "For more about why 'volatile' doesn't do what you think it does, see " ~
+      "http://www.kernel.org/doc/Documentation/" ~
       "volatile-considered-harmful.txt.\n",
                    true), // C++ only.
   ];
@@ -544,10 +544,10 @@ uint checkBlacklistedIdentifiers(string fpath, CppLexer.Token[] v) {
 
   string[string] banned = [
     "strtok" :
-      "strtok() is not thread safe, and has safer alternatives.  Consider "
+      "strtok() is not thread safe, and has safer alternatives.  Consider " ~
       "folly::split or strtok_r as appropriate.\n",
     "strncpy" :
-      "strncpy is very often used in error; see "
+      "strncpy is very often used in error; see " ~
       "http://meyering.net/crusade-to-eliminate-strncpy/\n"
   ];
 
@@ -573,7 +573,7 @@ uint checkDefinedNames(string fpath, Token[] v) {
   // Define a set of exception to rules
   static bool[string] okNames;
   if (okNames.length == 0) {
-    static string okNamesInit[] = [
+    static string[] okNamesInit = [
       "__STDC_LIMIT_MACROS",
       "__STDC_FORMAT_MACROS",
       "_GNU_SOURCE",
@@ -602,15 +602,15 @@ uint checkDefinedNames(string fpath, Token[] v) {
       if (sym in okNames) {
         continue;
       }
-      lintWarning(t, text("Symbol ", sym, " invalid."
-        "  A symbol may not start with an underscore followed by a "
+      lintWarning(t, text("Symbol ", sym, " invalid." ~
+        "  A symbol may not start with an underscore followed by a " ~
         "capital letter.\n"));
       ++result;
     } else if (sym.length >= 2 && sym[0] == '_' && sym[1] == '_') {
       if (sym in okNames) {
         continue;
       }
-      lintWarning(t, text("Symbol ", sym, " invalid."
+      lintWarning(t, text("Symbol ", sym, " invalid." ~
         "  A symbol may not begin with two adjacent underscores.\n"));
       ++result;
     } else if (!c_mode /* C is less restrictive about this */ &&
@@ -618,7 +618,7 @@ uint checkDefinedNames(string fpath, Token[] v) {
       if (sym in okNames) {
         continue;
       }
-      lintWarning(t, text("Symbol ", sym, " invalid."
+      lintWarning(t, text("Symbol ", sym, " invalid." ~
         "  A symbol may not contain two adjacent underscores.\n"));
       ++result;
     }
@@ -670,7 +670,7 @@ uint checkCatchByReference(string fpath, Token[] v) {
     // specifier, such as facebook::FancyException<int, string>.
     if (v[i + focal].type_ != tk!"identifier") {
       const t = v[i + focal];
-      lintWarning(t, "Symbol " ~ t.value_ ~ " invalid in "
+      lintWarning(t, "Symbol " ~ t.value_ ~ " invalid in " ~
               "catch clause.  You may only catch user-defined types.\n");
       ++result;
       continue;
@@ -711,7 +711,7 @@ uint checkCatchByReference(string fpath, Token[] v) {
       theType ~= v[i + j].value;
     }
     lintError(t, text("Symbol ", t.value_, " of type ", theType,
-      " caught by value.  Use catch by (preferably const) reference "
+      " caught by value.  Use catch by (preferably const) reference " ~
       "throughout.\n"));
     ++result;
   }
@@ -777,7 +777,7 @@ uint checkThrowSpecification(string, Token[] v) {
         }
 
         if (it.front.type_ == tk!"throw" && it[1].type_ == tk!"(") {
-          lintWarning(it.front, "Throw specifications on functions are "
+          lintWarning(it.front, "Throw specifications on functions are " ~
               "deprecated.\n");
           ++result;
         }
@@ -809,7 +809,7 @@ uint checkThrowSpecification(string, Token[] v) {
     }
 
     if (it.front.type_ == tk!"throw" && it[1].type_ == tk!"(") {
-      lintWarning(it.front, "Throw specifications on functions are "
+      lintWarning(it.front, "Throw specifications on functions are " ~
         "deprecated.\n");
       ++result;
     }
@@ -869,7 +869,7 @@ uint checkConstructors(string fpath, Token[] tokensV) {
   uint result = 0;
   string[] nestedClasses;
 
-  const string explicitOverride = "/""* implicit *""/";
+  const string explicitOverride = "/"~"* implicit *"~"/";
   const CppLexer.TokenType2[] stdInitializerSequence =
     [tk!"identifier", tk!"::", tk!"identifier", tk!"<"];
   const CppLexer.TokenType2[] voidConstructorSequence =
@@ -1055,9 +1055,9 @@ uint checkConstructors(string fpath, Token[] tokensV) {
         lintError(tox.front, text(
           "Single-argument constructor '",
           formatFunction(spec),
-          "' may inadvertently be used as a type conversion constructor. "
-          "Prefix the function with the 'explicit' keyword to avoid this, or "
-          "add an /* implicit *""/ comment to suppress this warning.\n"
+          "' may inadvertently be used as a type conversion constructor. " ~
+          "Prefix the function with the 'explicit' keyword to avoid this, or " ~
+          "add an /* implicit *"~"/ comment to suppress this warning.\n"
           ));
       }
     }
@@ -1069,7 +1069,7 @@ uint checkConstructors(string fpath, Token[] tokensV) {
       ++result;
       lintError(tox.front, text(
         "Move constructor '", formatFunction(spec),
-        "' should be declared noexcept.  "
+        "' should be declared noexcept.  " ~
         "Use a trailing or leading " ~ explicitThrowSpec ~
         " comment to suppress this warning\n"
         ));
@@ -1093,7 +1093,7 @@ uint checkImplicitCast(string fpath, Token[] tokensV) {
 
   uint result = 0;
 
-  const string lintOverride = "/""* implicit *""/";
+  const string lintOverride = "/"~"* implicit *"~"/";
 
   TokenType[TokenType] includeGuardDelimiters = [
     tk!"\"": tk!"\"",
@@ -1140,11 +1140,11 @@ uint checkImplicitCast(string fpath, Token[] tokensV) {
       }
 
       ++result;
-      lintError(tox.front, "operator bool() is dangerous. "
-        "In C++11 use explicit conversion (explicit operator bool()), "
-        "otherwise use something like the safe-bool idiom if the syntactic "
-        "convenience is justified in this case, or consider defining a "
-        "function (see http://www.artima.com/cppsource/safebool.html for more "
+      lintError(tox.front, "operator bool() is dangerous. " ~
+        "In C++11 use explicit conversion (explicit operator bool()), " ~
+        "otherwise use something like the safe-bool idiom if the syntactic " ~
+        "convenience is justified in this case, or consider defining a " ~
+        "function (see http://www.artima.com/cppsource/safebool.html for more " ~
         "details).\n"
       );
       continue;
@@ -1189,8 +1189,8 @@ uint checkImplicitCast(string fpath, Token[] tokensV) {
     lintWarning(tox.front, text(
       "Implicit conversion to '",
       typeString,
-      "' may inadvertently be used. Prefix the function with the 'explicit'"
-      " keyword to avoid this, or add an /* implicit *""/ comment to"
+      "' may inadvertently be used. Prefix the function with the 'explicit'" ~
+      " keyword to avoid this, or add an /* implicit *"~"/ comment to" ~
       " suppress this warning.\n"
       ));
   }
@@ -1378,9 +1378,9 @@ uint checkIncludeGuard(string fpath, Token[] v) {
       || v[1].value_ != "ifndef" || v[4].value_ != "define") {
     // There is no include guard in this file.
     lintError(v.front(),
-        text("Missing include guard. If you are ABSOLUTELY sure that you "
-             "don't want an include guard, then include a comment "
-             "containing ", override_string, " in lieu of an include "
+        text("Missing include guard. If you are ABSOLUTELY sure that you " ~
+             "don't want an include guard, then include a comment " ~
+             "containing ", override_string, " in lieu of an include " ~
              "guard.\n"));
     return 1;
   }
@@ -1490,7 +1490,7 @@ uint checkUsingDirectives(string fpath, Token[] v) {
       if (i.front.value_ == "facebook" && i[1].type_ == tk!"{") {
         // Entering facebook namespace
         if (openBraces > 0) {
-          lintError(i.front, "Namespace facebook must be introduced "
+          lintError(i.front, "Namespace facebook must be introduced " ~
             "at top level only.\n");
           ++result;
         }
@@ -1523,7 +1523,7 @@ uint checkUsingDirectives(string fpath, Token[] v) {
       else {
         string errorPrefix = usingCompound ? warningPrefix : "";
         if (openBraces == 0) {
-          lintError(i.front, errorPrefix ~ "Using directive not allowed at top "
+          lintError(i.front, errorPrefix ~ "Using directive not allowed at top " ~
                     "level or inside namespace facebook. "
                     ~ lintOverrideMessage);
           ++result;
@@ -1535,8 +1535,8 @@ uint checkUsingDirectives(string fpath, Token[] v) {
           }
 
           // We are directly inside the namespace.
-          lintError(i.front, errorPrefix ~ "Using directive not allowed in "
-                    "header file, unless it is scoped to an inline function "
+          lintError(i.front, errorPrefix ~ "Using directive not allowed in " ~
+                    "header file, unless it is scoped to an inline function " ~
                     "or function template. "
                     ~ lintOverrideMessage);
           ++result;
@@ -1603,7 +1603,7 @@ uint checkUsingNamespaceDirectives(string fpath, Token[] v) {
       if (there) {
         // duplicate using namespace directive
         size_t line = *there;
-        string error = format("Duplicate using directive for "
+        string error = format("Duplicate using directive for " ~
             "namespace \"%s\" (line %s).\n", ns, line);
         lintError(i.front, error);
         ++result;
@@ -1632,7 +1632,7 @@ uint checkUsingNamespaceDirectives(string fpath, Token[] v) {
               conflictLine = *it;
             }
           }
-          string error = format("Using namespace conflict: \"%s\" "
+          string error = format("Using namespace conflict: \"%s\" " ~
               "and \"%s\" (line %s).\n",
               ns, conflict, conflictLine);
           lintError(i.front, error);
@@ -1671,9 +1671,9 @@ uint checkThrowsHeapException(string fpath, Token[] v) {
         // Some other usage of throw new Class().
         msg = "Heap-allocated exception: throw new was used.";
       }
-      lintError(v[focal], text(msg, "\n  This is usually a mistake in C++. "
-        "Please refer to the C++ Primer (https://www.intern.facebook.com/"
-        "intern/wiki/images/b/b2/C%2B%2B--C%2B%2B_Primer.pdf) for FB exception "
+      lintError(v[focal], text(msg, "\n  This is usually a mistake in C++. " ~
+        "Please refer to the C++ Primer (https://www.intern.facebook.com/" ~
+        "intern/wiki/images/b/b2/C%2B%2B--C%2B%2B_Primer.pdf) for FB exception " ~
         "guidelines.\n"));
       ++result;
     }
@@ -1789,7 +1789,7 @@ uint checkHPHPNamespace(string fpath, Token[] v) {
             if (i.front.value.length > l.length) {
               auto substr = i.front.value[0 .. l.length];
               if (substr == l) {
-                lintError(i.front, text("Missing f_require_module before "
+                lintError(i.front, text("Missing f_require_module before " ~
                   "suspected HPHP namespace reference ", i.front.value_, "\n"));
                 ++result;
               }
@@ -1892,8 +1892,8 @@ uint checkIncludeAssociatedHeader(string fpath, Token[] v) {
         (includedParentPath.empty ||
          parentPath.endsWith('/' ~ includedParentPath))) {
       if (totalIncludesFound > 1) {
-        lintError(v.front, text("The associated header file of .cpp files "
-                "should be included before any other includes.\n(This "
+        lintError(v.front, text("The associated header file of .cpp files " ~
+                "should be included before any other includes.\n(This " ~
                 "helps catch missing header file dependencies in the .h)\n"));
         return 1;
       }
@@ -1967,9 +1967,9 @@ uint checkInlHeaderInclusions(string fpath, Token[] v) {
       continue;
     }
 
-    lintError(v.front, text("A -inl file (", includedPath, ") was "
-      "included even though this is not its associated header.  "
-      "Usually files like Foo-inl.h are implementation details and should "
+    lintError(v.front, text("A -inl file (", includedPath, ") was " ~
+      "included even though this is not its associated header.  " ~
+      "Usually files like Foo-inl.h are implementation details and should " ~
       "not be included outside of Foo.h.\n"));
     ++result;
   }
@@ -1986,8 +1986,8 @@ uint checkFollyDetail(string fpath, Token[] v) {
       continue;
     }
     if (v.front.value_ == "folly" && v[2].value_ == "detail") {
-      lintError(v.front, text("Code from folly::detail is logically "
-                              "private, please avoid use outside of "
+      lintError(v.front, text("Code from folly::detail is logically " ~
+                              "private, please avoid use outside of " ~
                               "folly.\n"));
       ++result;
     }
@@ -2005,7 +2005,7 @@ uint checkFollyStringPieceByValue(string fpath, Token[] v) {
                       tk!"identifier", tk!"&") &&
          v[1].value_ == "folly" &&
          v[3].value_ == "StringPiece")) {
-      lintWarning(v.front, text("Pass folly::StringPiece by value "
+      lintWarning(v.front, text("Pass folly::StringPiece by value " ~
                                 "instead of as a const reference.\n"));
       ++result;
     }
@@ -2035,9 +2035,9 @@ uint checkProtectedInheritance(string fpath, Token[] v) {
 
         // Detect a member access specifier.
         if (it.atSequence(tk!"protected", tk!"identifier")) {
-          lintWarning(it.front, "Protected inheritance is sometimes not a good "
-              "idea. Read http://stackoverflow.com/questions/"
-              "6484306/effective-c-discouraging-protected-inheritance "
+          lintWarning(it.front, "Protected inheritance is sometimes not a good " ~
+              "idea. Read http://stackoverflow.com/questions/" ~
+              "6484306/effective-c-discouraging-protected-inheritance " ~
               "for more information.\n");
           ++result;
         }
@@ -2055,10 +2055,10 @@ uint checkUpcaseNull(string fpath, Token[] v) {
   foreach (ref t; v) {
     if (t.type_ == tk!"identifier" && t.value_ == "NULL") {
       lintAdvice(t,
-        "Prefer `nullptr' to `NULL' in new C++ code.  Unlike `NULL', "
-        "`nullptr' can't accidentally be used in arithmetic or as an "
-        "integer. See "
-        "http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2431.pdf"
+        "Prefer `nullptr' to `NULL' in new C++ code.  Unlike `NULL', " ~
+        "`nullptr' can't accidentally be used in arithmetic or as an " ~
+        "integer. See " ~
+        "http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2007/n2431.pdf" ~
         " for details.\n");
       ++ret;
     }
@@ -2132,9 +2132,9 @@ uint checkExceptionInheritance(string fpath, Token[] v) {
           warn = badExceptionInheritance(classType, access);
         }
         if (warn) {
-          lintWarning(it.front, "std::exception should not be inherited "
-            "non-publicly, as this base class will not be accessible in "
-            "try..catch(const std::exception& e) outside the derived class. "
+          lintWarning(it.front, "std::exception should not be inherited " ~
+            "non-publicly, as this base class will not be accessible in " ~
+            "try..catch(const std::exception& e) outside the derived class. " ~
             "See C++ standard section 11.2 [class.access.base] / 4.\n");
           return 1;
         }
@@ -2234,7 +2234,7 @@ uint checkUniquePtrUsage(string fpath, Token[] v) {
         lintError(uniquePtrIt.front,
           uniquePtrHasArray
             ? text("unique_ptr<T[]> should be used with an array type\n")
-            : text("unique_ptr<T> should be unique_ptr<T[]> when "
+            : text("unique_ptr<T> should be unique_ptr<T[]> when " ~
                        "used with an array\n")
         );
         ++result;
@@ -2340,7 +2340,7 @@ uint checkBannedIdentifiers(string fpath, Token[] v) {
     // another thread_specific_ptr can lead to corrupting an internal
     // map.
     "thread_specific_ptr" :
-    "There are known bugs and performance downsides to the use of "
+    "There are known bugs and performance downsides to the use of " ~
     "this class. Use folly::ThreadLocal instead.\n",
   ];
 
@@ -2386,7 +2386,7 @@ uint checkNamespaceScopedStatics(string fpath, Token[] w) {
     } else if (v.front.type_ == tk!"static") {
       if (!isInMacro(w, w.length - v.length)) {
         lintWarning(v.front,
-                    "Avoid using static at global or namespace scope "
+                    "Avoid using static at global or namespace scope " ~
                     "in C++ header files.\n");
         ++result;
       }
@@ -2415,7 +2415,7 @@ uint checkMutexHolderHasName(string fpath, Token[] v) {
         v.popFront;
         v = skipTemplateSpec(v);
         if (v.atSequence(tk!">", tk!"(")) {
-          lintError(v.front, "Mutex holder variable declared without a name, "
+          lintError(v.front, "Mutex holder variable declared without a name, " ~
               "causing the lock to be released immediately.\n");
           ++result;
         }
@@ -2455,11 +2455,11 @@ uint checkIncludes(
     if (allowedPrefixes.any!(x => includePath.startsWith(x))) continue;
 
     // Finally, the lint error.
-    fn(it.front, "Open Source Software may not include files from "
-        "other fbcode projects (except what's already open-sourced). "
-        "If this is not an fbcode include, please use "
-        "'#include <...>' instead of '#include \"...\"'. "
-        "You may suppress this warning by including the "
+    fn(it.front, "Open Source Software may not include files from " ~
+        "other fbcode projects (except what's already open-sourced). " ~
+        "If this is not an fbcode include, please use " ~
+        "'#include <...>' instead of '#include \"...\"'. " ~
+        "You may suppress this warning by including the " ~
         "comment 'nolint' after the #include \"...\".\n");
     ++result;
   }
@@ -2632,7 +2632,7 @@ uint checkBreakInSynchronized(string fpath, Token[] v) {
     if (tox.front.type_.among(tk!"break", tk!"continue")) {
       if (!nestedStatements.empty &&
         nestedStatements.back.name == "SYNCHRONIZED") {
-        lintError(tox.front, "Cannot use break/continue inside "
+        lintError(tox.front, "Cannot use break/continue inside " ~
           "SYNCHRONIZED pseudo-statement\n"
         );
         ++result;
@@ -2654,17 +2654,17 @@ uint checkRandomUsage(string fpath, Token[] v) {
 
   string[string] random_banned = [
     "random_device" :
-      "random_device uses /dev/urandom, which is expensive. "
-      "Use folly::Random::rand32 or other methods in folly/Random.h.\n",
+      "random_device uses /dev/urandom, which is expensive. " ~
+      "Use folly::Random::rand32 or other methods in folly/Random.h.\n", 
     "RandomInt32" :
-      "using RandomInt32 (in common/base/Random.h) to generate random number "
+      "using RandomInt32 (in common/base/Random.h) to generate random number " ~
       "is discouraged, please consider folly::Random::rand32().\n",
     "RandomInt64" :
-      "using RandomInt64 (in common/base/Random.h) to generate random number "
+      "using RandomInt64 (in common/base/Random.h) to generate random number " ~
       "is discouraged, please consider folly::Random::rand64().\n",
     "random_shuffle" :
-      "std::random_shuffle is bankrupt (see http://fburl.com/evilrand) and is "
-      "scheduled for removal from C++17. Please consider the overload of"
+      "std::random_shuffle is bankrupt (see http://fburl.com/evilrand) and is " ~
+      "scheduled for removal from C++17. Please consider the overload of" ~
       "std::shuffle that takes a random # generator."
   ];
 
@@ -2677,7 +2677,7 @@ uint checkRandomUsage(string fpath, Token[] v) {
             && t.value_ == "rand") {
           lintWarning(
             t,
-            "using C rand() to generate random number causes lock contention, "
+            "using C rand() to generate random number causes lock contention, " ~
             "please consider folly::Random::rand32().\n");
           ++result;
       }
@@ -2699,13 +2699,13 @@ uint checkSleepUsage(string fpath, Token[] v) {
   uint result = 0;
 
   immutable string lintOverride = "sleep override";
-  immutable string message = "Most sleep calls are inappropriate. "
-    "Sleep calls are especially harmful in test cases, whereby they make the "
-    "tests, and by extension, contbuild, flakey. In general, the correctness "
-    "of a program should not depend on its execution speed.\n"
-    "Consider condition variables and/or futures as a replacement "
-    "(see http://fburl.com/SleepsToFuturesDex)."
-    "\n\nOverride lint rule by preceding the call with a /* sleep override */"
+  immutable string message = "Most sleep calls are inappropriate. " ~
+    "Sleep calls are especially harmful in test cases, whereby they make the " ~
+    "tests, and by extension, contbuild, flakey. In general, the correctness " ~
+    "of a program should not depend on its execution speed.\n" ~
+    "Consider condition variables and/or futures as a replacement " ~
+    "(see http://fburl.com/SleepsToFuturesDex)." ~
+    "\n\nOverride lint rule by preceding the call with a /* sleep override */" ~
     "comment.";
   byte[string] sleepBanned = [
     "sleep" : true,
@@ -3237,8 +3237,8 @@ uint getBogusComparisons(Token[] v,
       if (0 < lhsLParenCount) {
         lhsExprHead ~= lhs.length;
       } else {
-        specialTokenHead.clear;
-        lhs.clear;
+        specialTokenHead.destroy();
+        lhs.destroy();
         lhsExprHead = [0];
         lhsLParenCount = 0;
       }
@@ -3429,7 +3429,7 @@ uint checkAttributeArgumentUnderscores(string fpath, Token[] v) {
     }
     auto kw = tok[3];
     if (!kw.value.startsWith("__")) {
-      lintWarning(kw, format("__attribute__ type \"%s\""
+      lintWarning(kw, format("__attribute__ type \"%s\"" ~
                              " should be written as \"__%s__\"\n",
                              kw.value_, kw.value_));
       ++result;
@@ -3445,7 +3445,7 @@ uint checkAttributeArgumentUnderscores(string fpath, Token[] v) {
     /* Also detect when the T in "__format__(T" does not start with "__". */
     if (tok.atSequence(tk!"(", tk!"identifier")
         && !tok[1].value.startsWith("__")) {
-      lintWarning(tok[1], format("__attribute__ format archetype \"%s\""
+      lintWarning(tok[1], format("__attribute__ format archetype \"%s\"" ~
                                  " should be written as \"__%s__\"\n",
                                  tok[1].value_, tok[1].value_));
       ++result;
