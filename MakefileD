@@ -1,0 +1,19 @@
+DC=dmd
+DFLAGS=-O
+SOURCES=Checks.d FileCategories.d Ignored.d Tokenizer.d
+FLINT_EXE=flint
+FLINT_TEST=flint_test
+
+all: $(FLINT_EXE)
+
+$(FLINT_EXE): $(SOURCES) Main.d
+	$(DC) $(DFLAGS) -of$@ $^
+
+$(FLINT_TEST): $(SOURCES) Test.d
+	$(DC) $(DFLAGS) -unittest -of$@ $^
+
+test: $(FLINT_TEST)
+	./flint_test
+
+clean:
+	rm -f $(FLINT_EXE) $(FLINT_TEST)
