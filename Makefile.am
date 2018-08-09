@@ -1,5 +1,3 @@
-SUBDIRS = . cxx
-
 bin_PROGRAMS = flint
 noinst_PROGRAMS = flint_test cxx_replace cxx_tokenize
 
