@@ -48,5 +48,5 @@ To Build
 --------
 
     autoreconf --install
-    LDFLAGS=-L<double-conversion> CPPFLAGS=-I<double-conversion>/src configure ...
+    LDFLAGS="-L<double-conversion>" CPPFLAGS="-I<double-conversion>/src" ./configure 
     make
