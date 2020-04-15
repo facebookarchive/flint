@@ -18,7 +18,7 @@ AC_LANG([C++])
 AC_PROG_CXX
 AC_CXX_COMPILE_STDCXX_0X
 
-AC_CHECK_PROGS([DC],[gdc dmd ldc])
+AC_CHECK_PROGS([DC],[gdc dmd ldc ldc2])
 if test -z "$DC" ; then
     AC_MSG_ERROR([\
 *** No D Compiler found.  Please install one of gdc, ldc, or dmd])
